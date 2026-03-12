@@ -77,8 +77,10 @@ create policy "Users can vote once per option"
 create policy "Users can see all votes"
   on public.votes for select using (true);
 
--- Leaderboard view (computed rank by size)
-create or replace view public.leaderboard as
+-- Leaderboard view (computed rank by size, auth-only)
+create or replace view public.leaderboard
+  with (security_invoker = true)
+as
   select
     row_number() over (order by size_inches desc) as rank,
     id,
@@ -90,12 +92,41 @@ create or replace view public.leaderboard as
   from public.profiles
   order by size_inches desc;
 
--- RPC: safely increment poll vote count
+-- Poll options insert/update/delete policies
+create policy "Post owners can insert poll options"
+  on public.poll_options for insert
+  with check (
+    exists (
+      select 1 from public.posts
+      where id = post_id and user_id = auth.uid()
+    )
+  );
+
+create policy "Post owners can delete poll options"
+  on public.poll_options for delete
+  using (
+    exists (
+      select 1 from public.posts
+      where id = post_id and user_id = auth.uid()
+    )
+  );
+
+-- RPC: safely increment poll vote count (auth-guarded)
 create or replace function public.increment_vote_count(option_id uuid)
-returns void language sql security definer as $$
+returns void language plpgsql security definer as $$
+begin
+  if not exists (
+    select 1 from public.votes
+    where poll_option_id = option_id
+      and user_id = auth.uid()
+  ) then
+    raise exception 'Unauthorized: must cast vote before incrementing count';
+  end if;
+
   update public.poll_options
   set vote_count = vote_count + 1
   where id = option_id;
+end;
 $$;
 
 -- Auto-update comment_count on posts when a comment is added

@@ -6,6 +6,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SIZES, RADIUS, getSizeTier } from '@/constants/theme';
 import { fetchLeaderboard } from '@/lib/api';
+import PageContainer from '@/components/PageContainer';
 import { usePurchase } from '@/context/PurchaseContext';
 import PaywallModal from '@/components/PaywallModal';
 import { LeaderboardEntry } from '@/lib/types';
@@ -66,6 +67,7 @@ export default function LeaderboardScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
+      <PageContainer>
       <View style={styles.header}>
         <Text style={styles.title}>LEADERBOARD</Text>
         <Ionicons name="trophy" size={22} color={COLORS.gold} />
@@ -143,6 +145,7 @@ export default function LeaderboardScreen() {
           />
         </>
       )}
+      </PageContainer>
     </SafeAreaView>
   );
 }

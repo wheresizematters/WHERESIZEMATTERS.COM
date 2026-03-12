@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, SafeAreaView, TouchableOpacity,
-  ScrollView, Alert, ActivityIndicator,
+  ScrollView, Alert, ActivityIndicator, Platform,
 } from 'react-native';
+import PageContainer from '@/components/PageContainer';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SIZES, RADIUS, getSizeTier } from '@/constants/theme';
@@ -32,6 +33,12 @@ export default function ProfileScreen() {
   const percentile = rank && totalUsers ? Math.round((1 - rank / totalUsers) * 100) : null;
 
   async function handleSignOut() {
+    if (Platform.OS === 'web') {
+      if (!window.confirm('Are you sure you want to sign out?')) return;
+      setSigningOut(true);
+      await signOut();
+      return;
+    }
     Alert.alert('Sign Out', 'Are you sure?', [
       { text: 'Cancel', style: 'cancel' },
       {
@@ -56,6 +63,7 @@ export default function ProfileScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
+      <PageContainer>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.inner}>
         <View style={styles.header}>
           <Text style={styles.title}>PROFILE</Text>
@@ -165,6 +173,7 @@ export default function ProfileScreen() {
           }
         </TouchableOpacity>
       </ScrollView>
+      </PageContainer>
     </SafeAreaView>
   );
 }

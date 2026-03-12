@@ -4,6 +4,7 @@ import {
   SafeAreaView, ActivityIndicator, RefreshControl, Modal,
   TextInput, KeyboardAvoidingView, Platform, ScrollView, Image,
 } from 'react-native';
+import PageContainer from '@/components/PageContainer';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SIZES, RADIUS, getSizeTier } from '@/constants/theme';
 import { fetchPosts, createPost, voteOnPoll } from '@/lib/api';
@@ -260,12 +261,15 @@ export default function FeedScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
+      <PageContainer>
+      {Platform.OS !== 'web' && (
       <View style={styles.header}>
         <Text style={styles.logo}>SIZE.</Text>
         <TouchableOpacity>
           <Ionicons name="notifications-outline" size={24} color={COLORS.muted} />
         </TouchableOpacity>
       </View>
+      )}
 
       <FlatList
         data={FILTERS}
@@ -324,6 +328,7 @@ export default function FeedScreen() {
         onPost={loadPosts}
         isPremium={isPremium}
       />
+      </PageContainer>
     </SafeAreaView>
   );
 }

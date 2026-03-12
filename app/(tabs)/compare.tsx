@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SIZES, RADIUS, getSizeTier } from '@/constants/theme';
+import PageContainer from '@/components/PageContainer';
 import { searchUsers, fetchUserPercentile, fetchTotalUserCount } from '@/lib/api';
 import { WORLD_AVERAGE } from '@/lib/mockData';
 import { useAuth } from '@/context/AuthContext';
@@ -60,6 +61,7 @@ export default function CompareScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
+      <PageContainer>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.inner}>
         <View style={styles.header}>
           <Text style={styles.title}>COMPARE</Text>
@@ -166,6 +168,7 @@ export default function CompareScreen() {
           )}
         </View>
       </ScrollView>
+      </PageContainer>
     </SafeAreaView>
   );
 }
