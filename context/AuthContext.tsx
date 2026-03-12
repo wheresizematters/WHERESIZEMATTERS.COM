@@ -68,12 +68,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   async function signUp(email: string, password: string, username: string, sizeInches: number) {
     if (!SUPABASE_READY) return { error: 'Supabase not configured — running in demo mode' };
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: { data: { username, size_inches: sizeInches } },
-    });
+    const { data, error } = await supabase.auth.signUp({ email, password });
     if (error) return { error: error.message };
+    if (!data.user) return { error: 'Signup failed — no user returned' };
+
+    const { error: profileError } = await supabase.from('profiles').insert({
+      id: data.user.id,
+      username: username.trim(),
+      size_inches: sizeInches,
+    });
+    if (profileError) return { error: profileError.message };
     return { error: null };
   }
 
