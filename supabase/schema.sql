@@ -1,6 +1,25 @@
 -- SIZE. App — Supabase Schema
 -- Run this in your Supabase SQL editor
 
+-- Auto-create profile when a new auth user signs up
+create or replace function public.handle_new_user()
+returns trigger language plpgsql security definer as $$
+begin
+  insert into public.profiles (id, username, size_inches)
+  values (
+    new.id,
+    coalesce(new.raw_user_meta_data->>'username', split_part(new.email, '@', 1)),
+    coalesce((new.raw_user_meta_data->>'size_inches')::decimal, 6.0)
+  )
+  on conflict (id) do nothing;
+  return new;
+end;
+$$;
+
+create or replace trigger on_auth_user_created
+  after insert on auth.users
+  for each row execute procedure public.handle_new_user();
+
 -- Profiles table
 create table if not exists public.profiles (
   id          uuid references auth.users(id) on delete cascade primary key,
