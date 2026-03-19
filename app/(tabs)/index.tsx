@@ -2,8 +2,9 @@ import { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, FlatList, TouchableOpacity, StyleSheet,
   SafeAreaView, ActivityIndicator, RefreshControl, Modal,
-  TextInput, KeyboardAvoidingView, Platform, ScrollView, Image,
+  TextInput, KeyboardAvoidingView, Platform, ScrollView, Image, Alert,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import PageContainer from '@/components/PageContainer';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SIZES, RADIUS, getSizeTier } from '@/constants/theme';
@@ -15,15 +16,126 @@ import { Post } from '@/lib/types';
 import LockedMedia from '@/components/LockedMedia';
 import PaywallModal from '@/components/PaywallModal';
 
-const FILTERS = ['All', 'Polls', 'Discussion', 'Media'];
+const FEED_TABS = ['FEED', 'DISCUSSIONS', 'MEDIA'] as const;
+type FeedTab = typeof FEED_TABS[number];
+
+const TAGS: { label: string; category: 'size' | 'content' | 'viral' }[] = [
+  // Size
+  { label: 'Hung',             category: 'size' },
+  { label: 'Massive',          category: 'size' },
+  { label: 'Above Average',    category: 'size' },
+  { label: 'Average',          category: 'size' },
+  { label: 'Micro',            category: 'size' },
+  { label: 'Grower',           category: 'size' },
+  { label: 'Shower',           category: 'size' },
+  // Content
+  { label: 'OC',               category: 'content' },
+  { label: 'Rate Me',          category: 'content' },
+  { label: 'Comparison',       category: 'content' },
+  { label: 'Measurement',      category: 'content' },
+  { label: 'Progress',         category: 'content' },
+  { label: 'First Post',       category: 'content' },
+  { label: 'Soft',             category: 'content' },
+  { label: 'Hard',             category: 'content' },
+  { label: 'Bulge',            category: 'content' },
+  // Viral
+  { label: 'Guess My Size',    category: 'viral' },
+  { label: 'Be Honest',        category: 'viral' },
+  { label: 'Brutal Rating',    category: 'viral' },
+  { label: 'Top %',            category: 'viral' },
+  { label: "Biggest You've Seen?", category: 'viral' },
+];
+
+const TAG_COLORS: Record<string, string> = {
+  size:    '#A78BFA', // purple
+  content: '#60A5FA', // blue
+  viral:   '#F87171', // red
+};
+
+function timeAgo(ts: string): string {
+  const d = new Date(ts);
+  if (isNaN(d.getTime())) return '';
+  const s = Math.floor((Date.now() - d.getTime()) / 1000);
+  if (s < 60) return 'just now';
+  const m = Math.floor(s / 60);
+  if (m < 60) return `${m}m`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h`;
+  const dy = Math.floor(h / 24);
+  if (dy < 7) return `${dy}d`;
+  return d.toLocaleDateString([], { month: 'short', day: 'numeric' });
+}
+
+function TagChip({ tag }: { tag: string }) {
+  const meta = TAGS.find(t => t.label === tag);
+  const color = meta ? TAG_COLORS[meta.category] : COLORS.muted;
+  return (
+    <View style={[styles.tagChip, { borderColor: color, backgroundColor: `${color}18` }]}>
+      <Text style={[styles.tagChipText, { color }]}>{tag}</Text>
+    </View>
+  );
+}
 
 function SizeBadge({ inches, verified, isPremium }: { inches: number; verified: boolean; isPremium: boolean }) {
+  if (isPremium) {
+    return (
+      <LinearGradient
+        colors={['#FF6B2B', '#E8500A', '#C9A84C', '#BF5AF2']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.badge}
+      >
+        <Text style={styles.badgeText}>
+          {`${inches.toFixed(1)}"`}{verified ? ' ✓' : ''}
+        </Text>
+      </LinearGradient>
+    );
+  }
   const tier = getSizeTier(inches);
   return (
-    <View style={[styles.badge, { borderColor: tier.color }]}>
+    <View style={[styles.badgeMuted, { borderColor: tier.color }]}>
       <Text style={[styles.badgeText, { color: tier.color }]}>
-        {isPremium ? `${inches.toFixed(1)}"` : tier.emoji} {verified ? '✓' : ''}
+        {tier.emoji}{verified ? ' ✓' : ''}
       </Text>
+    </View>
+  );
+}
+
+function AuthorRow({ post, isPremium }: { post: Post; isPremium: boolean }) {
+  const tier = getSizeTier(post.author.size_inches);
+  return (
+    <View style={styles.authorRow}>
+      <View style={[styles.authorAvatar, { borderColor: tier.color }]}>
+        <Text style={[styles.authorAvatarLetter, { color: tier.color }]}>
+          {post.author.username.charAt(0).toUpperCase()}
+        </Text>
+      </View>
+      <View style={styles.authorMeta}>
+        <Text style={styles.authorUsername}>@{post.author.username}</Text>
+        <SizeBadge inches={post.author.size_inches} verified={post.author.is_verified} isPremium={isPremium} />
+      </View>
+      <Text style={styles.postTime}>{timeAgo(post.created_at)}</Text>
+    </View>
+  );
+}
+
+function ActionBar({ voteCount, commentCount }: { voteCount?: number; commentCount: number }) {
+  return (
+    <View style={styles.actionBar}>
+      {voteCount !== undefined && (
+        <View style={styles.actionItem}>
+          <Ionicons name="stats-chart-outline" size={13} color={COLORS.muted} />
+          <Text style={styles.actionText}>{voteCount.toLocaleString()} votes</Text>
+        </View>
+      )}
+      <View style={styles.actionItem}>
+        <Ionicons name="chatbubble-outline" size={13} color={COLORS.muted} />
+        <Text style={styles.actionText}>{commentCount} comments</Text>
+      </View>
+      <View style={styles.actionItem}>
+        <Ionicons name="arrow-redo-outline" size={13} color={COLORS.muted} />
+        <Text style={styles.actionText}>Share</Text>
+      </View>
     </View>
   );
 }
@@ -41,10 +153,8 @@ function PollCard({ post, userId, isPremium }: { post: Post; userId: string; isP
 
   return (
     <View style={styles.card}>
-      <View style={styles.cardHeader}>
-        <Text style={styles.authorName}>@{post.author.username}</Text>
-        <SizeBadge inches={post.author.size_inches} verified={post.author.is_verified} isPremium={isPremium} />
-      </View>
+      <AuthorRow post={post} isPremium={isPremium} />
+      {post.tag && <TagChip tag={post.tag} />}
       <Text style={styles.pollQuestion}>{post.content}</Text>
       <View style={styles.pollOptions}>
         {options.map(opt => {
@@ -71,13 +181,7 @@ function PollCard({ post, userId, isPremium }: { post: Post; userId: string; isP
           );
         })}
       </View>
-      <View style={styles.cardFooter}>
-        <Text style={styles.footerMeta}>{totalVotes.toLocaleString()} votes</Text>
-        <View style={styles.footerRight}>
-          <Ionicons name="chatbubble-outline" size={14} color={COLORS.muted} />
-          <Text style={styles.footerMeta}>{post.comment_count} · {post.created_at}</Text>
-        </View>
-      </View>
+      <ActionBar voteCount={totalVotes} commentCount={post.comment_count} />
     </View>
   );
 }
@@ -85,10 +189,9 @@ function PollCard({ post, userId, isPremium }: { post: Post; userId: string; isP
 function DiscussionCard({ post, isPremium }: { post: Post; isPremium: boolean }) {
   return (
     <View style={styles.card}>
-      <View style={styles.cardHeader}>
-        <Text style={styles.authorName}>@{post.author.username}</Text>
-        <SizeBadge inches={post.author.size_inches} verified={post.author.is_verified} isPremium={isPremium} />
-      </View>
+      <AuthorRow post={post} isPremium={isPremium} />
+      {post.tag && <TagChip tag={post.tag} />}
+      {post.title && <Text style={styles.discussionTitle}>{post.title}</Text>}
       <Text style={styles.discussionText}>{post.content}</Text>
       {(post as any).media_url && (
         <LockedMedia
@@ -97,12 +200,87 @@ function DiscussionCard({ post, isPremium }: { post: Post; isPremium: boolean })
           isPremium={isPremium}
         />
       )}
-      <View style={styles.cardFooter}>
-        <View style={styles.footerRight}>
-          <Ionicons name="chatbubble-outline" size={14} color={COLORS.muted} />
-          <Text style={styles.footerMeta}>{post.comment_count} replies · {post.created_at}</Text>
+      <ActionBar commentCount={post.comment_count} />
+    </View>
+  );
+}
+
+function DiscussionRow({ post, isPremium }: { post: Post; isPremium: boolean }) {
+  const meta = TAGS.find(t => t.label === post.tag);
+  const tagColor = meta ? TAG_COLORS[meta.category] : COLORS.muted;
+  const tier = getSizeTier(post.author.size_inches);
+
+  return (
+    <View style={styles.discRow}>
+      <View style={styles.discRowTop}>
+        {post.tag && (
+          <View style={[styles.tagChip, { borderColor: tagColor, backgroundColor: `${tagColor}18` }]}>
+            <Text style={[styles.tagChipText, { color: tagColor }]}>{post.tag}</Text>
+          </View>
+        )}
+        <Text style={styles.discRowTime}>{timeAgo(post.created_at)}</Text>
+      </View>
+      {post.title
+        ? <Text style={styles.discRowTitle}>{post.title}</Text>
+        : <Text style={styles.discRowTitle} numberOfLines={2}>{post.content}</Text>
+      }
+      {post.title && (
+        <Text style={styles.discRowPreview} numberOfLines={2}>{post.content}</Text>
+      )}
+      <View style={styles.discRowFooter}>
+        <View style={[styles.discRowAvatar, { borderColor: tier.color }]}>
+          <Text style={[styles.discRowAvatarLetter, { color: tier.color }]}>
+            {post.author.username.charAt(0).toUpperCase()}
+          </Text>
+        </View>
+        <Text style={styles.discRowAuthor}>@{post.author.username}</Text>
+        <View style={styles.discRowStats}>
+          <Ionicons name="chatbubble-outline" size={12} color={COLORS.muted} />
+          <Text style={styles.discRowStatText}>{post.comment_count}</Text>
         </View>
       </View>
+    </View>
+  );
+}
+
+function DiscussionsList({ posts, isPremium }: { posts: Post[]; isPremium: boolean }) {
+  const [search, setSearch] = useState('');
+  const discussions = posts.filter(p => p.type === 'discussion');
+  const filtered = search.trim()
+    ? discussions.filter(p =>
+        (p.title ?? p.content).toLowerCase().includes(search.toLowerCase()) ||
+        (p.tag ?? '').toLowerCase().includes(search.toLowerCase()) ||
+        p.author.username.toLowerCase().includes(search.toLowerCase())
+      )
+    : discussions;
+
+  return (
+    <View style={{ flex: 1 }}>
+      <View style={styles.searchWrap}>
+        <Ionicons name="search-outline" size={16} color={COLORS.muted} style={styles.searchIcon} />
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Search discussions..."
+          placeholderTextColor={COLORS.muted}
+          value={search}
+          onChangeText={setSearch}
+          returnKeyType="search"
+          clearButtonMode="while-editing"
+        />
+      </View>
+      <FlatList
+        data={filtered}
+        keyExtractor={item => item.id}
+        contentContainerStyle={styles.discList}
+        showsVerticalScrollIndicator={false}
+        renderItem={({ item }) => <DiscussionRow post={item} isPremium={isPremium} />}
+        ItemSeparatorComponent={() => <View style={styles.discSep} />}
+        ListEmptyComponent={
+          <View style={styles.empty}>
+            <Text style={styles.emptyText}>{search ? 'No results.' : 'No discussions yet.'}</Text>
+          </View>
+        }
+      />
     </View>
   );
 }
@@ -112,11 +290,18 @@ function CreatePostModal({ visible, onClose, onPost, isPremium }: {
 }) {
   const { session } = useAuth();
   const [type, setType] = useState<'discussion' | 'poll'>('discussion');
+  const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [pollOptions, setPollOptions] = useState(['', '', '', '']);
   const [mediaAsset, setMediaAsset] = useState<any | null>(null);
+  const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [showPaywall, setShowPaywall] = useState(false);
+
+  function reset() {
+    setTitle(''); setContent(''); setMediaAsset(null); setSelectedTag(null);
+    setPollOptions(['', '', '', '']);
+  }
 
   async function handlePickMedia() {
     if (!isPremium) { setShowPaywall(true); return; }
@@ -124,8 +309,10 @@ function CreatePostModal({ visible, onClose, onPost, isPremium }: {
     if (asset) setMediaAsset(asset);
   }
 
+  const canPost = type === 'poll' ? content.trim().length > 0 : content.trim().length > 0;
+
   async function handlePost() {
-    if (!content.trim() || !session) return;
+    if (!canPost || !session) return;
     setLoading(true);
     const postId = Date.now().toString();
     let mediaUrl: string | undefined;
@@ -134,29 +321,42 @@ function CreatePostModal({ visible, onClose, onPost, isPremium }: {
       if (url) mediaUrl = url;
     }
     const opts = type === 'poll' ? pollOptions.filter(o => o.trim()) : undefined;
-    const { error } = await createPost(session.user.id, type, content.trim(), opts, mediaUrl);
+    const { error } = await createPost(
+      session.user.id, type, content.trim(), opts, mediaUrl,
+      selectedTag ?? undefined, title.trim() || undefined,
+    );
     setLoading(false);
-    if (!error) { setContent(''); setMediaAsset(null); onPost(); onClose(); }
+    if (error) {
+      Alert.alert('Post failed', error);
+    } else {
+      reset(); onPost(); onClose();
+    }
   }
 
   return (
     <>
       <Modal visible={visible} animationType="slide" presentationStyle="pageSheet">
         <KeyboardAvoidingView style={styles.modal} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+          {/* Header */}
           <View style={styles.modalHeader}>
-            <TouchableOpacity onPress={onClose}>
+            <TouchableOpacity onPress={() => { reset(); onClose(); }}>
               <Text style={styles.modalCancel}>Cancel</Text>
             </TouchableOpacity>
             <Text style={styles.modalTitle}>New Post</Text>
-            <TouchableOpacity onPress={handlePost} disabled={loading || !content.trim()}>
+            <TouchableOpacity onPress={handlePost} disabled={loading || !canPost}>
               {loading
                 ? <ActivityIndicator size="small" color={COLORS.gold} />
-                : <Text style={[styles.modalPost, !content.trim() && styles.modalPostDisabled]}>Post</Text>
+                : (
+                  <View style={[styles.modalPostBtn, !canPost && styles.modalPostBtnDisabled]}>
+                    <Text style={styles.modalPostBtnText}>Post</Text>
+                  </View>
+                )
               }
             </TouchableOpacity>
           </View>
 
           <ScrollView style={styles.modalBody} keyboardShouldPersistTaps="handled">
+            {/* Type selector */}
             <View style={styles.typeRow}>
               {(['discussion', 'poll'] as const).map(t => (
                 <TouchableOpacity
@@ -175,6 +375,44 @@ function CreatePostModal({ visible, onClose, onPost, isPremium }: {
               ))}
             </View>
 
+            {/* Tag picker */}
+            <Text style={styles.fieldLabel}>TAG <Text style={styles.fieldLabelOptional}>(optional)</Text></Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tagPickerRow}>
+              {TAGS.map(t => {
+                const color = TAG_COLORS[t.category];
+                const active = selectedTag === t.label;
+                return (
+                  <TouchableOpacity
+                    key={t.label}
+                    style={[styles.tagPickerChip, { borderColor: color, backgroundColor: active ? `${color}30` : 'transparent' }]}
+                    onPress={() => setSelectedTag(active ? null : t.label)}
+                  >
+                    <Text style={[styles.tagPickerChipText, { color: active ? color : COLORS.muted }]}>{t.label}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+
+            {/* Title — only for discussions */}
+            {type === 'discussion' && (
+              <>
+                <Text style={styles.fieldLabel}>TITLE <Text style={styles.fieldLabelOptional}>(optional)</Text></Text>
+                <TextInput
+                  style={styles.titleInput}
+                  placeholder="Give your post a title..."
+                  placeholderTextColor={COLORS.muted}
+                  value={title}
+                  onChangeText={setTitle}
+                  maxLength={100}
+                  returnKeyType="next"
+                />
+              </>
+            )}
+
+            {/* Body */}
+            <Text style={styles.fieldLabel}>
+              {type === 'poll' ? 'QUESTION' : 'BODY'} <Text style={styles.fieldLabelRequired}>*</Text>
+            </Text>
             <TextInput
               style={styles.contentInput}
               placeholder={type === 'poll' ? 'Ask a question...' : "What's on your mind?"}
@@ -182,15 +420,36 @@ function CreatePostModal({ visible, onClose, onPost, isPremium }: {
               value={content}
               onChangeText={setContent}
               multiline
-              maxLength={280}
+              maxLength={600}
             />
-            <Text style={styles.charCount}>{content.length}/280</Text>
+            <Text style={styles.charCount}>{content.length}/600</Text>
+
+            {/* Poll options */}
+            {type === 'poll' && (
+              <View style={styles.pollInputs}>
+                <Text style={styles.fieldLabel}>OPTIONS</Text>
+                {pollOptions.map((opt, i) => (
+                  <TextInput
+                    key={i}
+                    style={styles.pollInput}
+                    placeholder={`Option ${i + 1}${i < 2 ? ' *' : ' (optional)'}`}
+                    placeholderTextColor={COLORS.muted}
+                    value={opt}
+                    onChangeText={val => {
+                      const next = [...pollOptions];
+                      next[i] = val;
+                      setPollOptions(next);
+                    }}
+                  />
+                ))}
+              </View>
+            )}
 
             {/* Media picker */}
             <TouchableOpacity style={styles.mediaPickerBtn} onPress={handlePickMedia}>
               <Ionicons name="images-outline" size={20} color={isPremium ? COLORS.gold : COLORS.muted} />
               <Text style={[styles.mediaPickerText, isPremium && styles.mediaPickerTextActive]}>
-                {isPremium ? 'Add Photo / Video' : '📷 Add Media (Premium)'}
+                {isPremium ? 'Add Photo / Video' : 'Add Media (Premium)'}
               </Text>
               {!isPremium && <Ionicons name="lock-closed-outline" size={14} color={COLORS.muted} />}
             </TouchableOpacity>
@@ -201,26 +460,6 @@ function CreatePostModal({ visible, onClose, onPost, isPremium }: {
                 <TouchableOpacity style={styles.removeMedia} onPress={() => setMediaAsset(null)}>
                   <Ionicons name="close-circle" size={24} color={COLORS.white} />
                 </TouchableOpacity>
-              </View>
-            )}
-
-            {type === 'poll' && (
-              <View style={styles.pollInputs}>
-                <Text style={styles.pollInputLabel}>Poll Options</Text>
-                {pollOptions.map((opt, i) => (
-                  <TextInput
-                    key={i}
-                    style={styles.pollInput}
-                    placeholder={`Option ${i + 1}${i < 2 ? ' (required)' : ' (optional)'}`}
-                    placeholderTextColor={COLORS.muted}
-                    value={opt}
-                    onChangeText={val => {
-                      const next = [...pollOptions];
-                      next[i] = val;
-                      setPollOptions(next);
-                    }}
-                  />
-                ))}
               </View>
             )}
           </ScrollView>
@@ -241,28 +480,40 @@ export default function FeedScreen() {
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [activeFilter, setActiveFilter] = useState('All');
+  const [activeFilter, setActiveFilter] = useState<FeedTab>('FEED');
+  const [activeTag, setActiveTag] = useState<string | null>(null);
+  const [verifiedOnly, setVerifiedOnly] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
+  const [showFilter, setShowFilter] = useState(false);
+  const activeFilterCount = (activeTag ? 1 : 0) + (verifiedOnly ? 1 : 0);
 
   const loadPosts = useCallback(async () => {
-    const data = await fetchPosts();
-    setPosts(data);
-    setLoading(false);
-    setRefreshing(false);
+    try {
+      const data = await fetchPosts();
+      setPosts(data);
+    } catch {
+      // Keep existing posts on error rather than clearing
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
   }, []);
 
   useEffect(() => { loadPosts(); }, [loadPosts]);
 
   const filtered = posts.filter(p => {
-    if (activeFilter === 'Polls') return p.type === 'poll';
-    if (activeFilter === 'Discussion') return p.type === 'discussion';
+    if (activeFilter === 'DISCUSSIONS') return p.type === 'discussion';
+    if (activeFilter === 'MEDIA') return !!(p as any).media_url;
+    if (activeTag && p.tag !== activeTag) return false;
+    if (verifiedOnly && !p.author.is_verified) return false;
     return true;
   });
 
   return (
     <SafeAreaView style={styles.container}>
       <PageContainer>
-      {Platform.OS !== 'web' && (
+      {/* Show header on native and mobile web, hide on desktop web (WebNavbar handles it) */}
+      {!(Platform.OS === 'web' && typeof window !== 'undefined' && window.innerWidth >= 768) && (
       <View style={styles.header}>
         <Text style={styles.logo}>SIZE.</Text>
         <TouchableOpacity>
@@ -271,26 +522,97 @@ export default function FeedScreen() {
       </View>
       )}
 
-      <FlatList
-        data={FILTERS}
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.filterList}
-        keyExtractor={item => item}
-        renderItem={({ item }) => (
+      <View style={styles.feedTabBar}>
+        {FEED_TABS.map(tab => (
           <TouchableOpacity
-            style={[styles.filterChip, activeFilter === item && styles.filterChipActive]}
-            onPress={() => setActiveFilter(item)}
+            key={tab}
+            style={styles.feedTabBtn}
+            onPress={() => setActiveFilter(tab)}
+            activeOpacity={0.7}
           >
-            <Text style={[styles.filterText, activeFilter === item && styles.filterTextActive]}>{item}</Text>
+            <Text style={[styles.feedTabLabel, activeFilter === tab && styles.feedTabLabelActive]}>
+              {tab}
+            </Text>
+            {activeFilter === tab && <View style={styles.feedTabUnderline} />}
           </TouchableOpacity>
-        )}
-      />
+        ))}
+      </View>
+
+
+      {/* Filter bar */}
+      {activeFilter === 'FEED' && (
+        <View style={styles.filterBar}>
+          <TouchableOpacity
+            style={[styles.filterBtn, activeFilterCount > 0 && styles.filterBtnActive]}
+            onPress={() => setShowFilter(true)}
+          >
+            <Ionicons name="options-outline" size={14} color={activeFilterCount > 0 ? COLORS.gold : COLORS.muted} />
+            <Text style={[styles.filterBtnText, activeFilterCount > 0 && styles.filterBtnTextActive]}>
+              Filter{activeFilterCount > 0 ? ` (${activeFilterCount})` : ''}
+            </Text>
+          </TouchableOpacity>
+          {activeFilterCount > 0 && (
+            <TouchableOpacity onPress={() => { setActiveTag(null); setVerifiedOnly(false); }}>
+              <Text style={styles.filterClear}>Clear</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      )}
+
+      {/* Filter modal */}
+      <Modal visible={showFilter} animationType="slide" presentationStyle="pageSheet" transparent>
+        <TouchableOpacity style={styles.filterBackdrop} activeOpacity={1} onPress={() => setShowFilter(false)} />
+        <View style={styles.filterSheet}>
+          <View style={styles.filterSheetHandle} />
+          <Text style={styles.filterSheetTitle}>Filter Posts</Text>
+
+          <Text style={styles.filterSectionLabel}>POST TYPE</Text>
+          <View style={styles.filterRow}>
+            {['All', 'Verified only'].map(opt => {
+              const active = opt === 'Verified only' ? verifiedOnly : !verifiedOnly;
+              return (
+                <TouchableOpacity
+                  key={opt}
+                  style={[styles.filterChip, active && styles.filterChipActive]}
+                  onPress={() => setVerifiedOnly(opt === 'Verified only')}
+                >
+                  <Text style={[styles.filterChipText, active && styles.filterChipTextActive]}>{opt}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+
+          <Text style={styles.filterSectionLabel}>TAG</Text>
+          <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 240 }}>
+            <View style={styles.filterTagGrid}>
+              {TAGS.map(item => {
+                const color = TAG_COLORS[item.category];
+                const active = activeTag === item.label;
+                return (
+                  <TouchableOpacity
+                    key={item.label}
+                    style={[styles.filterTagChip, { borderColor: color, backgroundColor: active ? `${color}25` : 'transparent' }]}
+                    onPress={() => setActiveTag(active ? null : item.label)}
+                  >
+                    <Text style={[styles.filterTagChipText, { color: active ? color : COLORS.muted }]}>{item.label}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </ScrollView>
+
+          <TouchableOpacity style={styles.filterDoneBtn} onPress={() => setShowFilter(false)}>
+            <Text style={styles.filterDoneBtnText}>Done</Text>
+          </TouchableOpacity>
+        </View>
+      </Modal>
 
       {loading ? (
         <View style={styles.loadingWrap}>
           <ActivityIndicator size="large" color={COLORS.gold} />
         </View>
+      ) : activeFilter === 'DISCUSSIONS' ? (
+        <DiscussionsList posts={posts} isPremium={isPremium} />
       ) : (
         <FlatList
           data={filtered}
@@ -309,7 +631,6 @@ export default function FeedScreen() {
               ? <PollCard post={item} userId={session?.user.id ?? ''} isPremium={isPremium} />
               : <DiscussionCard post={item} isPremium={isPremium} />
           }
-          ItemSeparatorComponent={() => <View style={styles.separator} />}
           ListEmptyComponent={
             <View style={styles.empty}>
               <Text style={styles.emptyText}>No posts yet. Be the first.</Text>
@@ -319,7 +640,7 @@ export default function FeedScreen() {
       )}
 
       <TouchableOpacity style={styles.fab} onPress={() => setShowCreate(true)}>
-        <Ionicons name="add" size={28} color={COLORS.bg} />
+        <Text style={styles.fabIcon}>+</Text>
       </TouchableOpacity>
 
       <CreatePostModal
@@ -335,56 +656,123 @@ export default function FeedScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.bg },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 12 },
-  logo: { fontSize: 28, fontWeight: '900', color: COLORS.gold, letterSpacing: 4 },
-  filterList: { paddingHorizontal: 16, paddingVertical: 8, gap: 8 },
-  filterChip: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: RADIUS.full, borderWidth: 1, borderColor: COLORS.cardBorder, backgroundColor: COLORS.card },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 18, paddingVertical: 10 },
+  logo: { fontSize: 24, fontWeight: '900', color: COLORS.gold, letterSpacing: 4 },
+  feedTabBar: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: COLORS.cardBorder },
+  feedTabBtn: { flex: 1, alignItems: 'center', paddingVertical: 10, position: 'relative' },
+  feedTabLabel: { fontSize: 11, fontWeight: '600', color: COLORS.muted, letterSpacing: 0.6, textTransform: 'uppercase' },
+  feedTabLabelActive: { color: COLORS.white, fontWeight: '700' },
+  feedTabUnderline: { position: 'absolute', bottom: 0, left: '25%', right: '25%', height: 2, backgroundColor: COLORS.gold, borderRadius: 1 },
+  filterBar: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 14, paddingVertical: 8 },
+  filterBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 12, paddingVertical: 6, borderRadius: RADIUS.full, borderWidth: 1, borderColor: COLORS.cardBorder, backgroundColor: COLORS.card },
+  filterBtnActive: { borderColor: COLORS.gold, backgroundColor: `${COLORS.gold}15` },
+  filterBtnText: { color: COLORS.muted, fontSize: SIZES.sm, fontWeight: '700' },
+  filterBtnTextActive: { color: COLORS.gold },
+  filterClear: { color: COLORS.muted, fontSize: SIZES.sm, textDecorationLine: 'underline' },
+  filterBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)' },
+  filterSheet: { backgroundColor: '#161616', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, paddingBottom: 40, gap: 14, borderWidth: 1, borderColor: COLORS.cardBorder, borderBottomWidth: 0 },
+  filterSheetHandle: { width: 40, height: 4, borderRadius: 2, backgroundColor: COLORS.mutedDark, alignSelf: 'center', marginBottom: 8 },
+  filterSheetTitle: { color: COLORS.white, fontSize: SIZES.xl, fontWeight: '800' },
+  filterSectionLabel: { color: COLORS.muted, fontSize: SIZES.xs, fontWeight: '800', letterSpacing: 2, textTransform: 'uppercase', marginTop: 4 },
+  filterRow: { flexDirection: 'row', gap: 8 },
+  filterChip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: RADIUS.full, borderWidth: 1, borderColor: COLORS.cardBorder, backgroundColor: COLORS.card },
   filterChipActive: { borderColor: COLORS.gold, backgroundColor: `${COLORS.gold}20` },
-  filterText: { color: COLORS.muted, fontSize: SIZES.sm, fontWeight: '600' },
-  filterTextActive: { color: COLORS.gold },
+  filterChipText: { color: COLORS.muted, fontSize: SIZES.sm, fontWeight: '700' },
+  filterChipTextActive: { color: COLORS.gold },
+  filterTagGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  filterTagChip: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: RADIUS.full, borderWidth: 1 },
+  filterTagChipText: { fontSize: SIZES.sm, fontWeight: '700' },
+  filterDoneBtn: { backgroundColor: COLORS.gold, borderRadius: RADIUS.md, paddingVertical: 16, alignItems: 'center', marginTop: 8 },
+  filterDoneBtnText: { color: COLORS.bg, fontWeight: '800', fontSize: SIZES.md },
+  tagChip: { alignSelf: 'flex-start', paddingHorizontal: 8, paddingVertical: 2, borderRadius: RADIUS.full, borderWidth: 1 },
+  tagChipText: { fontSize: 10, fontWeight: '700', letterSpacing: 0.3 },
+  tagPickerLabel: { color: COLORS.muted, fontSize: SIZES.xs, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 8, marginTop: 16 },
+  tagPickerRow: { gap: 8, paddingBottom: 4 },
+  tagPickerChip: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: RADIUS.full, borderWidth: 1 },
+  tagPickerChipText: { fontSize: SIZES.sm, fontWeight: '700' },
   loadingWrap: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  feedList: { paddingHorizontal: 16, paddingBottom: 100 },
-  separator: { height: 1, backgroundColor: COLORS.cardBorder, marginVertical: 4 },
+  feedList: { paddingHorizontal: 12, paddingTop: 6, paddingBottom: 100, gap: 10 },
   empty: { paddingVertical: 60, alignItems: 'center' },
   emptyText: { color: COLORS.muted, fontSize: SIZES.md },
-  card: { paddingVertical: 16, gap: 12 },
-  cardHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  authorName: { color: COLORS.white, fontWeight: '700', fontSize: SIZES.md },
-  badge: { borderWidth: 1, borderRadius: RADIUS.full, paddingHorizontal: 10, paddingVertical: 3 },
-  badgeText: { fontSize: SIZES.xs, fontWeight: '800', letterSpacing: 0.5 },
-  pollQuestion: { color: COLORS.white, fontSize: SIZES.base, fontWeight: '600', lineHeight: 22 },
+  // Card
+  card: {
+    backgroundColor: COLORS.card,
+    borderRadius: RADIUS.lg,
+    borderWidth: 1,
+    borderColor: COLORS.cardBorder,
+    padding: 14,
+    gap: 10,
+  },
+  // Author row
+  authorRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  authorAvatar: { width: 36, height: 36, borderRadius: 18, borderWidth: 2, alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.bg },
+  authorAvatarLetter: { fontSize: SIZES.md, fontWeight: '800' },
+  authorMeta: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8 },
+  authorUsername: { color: COLORS.muted, fontSize: SIZES.sm, fontWeight: '600' },
+  postTime: { color: COLORS.muted, fontSize: SIZES.xs },
+  badge: { borderRadius: RADIUS.full, paddingHorizontal: 9, paddingVertical: 3 },
+  badgeMuted: { borderWidth: 1, borderRadius: RADIUS.full, paddingHorizontal: 8, paddingVertical: 2 },
+  badgeText: { fontSize: 10, fontWeight: '800', letterSpacing: 0.5, color: COLORS.white, textShadowColor: 'rgba(0,0,0,0.3)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 2 },
+  // Content
+  pollQuestion: { color: COLORS.white, fontSize: SIZES.base, fontWeight: '700', lineHeight: 22 },
+  discussionText: { color: COLORS.offWhite, fontSize: SIZES.base, lineHeight: 24 },
+  // Poll options
   pollOptions: { gap: 8 },
-  pollOption: { borderRadius: RADIUS.sm, borderWidth: 1, borderColor: COLORS.cardBorder, backgroundColor: COLORS.card, overflow: 'hidden', minHeight: 44, justifyContent: 'center' },
-  pollBar: { position: 'absolute', top: 0, left: 0, bottom: 0, borderRadius: RADIUS.sm },
+  pollOption: { borderRadius: RADIUS.sm, borderWidth: 1, borderColor: COLORS.cardBorder, backgroundColor: `${COLORS.mutedDark}60`, overflow: 'hidden', minHeight: 44, justifyContent: 'center' },
+  pollBar: { position: 'absolute', top: 0, left: 0, bottom: 0 },
   pollOptionInner: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 12 },
-  pollOptionText: { color: '#EEEEEE', fontSize: SIZES.md, fontWeight: '500' },
+  pollOptionText: { color: COLORS.offWhite, fontSize: SIZES.md, fontWeight: '500' },
   pollOptionVoted: { color: COLORS.white, fontWeight: '700' },
   pollPct: { color: COLORS.muted, fontSize: SIZES.sm, fontWeight: '600' },
   pollPctVoted: { color: COLORS.gold, fontWeight: '800' },
-  discussionText: { color: '#EEEEEE', fontSize: SIZES.base, lineHeight: 24 },
-  cardFooter: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  footerRight: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  footerMeta: { color: COLORS.muted, fontSize: SIZES.sm },
+  // Action bar
+  actionBar: { flexDirection: 'row', alignItems: 'center', gap: 18, paddingTop: 4, borderTopWidth: 1, borderTopColor: COLORS.cardBorder, marginTop: 2 },
+  actionItem: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  actionText: { color: COLORS.muted, fontSize: SIZES.xs, fontWeight: '600' },
   fab: { position: 'absolute', bottom: 96, right: 20, width: 56, height: 56, borderRadius: 28, backgroundColor: COLORS.gold, alignItems: 'center', justifyContent: 'center', shadowColor: COLORS.gold, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.4, shadowRadius: 12, elevation: 8 },
+  fabIcon: { fontSize: 32, fontWeight: '300', color: COLORS.bg, lineHeight: 36, marginTop: -2 },
+  // Discussion title in card
+  discussionTitle: { color: COLORS.white, fontSize: SIZES.lg, fontWeight: '800', lineHeight: 24 },
+  // Discussion list view
+  searchWrap: { flexDirection: 'row', alignItems: 'center', marginHorizontal: 14, marginTop: 8, marginBottom: 8, backgroundColor: COLORS.card, borderRadius: RADIUS.md, borderWidth: 1, borderColor: COLORS.cardBorder, paddingHorizontal: 12 },
+  searchIcon: { marginRight: 8 },
+  searchInput: { flex: 1, paddingVertical: 10, color: COLORS.white, fontSize: SIZES.md },
+  discList: { paddingHorizontal: 14, paddingBottom: 100 },
+  discSep: { height: 1, backgroundColor: COLORS.cardBorder },
+  discRow: { paddingVertical: 14, gap: 6 },
+  discRowTop: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  discRowTime: { color: COLORS.muted, fontSize: SIZES.xs, marginLeft: 'auto' },
+  discRowTitle: { color: COLORS.white, fontSize: SIZES.base, fontWeight: '800', lineHeight: 22 },
+  discRowPreview: { color: COLORS.muted, fontSize: SIZES.sm, lineHeight: 18 },
+  discRowFooter: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4 },
+  discRowAvatar: { width: 20, height: 20, borderRadius: 10, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.bg },
+  discRowAvatarLetter: { fontSize: 9, fontWeight: '900' },
+  discRowAuthor: { color: COLORS.muted, fontSize: SIZES.xs, fontWeight: '600', flex: 1 },
+  discRowStats: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  discRowStatText: { color: COLORS.muted, fontSize: SIZES.xs },
   // Modal
   modal: { flex: 1, backgroundColor: COLORS.bg },
-  modalHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: COLORS.cardBorder },
-  modalCancel: { color: COLORS.muted, fontSize: SIZES.md },
+  modalHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: COLORS.cardBorder },
+  modalCancel: { color: COLORS.muted, fontSize: SIZES.md, minWidth: 60 },
   modalTitle: { color: COLORS.white, fontSize: SIZES.md, fontWeight: '800' },
-  modalPost: { color: COLORS.gold, fontSize: SIZES.md, fontWeight: '800' },
-  modalPostDisabled: { opacity: 0.4 },
+  modalPostBtn: { backgroundColor: COLORS.gold, borderRadius: RADIUS.full, paddingHorizontal: 18, paddingVertical: 7 },
+  modalPostBtnDisabled: { opacity: 0.35 },
+  modalPostBtnText: { color: COLORS.bg, fontWeight: '800', fontSize: SIZES.sm },
   modalBody: { flex: 1, padding: 20 },
   typeRow: { flexDirection: 'row', gap: 10, marginBottom: 20 },
   typeBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 12, borderRadius: RADIUS.md, borderWidth: 1, borderColor: COLORS.cardBorder, backgroundColor: COLORS.card },
   typeBtnActive: { borderColor: COLORS.gold, backgroundColor: `${COLORS.gold}15` },
   typeBtnText: { color: COLORS.muted, fontSize: SIZES.md, fontWeight: '600' },
   typeBtnTextActive: { color: COLORS.gold },
+  fieldLabel: { color: COLORS.muted, fontSize: 10, fontWeight: '800', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 8, marginTop: 18 },
+  fieldLabelOptional: { color: COLORS.mutedDark, fontWeight: '600', letterSpacing: 0 },
+  fieldLabelRequired: { color: COLORS.gold },
+  titleInput: { backgroundColor: COLORS.card, borderWidth: 1, borderColor: COLORS.cardBorder, borderRadius: RADIUS.md, paddingHorizontal: 16, paddingVertical: 14, color: COLORS.white, fontSize: SIZES.lg, fontWeight: '700' },
   contentInput: { backgroundColor: COLORS.card, borderWidth: 1, borderColor: COLORS.cardBorder, borderRadius: RADIUS.md, padding: 16, color: COLORS.white, fontSize: SIZES.base, minHeight: 120, textAlignVertical: 'top' },
   charCount: { color: COLORS.muted, fontSize: SIZES.xs, textAlign: 'right', marginTop: 6 },
-  pollInputs: { marginTop: 20, gap: 10 },
-  pollInputLabel: { color: COLORS.muted, fontSize: SIZES.xs, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 4 },
+  pollInputs: { gap: 8 },
   pollInput: { backgroundColor: COLORS.card, borderWidth: 1, borderColor: COLORS.cardBorder, borderRadius: RADIUS.md, paddingHorizontal: 16, paddingVertical: 14, color: COLORS.white, fontSize: SIZES.md },
-  mediaPickerBtn: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 14, borderTopWidth: 1, borderTopColor: COLORS.cardBorder, marginTop: 8 },
+  mediaPickerBtn: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 16, borderTopWidth: 1, borderTopColor: COLORS.cardBorder, marginTop: 16 },
   mediaPickerText: { color: COLORS.muted, fontSize: SIZES.md, flex: 1 },
   mediaPickerTextActive: { color: COLORS.gold },
   mediaPreviewWrap: { position: 'relative', marginVertical: 8, borderRadius: RADIUS.md, overflow: 'hidden' },

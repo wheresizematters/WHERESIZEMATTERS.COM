@@ -1,13 +1,11 @@
-import { Platform } from 'react-native';
+import { Platform, useWindowDimensions } from 'react-native';
 import { Tabs } from 'expo-router';
 import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '@/constants/theme';
 import WebNavbar from '@/components/WebNavbar';
 
-const isWeb = Platform.OS === 'web';
-
-type IconName = 'home' | 'home-outline' | 'trophy' | 'trophy-outline' | 'git-compare' | 'git-compare-outline' | 'person' | 'person-outline';
+type IconName = 'home' | 'home-outline' | 'trophy' | 'trophy-outline' | 'git-compare' | 'git-compare-outline' | 'chatbubbles' | 'chatbubbles-outline' | 'person' | 'person-outline';
 
 function TabIcon({ name, focused, label }: { name: IconName; focused: boolean; label: string }) {
   return (
@@ -19,13 +17,16 @@ function TabIcon({ name, focused, label }: { name: IconName; focused: boolean; l
 }
 
 export default function TabLayout() {
+  const { width } = useWindowDimensions();
+  const isDesktopWeb = Platform.OS === 'web' && width >= 768;
+
   return (
     <>
-      {isWeb && <WebNavbar />}
+      {isDesktopWeb && <WebNavbar />}
       <Tabs
         screenOptions={{
           headerShown: false,
-          tabBarStyle: isWeb ? styles.tabBarHidden : styles.tabBar,
+          tabBarStyle: isDesktopWeb ? styles.tabBarHidden : styles.tabBar,
           tabBarShowLabel: false,
         }}
       >
@@ -40,6 +41,10 @@ export default function TabLayout() {
         <Tabs.Screen
           name="compare"
           options={{ tabBarIcon: ({ focused }) => <TabIcon name="git-compare" focused={focused} label="Compare" /> }}
+        />
+        <Tabs.Screen
+          name="messages"
+          options={{ tabBarIcon: ({ focused }) => <TabIcon name="chatbubbles" focused={focused} label="Messages" /> }}
         />
         <Tabs.Screen
           name="profile"

@@ -26,7 +26,14 @@
     },
     "web": {
       "output": "static",
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./assets/images/favicon.png",
+      "name": "SIZE.",
+      "shortName": "SIZE.",
+      "description": "Verify your size. Earn $SIZE.",
+      "themeColor": "#0A0A0A",
+      "backgroundColor": "#0A0A0A",
+      "display": "standalone",
+      "orientation": "portrait"
     },
     "plugins": [
       "expo-router",

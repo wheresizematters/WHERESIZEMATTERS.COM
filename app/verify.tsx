@@ -1,0 +1,356 @@
+import { useState, useEffect } from 'react';
+import {
+  View, Text, StyleSheet, SafeAreaView, TouchableOpacity,
+  ActivityIndicator, ScrollView, Image, Platform,
+} from 'react-native';
+import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
+import { COLORS, SIZES, RADIUS } from '@/constants/theme';
+import { useAuth } from '@/context/AuthContext';
+import {
+  fetchMyVerificationRequest,
+  submitVerificationPhoto,
+  runVerification,
+} from '@/lib/api';
+
+type Step = 'checking' | 'already_verified' | 'pending_review' | 'instructions' | 'photo' | 'uploading' | 'result_verified' | 'result_pending' | 'error';
+
+const REFERENCE_OBJECTS = [
+  { icon: '💳', label: 'Credit card', detail: '3.37" wide — lay it flat beside the subject' },
+  { icon: '💵', label: 'Dollar bill', detail: '6.14" long — place alongside' },
+  { icon: '📏', label: 'Ruler / tape', detail: 'Most accurate — measure directly' },
+];
+
+export default function VerifyScreen() {
+  const router = useRouter();
+  const { profile, session, updateProfile } = useAuth();
+  const [step, setStep] = useState<Step>('checking');
+  const [photoUri, setPhotoUri] = useState<string | null>(null);
+  const [errorMsg, setErrorMsg] = useState('');
+
+  useEffect(() => {
+    if (!session?.user.id) return;
+    if (profile?.is_verified) { setStep('already_verified'); return; }
+
+    fetchMyVerificationRequest(session.user.id).then(req => {
+      if (!req) { setStep('instructions'); return; }
+      if (req.status === 'pending') setStep('pending_review');
+      else setStep('instructions'); // rejected — can retry
+    });
+  }, [session?.user.id, profile?.is_verified]);
+
+  async function pickPhoto() {
+    const cameraPermission = await ImagePicker.requestCameraPermissionsAsync();
+    if (cameraPermission.granted) {
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ['images'],
+        quality: 0.8,
+        allowsEditing: false,
+      });
+      if (result.canceled || !result.assets[0]) return;
+      setPhotoUri(result.assets[0].uri);
+      setStep('photo');
+    } else {
+      const library = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!library.granted) { setErrorMsg('Camera or photo library access is required.'); setStep('error'); return; }
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        quality: 0.8,
+      });
+      if (result.canceled || !result.assets[0]) return;
+      setPhotoUri(result.assets[0].uri);
+      setStep('photo');
+    }
+  }
+
+  async function pickFromLibrary() {
+    const { granted } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!granted) { setErrorMsg('Photo library access is required.'); setStep('error'); return; }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      quality: 0.8,
+    });
+
+    if (result.canceled || !result.assets[0]) return;
+    setPhotoUri(result.assets[0].uri);
+    setStep('photo');
+  }
+
+  async function submitPhoto() {
+    if (!photoUri || !session?.user.id || !profile) return;
+    setStep('uploading');
+
+    const { imagePath, error: uploadError } = await submitVerificationPhoto(
+      session.user.id,
+      photoUri,
+      profile.size_inches,
+    );
+
+    if (uploadError || !imagePath) {
+      setErrorMsg(uploadError ?? 'Upload failed.');
+      setStep('error');
+      return;
+    }
+
+    const result = await runVerification(imagePath, profile.size_inches);
+
+    if (result.status === 'auto_verified') {
+      await updateProfile({ is_verified: true });
+      setStep('result_verified');
+    } else {
+      setStep('result_pending');
+    }
+  }
+
+  return (
+    <SafeAreaView style={s.container}>
+      <View style={s.header}>
+        <TouchableOpacity onPress={() => router.back()} style={s.backBtn}>
+          <Ionicons name="chevron-back" size={24} color={COLORS.white} />
+        </TouchableOpacity>
+        <Text style={s.headerTitle}>VERIFY SIZE</Text>
+        <View style={{ width: 40 }} />
+      </View>
+
+      <ScrollView contentContainerStyle={s.body} showsVerticalScrollIndicator={false}>
+
+        {/* ── Checking ── */}
+        {step === 'checking' && (
+          <View style={s.centered}>
+            <ActivityIndicator color={COLORS.gold} size="large" />
+          </View>
+        )}
+
+        {/* ── Already verified ── */}
+        {step === 'already_verified' && (
+          <View style={s.centered}>
+            <View style={s.iconCircle}>
+              <Ionicons name="shield-checkmark" size={48} color={COLORS.gold} />
+            </View>
+            <Text style={s.resultTitle}>Already Verified</Text>
+            <Text style={s.resultSub}>Your size has been confirmed. The verified badge is active on your profile and leaderboard entry.</Text>
+            <TouchableOpacity style={s.primaryBtn} onPress={() => router.back()}>
+              <Text style={s.primaryBtnText}>Back to Profile</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* ── Pending review ── */}
+        {step === 'pending_review' && (
+          <View style={s.centered}>
+            <View style={[s.iconCircle, { backgroundColor: `${COLORS.blue}20` }]}>
+              <Ionicons name="time-outline" size={48} color={COLORS.blue} />
+            </View>
+            <Text style={s.resultTitle}>Under Review</Text>
+            <Text style={s.resultSub}>Your verification photo has been submitted and is awaiting manual review. You'll be verified shortly.</Text>
+            <TouchableOpacity style={s.primaryBtn} onPress={() => router.back()}>
+              <Text style={s.primaryBtnText}>Back to Profile</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* ── Instructions ── */}
+        {step === 'instructions' && (
+          <>
+            <View style={s.heroSection}>
+              <View style={s.iconCircle}>
+                <Ionicons name="shield-checkmark-outline" size={40} color={COLORS.gold} />
+              </View>
+              <Text style={s.heroTitle}>Get Verified</Text>
+              <Text style={s.heroSub}>
+                Submit a photo with a reference object in frame. Our AI measures the scale and confirms your size.
+              </Text>
+            </View>
+
+            <Text style={s.sectionLabel}>REFERENCE OBJECTS</Text>
+            <View style={s.refList}>
+              {REFERENCE_OBJECTS.map(item => (
+                <View key={item.label} style={s.refRow}>
+                  <Text style={s.refIcon}>{item.icon}</Text>
+                  <View style={s.refText}>
+                    <Text style={s.refLabel}>{item.label}</Text>
+                    <Text style={s.refDetail}>{item.detail}</Text>
+                  </View>
+                </View>
+              ))}
+            </View>
+
+            <Text style={s.sectionLabel}>PHOTO TIPS</Text>
+            <View style={s.tipList}>
+              {[
+                'Shoot from directly above in good lighting',
+                'Keep both the subject and reference object fully in frame',
+                'Measure erect length from base to tip along the top',
+                'Your photo is deleted immediately after review',
+              ].map((tip, i) => (
+                <View key={i} style={s.tipRow}>
+                  <View style={s.tipDot} />
+                  <Text style={s.tipText}>{tip}</Text>
+                </View>
+              ))}
+            </View>
+
+            <View style={s.privacyNote}>
+              <Ionicons name="lock-closed-outline" size={14} color={COLORS.muted} />
+              <Text style={s.privacyText}>
+                Photos are stored encrypted, never shared, and permanently deleted after verification — whether approved or rejected.
+              </Text>
+            </View>
+
+            <TouchableOpacity style={s.primaryBtn} onPress={pickPhoto}>
+              <Ionicons name="camera-outline" size={18} color={COLORS.bg} />
+              <Text style={s.primaryBtnText}>Take Photo</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={s.secondaryBtn} onPress={pickFromLibrary}>
+              <Ionicons name="images-outline" size={18} color={COLORS.gold} />
+              <Text style={s.secondaryBtnText}>Choose from Library</Text>
+            </TouchableOpacity>
+          </>
+        )}
+
+        {/* ── Photo preview ── */}
+        {step === 'photo' && photoUri && (
+          <>
+            <Text style={s.sectionLabel}>REVIEW PHOTO</Text>
+            <Image source={{ uri: photoUri }} style={s.preview} resizeMode="cover" />
+            <Text style={s.previewHint}>Make sure a reference object is clearly visible alongside the subject.</Text>
+            <TouchableOpacity style={s.primaryBtn} onPress={submitPhoto}>
+              <Ionicons name="cloud-upload-outline" size={18} color={COLORS.bg} />
+              <Text style={s.primaryBtnText}>Submit for Verification</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={s.secondaryBtn} onPress={() => { setPhotoUri(null); setStep('instructions'); }}>
+              <Text style={s.secondaryBtnText}>Retake Photo</Text>
+            </TouchableOpacity>
+          </>
+        )}
+
+        {/* ── Uploading ── */}
+        {step === 'uploading' && (
+          <View style={s.centered}>
+            <ActivityIndicator color={COLORS.gold} size="large" />
+            <Text style={s.uploadingText}>Analyzing photo...</Text>
+            <Text style={s.uploadingSub}>Our AI is checking your reference object and estimating your size.</Text>
+          </View>
+        )}
+
+        {/* ── Auto verified ── */}
+        {step === 'result_verified' && (
+          <View style={s.centered}>
+            <View style={s.iconCircle}>
+              <Ionicons name="shield-checkmark" size={48} color={COLORS.gold} />
+            </View>
+            <Text style={s.resultTitle}>Verified!</Text>
+            <Text style={s.resultSub}>Your size has been confirmed by our AI. The verified badge is now active on your profile.</Text>
+            <TouchableOpacity style={s.primaryBtn} onPress={() => router.back()}>
+              <Text style={s.primaryBtnText}>Back to Profile</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* ── Pending manual review ── */}
+        {step === 'result_pending' && (
+          <View style={s.centered}>
+            <View style={[s.iconCircle, { backgroundColor: `${COLORS.blue}20` }]}>
+              <Ionicons name="time-outline" size={48} color={COLORS.blue} />
+            </View>
+            <Text style={s.resultTitle}>Under Review</Text>
+            <Text style={s.resultSub}>Our AI couldn't auto-verify from this photo. Your submission has been queued for manual review — you'll be verified shortly.</Text>
+            <TouchableOpacity style={s.primaryBtn} onPress={() => router.back()}>
+              <Text style={s.primaryBtnText}>Back to Profile</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* ── Error ── */}
+        {step === 'error' && (
+          <View style={s.centered}>
+            <View style={[s.iconCircle, { backgroundColor: `${COLORS.red}20` }]}>
+              <Ionicons name="alert-circle-outline" size={48} color={COLORS.red} />
+            </View>
+            <Text style={s.resultTitle}>Something went wrong</Text>
+            <Text style={s.resultSub}>{errorMsg}</Text>
+            <TouchableOpacity style={s.primaryBtn} onPress={() => setStep('instructions')}>
+              <Text style={s.primaryBtnText}>Try Again</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+      </ScrollView>
+    </SafeAreaView>
+  );
+}
+
+const s = StyleSheet.create({
+  container: { flex: 1, backgroundColor: COLORS.bg },
+  header: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: COLORS.cardBorder,
+  },
+  backBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
+  headerTitle: { fontSize: SIZES.md, fontWeight: '900', color: COLORS.white, letterSpacing: 3 },
+  body: { padding: 20, paddingBottom: 60 },
+  centered: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingTop: 60, gap: 16 },
+
+  heroSection: { alignItems: 'center', gap: 12, marginBottom: 28 },
+  iconCircle: {
+    width: 80, height: 80, borderRadius: 40,
+    backgroundColor: `${COLORS.gold}20`, borderWidth: 1, borderColor: `${COLORS.gold}40`,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  heroTitle: { fontSize: SIZES.xxl, fontWeight: '900', color: COLORS.white },
+  heroSub: { color: COLORS.muted, fontSize: SIZES.md, textAlign: 'center', lineHeight: 22 },
+
+  sectionLabel: {
+    color: COLORS.gold, fontSize: SIZES.xs, fontWeight: '800', letterSpacing: 2,
+    marginBottom: 12, marginTop: 4,
+  },
+  refList: {
+    backgroundColor: COLORS.card, borderRadius: RADIUS.lg, borderWidth: 1,
+    borderColor: COLORS.cardBorder, marginBottom: 24, overflow: 'hidden',
+  },
+  refRow: {
+    flexDirection: 'row', alignItems: 'center', gap: 14,
+    paddingHorizontal: 16, paddingVertical: 14,
+    borderBottomWidth: 1, borderBottomColor: COLORS.cardBorder,
+  },
+  refIcon: { fontSize: 24 },
+  refText: { flex: 1 },
+  refLabel: { color: COLORS.white, fontSize: SIZES.md, fontWeight: '700' },
+  refDetail: { color: COLORS.muted, fontSize: SIZES.sm, marginTop: 2 },
+
+  tipList: { gap: 10, marginBottom: 24 },
+  tipRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
+  tipDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: COLORS.gold, marginTop: 6 },
+  tipText: { color: COLORS.offWhite, fontSize: SIZES.md, flex: 1, lineHeight: 20 },
+
+  privacyNote: {
+    flexDirection: 'row', gap: 10, alignItems: 'flex-start',
+    backgroundColor: `${COLORS.muted}10`, borderRadius: RADIUS.md, padding: 14,
+    borderWidth: 1, borderColor: COLORS.cardBorder, marginBottom: 24,
+  },
+  privacyText: { color: COLORS.muted, fontSize: SIZES.sm, flex: 1, lineHeight: 18 },
+
+  primaryBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+    backgroundColor: COLORS.gold, borderRadius: RADIUS.md, paddingVertical: 16,
+    marginBottom: 12,
+  },
+  primaryBtnText: { color: COLORS.bg, fontSize: SIZES.md, fontWeight: '800' },
+  secondaryBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+    backgroundColor: COLORS.card, borderRadius: RADIUS.md, paddingVertical: 16,
+    borderWidth: 1, borderColor: `${COLORS.gold}40`, marginBottom: 12,
+  },
+  secondaryBtnText: { color: COLORS.gold, fontSize: SIZES.md, fontWeight: '700' },
+
+  preview: { width: '100%', height: 320, borderRadius: RADIUS.lg, marginBottom: 12 },
+  previewHint: { color: COLORS.muted, fontSize: SIZES.sm, textAlign: 'center', marginBottom: 20 },
+
+  uploadingText: { color: COLORS.white, fontSize: SIZES.xl, fontWeight: '800', marginTop: 16 },
+  uploadingSub: { color: COLORS.muted, fontSize: SIZES.md, textAlign: 'center', lineHeight: 22, paddingHorizontal: 24 },
+
+  resultTitle: { fontSize: SIZES.xxl, fontWeight: '900', color: COLORS.white, textAlign: 'center' },
+  resultSub: { color: COLORS.muted, fontSize: SIZES.md, textAlign: 'center', lineHeight: 22, paddingHorizontal: 24, marginBottom: 8 },
+});

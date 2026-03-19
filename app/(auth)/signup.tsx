@@ -7,6 +7,7 @@ import {
 import { Link } from 'expo-router';
 import { useAuth } from '@/context/AuthContext';
 import { COLORS, SIZES, RADIUS, getSizeTier } from '@/constants/theme';
+import AuthContainer from '@/components/AuthContainer';
 
 const AGE_RANGES = ['18–24', '25–34', '35–44', '45–54', '55+'];
 
@@ -64,6 +65,7 @@ export default function SignupScreen() {
 
   return (
     <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <AuthContainer>
       <ScrollView contentContainerStyle={styles.inner} keyboardShouldPersistTaps="handled">
         {/* Header */}
         <View style={styles.header}>
@@ -137,7 +139,14 @@ export default function SignupScreen() {
                 <TouchableOpacity
                   key={u}
                   style={[styles.unitBtn, unit === u && styles.unitBtnActive]}
-                  onPress={() => { setUnit(u); setSizeInput(''); }}
+                  onPress={() => {
+                    if (u === unit) return;
+                    const val = parseFloat(sizeInput);
+                    if (!isNaN(val)) {
+                      setSizeInput(u === 'cm' ? (val * 2.54).toFixed(1) : (val / 2.54).toFixed(1));
+                    }
+                    setUnit(u);
+                  }}
                 >
                   <Text style={[styles.unitText, unit === u && styles.unitTextActive]}>
                     {u === 'in' ? 'Inches' : 'Centimeters'}
@@ -194,6 +203,7 @@ export default function SignupScreen() {
           </Link>
         </View>
       </ScrollView>
+      </AuthContainer>
     </KeyboardAvoidingView>
   );
 }

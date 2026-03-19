@@ -2,9 +2,12 @@ import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, Animated } from 'react-native';
+import { useFonts } from 'expo-font';
+import { Ionicons } from '@expo/vector-icons';
 import { AuthProvider, useAuth } from '@/context/AuthContext';
 import { PurchaseProvider } from '@/context/PurchaseContext';
 import { COLORS } from '@/constants/theme';
+import InstallPrompt from '@/components/InstallPrompt';
 
 const SPLASH_DURATION = 2600; // ms
 
@@ -36,7 +39,7 @@ function SplashScreen() {
 }
 
 function RootLayoutNav() {
-  const { session, loading } = useAuth();
+  const { session, loading, profile } = useAuth();
   const segments = useSegments();
   const router = useRouter();
   const [splashDone, setSplashDone] = useState(false);
@@ -50,12 +53,18 @@ function RootLayoutNav() {
   useEffect(() => {
     if (loading || !splashDone) return;
     const inAuthGroup = segments[0] === '(auth)';
+    const inSetupSize = segments[0] === 'setup-size';
+
     if (!session && !inAuthGroup) {
       router.replace('/(auth)/login');
     } else if (session && inAuthGroup) {
       router.replace('/(tabs)');
+    } else if (session && !inSetupSize && (!profile || (profile as any)?.has_set_size === false)) {
+      router.replace('/setup-size' as any);
+    } else if (session && inSetupSize && (profile as any)?.has_set_size === true) {
+      router.replace('/(tabs)');
     }
-  }, [session, loading, splashDone, segments]);
+  }, [session, loading, splashDone, segments, profile]);
 
   if (!splashDone || loading) return <SplashScreen />;
 
@@ -64,16 +73,24 @@ function RootLayoutNav() {
       <Stack.Screen name="(auth)" />
       <Stack.Screen name="(tabs)" />
       <Stack.Screen name="settings" options={{ presentation: 'card', animation: 'slide_from_right' }} />
+      <Stack.Screen name="chat/[id]" options={{ presentation: 'card', animation: 'slide_from_right' }} />
+      <Stack.Screen name="verify" options={{ presentation: 'card', animation: 'slide_from_bottom' }} />
+      <Stack.Screen name="admin" options={{ presentation: 'card', animation: 'slide_from_right' }} />
+      <Stack.Screen name="setup-size" options={{ presentation: 'fullScreenModal', animation: 'fade' }} />
     </Stack>
   );
 }
 
 export default function RootLayout() {
+  const [fontsLoaded] = useFonts({ ...Ionicons.font });
+  if (!fontsLoaded) return null;
+
   return (
     <AuthProvider>
       <PurchaseProvider>
         <StatusBar style="light" />
         <RootLayoutNav />
+        <InstallPrompt />
       </PurchaseProvider>
     </AuthProvider>
   );

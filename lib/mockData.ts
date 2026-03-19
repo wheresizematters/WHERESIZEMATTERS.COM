@@ -31,7 +31,7 @@ export const MOCK_POSTS: Post[] = [
       { id: 'o4', text: 'Not at all', vote_count: 231, user_voted: false },
     ],
     comment_count: 342,
-    created_at: '2h ago',
+    created_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
   },
   {
     id: 'p2',
@@ -39,7 +39,7 @@ export const MOCK_POSTS: Post[] = [
     content: 'Finally got verified 👑 Took a while but worth it. Who else recently joined the XL club?',
     author: { id: 'u3', username: 'KingKong_X', size_inches: 8.9, is_verified: true },
     comment_count: 87,
-    created_at: '4h ago',
+    created_at: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
   },
   {
     id: 'p3',
@@ -53,7 +53,7 @@ export const MOCK_POSTS: Post[] = [
       { id: 'o8', text: 'Over 6"', vote_count: 334, user_voted: false },
     ],
     comment_count: 156,
-    created_at: '6h ago',
+    created_at: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(),
   },
   {
     id: 'p3b',
@@ -63,7 +63,7 @@ export const MOCK_POSTS: Post[] = [
     media_url: 'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=800&q=80',
     media_type: 'image',
     comment_count: 52,
-    created_at: '5h ago',
+    created_at: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
   } as any,
   {
     id: 'p4',
@@ -71,7 +71,7 @@ export const MOCK_POSTS: Post[] = [
     content: 'Girth or length — what matters more? Drop your honest take below 👇',
     author: { id: 'u9', username: 'SteelCityBull', size_inches: 8.2, is_verified: true },
     comment_count: 214,
-    created_at: '9h ago',
+    created_at: new Date(Date.now() - 9 * 60 * 60 * 1000).toISOString(),
   },
   {
     id: 'p5',
@@ -85,7 +85,7 @@ export const MOCK_POSTS: Post[] = [
       { id: 'o12', text: 'All the time',          vote_count: 198,  user_voted: false },
     ],
     comment_count: 523,
-    created_at: '12h ago',
+    created_at: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString(),
   },
 ];
 

@@ -40,17 +40,22 @@ export default function CompareScreen() {
   const [searching, setSearching] = useState(false);
 
   useEffect(() => {
-    fetchUserPercentile(mySize).then(setPercentile);
-    fetchTotalUserCount().then(setTotalUsers);
+    fetchUserPercentile(mySize).then(setPercentile).catch(() => setPercentile(null));
+    fetchTotalUserCount().then(setTotalUsers).catch(() => setTotalUsers(0));
   }, [mySize]);
 
   useEffect(() => {
     if (search.length < 2) { setSearchResults([]); return; }
     setSearching(true);
     const timer = setTimeout(async () => {
-      const results = await searchUsers(search);
-      setSearchResults(results);
-      setSearching(false);
+      try {
+        const results = await searchUsers(search);
+        setSearchResults(results);
+      } catch {
+        setSearchResults([]);
+      } finally {
+        setSearching(false);
+      }
     }, 300);
     return () => clearTimeout(timer);
   }, [search]);
@@ -64,7 +69,10 @@ export default function CompareScreen() {
       <PageContainer>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.inner}>
         <View style={styles.header}>
-          <Text style={styles.title}>COMPARE</Text>
+          <View style={styles.headerTitle}>
+            <Text style={styles.logo}>SIZE.</Text>
+            <Text style={styles.title}>COMPARE</Text>
+          </View>
         </View>
 
         {/* My size */}
@@ -177,7 +185,9 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.bg },
   inner: { paddingBottom: 100 },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 14 },
+  headerTitle: { flexDirection: 'row', alignItems: 'baseline', gap: 8 },
   title: { fontSize: SIZES.xl, fontWeight: '900', color: COLORS.white, letterSpacing: 3 },
+  logo: { fontSize: 28, fontWeight: '900', color: COLORS.gold, letterSpacing: 4 },
   myCard: { marginHorizontal: 16, padding: 24, backgroundColor: COLORS.card, borderRadius: RADIUS.lg, borderWidth: 1, alignItems: 'center', marginBottom: 16, gap: 10 },
   myLabel: { color: COLORS.muted, fontSize: SIZES.xs, letterSpacing: 3, textTransform: 'uppercase' },
   mySize: { fontSize: SIZES.huge, fontWeight: '900', lineHeight: 56 },

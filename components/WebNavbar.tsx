@@ -1,18 +1,21 @@
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, useWindowDimensions } from 'react-native';
 import { useRouter, usePathname } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SIZES } from '@/constants/theme';
 
 const TABS = [
-  { label: 'Feed',        href: '/',            icon: 'home-outline' as const,        iconActive: 'home' as const },
-  { label: 'Leaderboard', href: '/leaderboard', icon: 'trophy-outline' as const,      iconActive: 'trophy' as const },
-  { label: 'Compare',     href: '/compare',     icon: 'git-compare-outline' as const, iconActive: 'git-compare' as const },
-  { label: 'Profile',     href: '/profile',     icon: 'person-outline' as const,      iconActive: 'person' as const },
+  { label: 'Feed',        href: '/',            icon: 'home-outline' as const,           iconActive: 'home' as const },
+  { label: 'Leaderboard', href: '/leaderboard', icon: 'trophy-outline' as const,         iconActive: 'trophy' as const },
+  { label: 'Compare',     href: '/compare',     icon: 'git-compare-outline' as const,    iconActive: 'git-compare' as const },
+  { label: 'Messages',    href: '/messages',    icon: 'chatbubbles-outline' as const,    iconActive: 'chatbubbles' as const },
+  { label: 'Profile',     href: '/profile',     icon: 'person-outline' as const,         iconActive: 'person' as const },
 ];
 
 export default function WebNavbar() {
   const router = useRouter();
   const pathname = usePathname();
+  const { width } = useWindowDimensions();
+  if (width < 768) return null;
 
   return (
     <View style={styles.navbar}>
