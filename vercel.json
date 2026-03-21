@@ -1,4 +1,9 @@
 {
+  "buildCommand": "npx expo export --platform web",
+  "outputDirectory": "dist",
+  "redirects": [
+    { "source": "/_sitemap", "destination": "/", "permanent": false }
+  ],
   "rewrites": [
     { "source": "/(.*)", "destination": "/index.html" }
   ]
