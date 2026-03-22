@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import {
   View, Text, StyleSheet, Modal, TouchableOpacity,
-  ScrollView, ActivityIndicator, Alert,
+  ScrollView, ActivityIndicator, Alert, Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SIZES, RADIUS } from '@/constants/theme';
@@ -18,39 +18,47 @@ const FEATURES = [
 interface Props {
   visible: boolean;
   onClose: () => void;
-  trigger?: string; // what caused the paywall to show
+  trigger?: string;
 }
 
 export default function PaywallModal({ visible, onClose, trigger }: Props) {
-  const { offerings, purchase, restore } = usePurchase();
+  const { offerings, purchase, purchaseWeb, restore } = usePurchase();
   const [selected, setSelected] = useState<'monthly' | 'annual'>('annual');
   const [loading, setLoading] = useState(false);
   const [restoring, setRestoring] = useState(false);
 
+  const isWeb = Platform.OS === 'web';
   const monthlyPkg = offerings?.availablePackages?.find((p: any) => p.packageType === 'MONTHLY');
   const annualPkg  = offerings?.availablePackages?.find((p: any) => p.packageType === 'ANNUAL');
 
-  const isDemo = !monthlyPkg && !annualPkg;
-
   async function handlePurchase() {
-    if (isDemo) {
-      Alert.alert(
-        'Demo Mode',
-        'Connect RevenueCat + App Store to enable real purchases. In production this would charge ' +
-        (selected === 'annual' ? '$29.99/year.' : '$4.99/month.'),
-        [{ text: 'Got it' }]
-      );
-      return;
-    }
-    const pkg = selected === 'monthly' ? monthlyPkg : annualPkg;
     setLoading(true);
-    const { error } = await purchase(pkg);
-    setLoading(false);
-    if (error) Alert.alert('Purchase failed', error);
-    else onClose();
+    try {
+      if (isWeb) {
+        // Redirects to Stripe Checkout — page will navigate away
+        await purchaseWeb(selected);
+      } else {
+        const pkg = selected === 'monthly' ? monthlyPkg : annualPkg;
+        if (!pkg) {
+          Alert.alert('Not available', 'Purchases are not available right now.');
+          return;
+        }
+        const { error } = await purchase(pkg);
+        if (error) Alert.alert('Purchase failed', error);
+        else onClose();
+      }
+    } catch (e: any) {
+      Alert.alert('Error', e.message ?? 'Something went wrong');
+    } finally {
+      setLoading(false);
+    }
   }
 
   async function handleRestore() {
+    if (isWeb) {
+      Alert.alert('Restore', 'To restore a web subscription, please log in with the same account you used to subscribe.');
+      return;
+    }
     setRestoring(true);
     const { error } = await restore();
     setRestoring(false);
@@ -128,7 +136,9 @@ export default function PaywallModal({ visible, onClose, trigger }: Props) {
           </TouchableOpacity>
 
           <Text style={styles.legal}>
-            Subscriptions auto-renew. Cancel anytime in your App Store or Google Play settings.
+            {isWeb
+              ? 'Secure payment via Stripe. Subscriptions auto-renew. Cancel anytime in your account settings.'
+              : 'Subscriptions auto-renew. Cancel anytime in your App Store or Google Play settings.'}
           </Text>
 
           <TouchableOpacity style={styles.restoreBtn} onPress={handleRestore} disabled={restoring}>

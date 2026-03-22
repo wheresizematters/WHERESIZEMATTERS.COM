@@ -1,7 +1,34 @@
 import { Platform } from 'react-native';
 
-// react-native-purchases uses native modules that crash in Expo Go.
-// We lazy-load it only when native modules are available.
+// ── Stripe (web) ──────────────────────────────────────────────────────────────
+export const STRIPE_PUBLISHABLE_KEY = 'pk_test_51TDr6WRgeoqeXUgeg1i0V3Uz8NwJGGwydjBDXaYvTVrZzkYu2swsZHvgsAiFiyAZBVuKlF2Rqub5uVNFbeITAYF100mQVQIJep';
+export const STRIPE_PRICE_MONTHLY = 'price_1TDrAIRgeoqeXUge2NFprjqt';
+export const STRIPE_PRICE_ANNUAL  = 'price_1TDrApRgeoqeXUgeFR8rUpD6';
+
+const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL ?? '';
+const SUPABASE_ANON_KEY = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? '';
+
+export async function stripeCheckout(priceId: string, userId: string, email: string) {
+  const res = await fetch(`${SUPABASE_URL}/functions/v1/stripe-checkout`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+    },
+    body: JSON.stringify({
+      priceId,
+      userId,
+      email,
+      successUrl: `${window.location.origin}/?subscribed=1`,
+      cancelUrl: window.location.href,
+    }),
+  });
+  const data = await res.json();
+  if (data.url) window.location.href = data.url;
+  else throw new Error(data.error ?? 'Failed to create checkout session');
+}
+
+// ── RevenueCat (native iOS/Android) ──────────────────────────────────────────
 let Purchases: any = null;
 let LOG_LEVEL: any = null;
 
@@ -23,6 +50,7 @@ const REVENUECAT_ANDROID_KEY = process.env.EXPO_PUBLIC_REVENUECAT_ANDROID_KEY ??
 export const ENTITLEMENT_ID = 'premium';
 
 export function initPurchases(userId?: string) {
+  if (Platform.OS === 'web') return;
   if (!loadPurchases()) return;
   const key = Platform.OS === 'ios' ? REVENUECAT_IOS_KEY : REVENUECAT_ANDROID_KEY;
   if (!key) return;
@@ -33,6 +61,7 @@ export function initPurchases(userId?: string) {
 }
 
 export async function getOfferings(): Promise<any | null> {
+  if (Platform.OS === 'web') return null;
   if (!loadPurchases()) return null;
   try {
     const offerings = await Purchases.getOfferings();
@@ -43,7 +72,8 @@ export async function getOfferings(): Promise<any | null> {
 }
 
 export async function purchasePackage(pkg: any) {
-  if (!loadPurchases()) return { customerInfo: null, error: 'Purchases not available in Expo Go' };
+  if (Platform.OS === 'web') return { customerInfo: null, error: 'Use Stripe on web' };
+  if (!loadPurchases()) return { customerInfo: null, error: 'Purchases not available' };
   try {
     const { customerInfo } = await Purchases.purchasePackage(pkg);
     return { customerInfo, error: null };
@@ -54,7 +84,8 @@ export async function purchasePackage(pkg: any) {
 }
 
 export async function restorePurchases() {
-  if (!loadPurchases()) return { customerInfo: null, error: 'Purchases not available in Expo Go' };
+  if (Platform.OS === 'web') return { customerInfo: null, error: 'Use Stripe on web' };
+  if (!loadPurchases()) return { customerInfo: null, error: 'Purchases not available' };
   try {
     const customerInfo = await Purchases.restorePurchases();
     return { customerInfo, error: null };
