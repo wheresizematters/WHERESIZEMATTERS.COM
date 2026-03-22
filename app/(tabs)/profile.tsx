@@ -168,7 +168,7 @@ export default function ProfileScreen() {
     return () => clearTimeout(t);
   }, [search]);
 
-  const percentileVal = rank && totalUsers ? Math.round((1 - rank / totalUsers) * 100) : null;
+  const percentileVal = rank && totalUsers ? Math.max(0, Math.min(100, Math.round((1 - rank / totalUsers) * 100))) : null;
   const myTier = getSizeTier(size);
   const targetTier = compareTarget ? getSizeTier(compareTarget.size_inches) : null;
   const maxSize = compareTarget ? Math.max(size, compareTarget.size_inches, WORLD_AVERAGE) * 1.15 : Math.max(size, WORLD_AVERAGE) * 1.15;
