@@ -6,8 +6,10 @@ import { useFonts } from 'expo-font';
 import { Ionicons } from '@expo/vector-icons';
 import { AuthProvider, useAuth } from '@/context/AuthContext';
 import { PurchaseProvider } from '@/context/PurchaseContext';
+import { UnreadProvider } from '@/context/UnreadContext';
 import { COLORS } from '@/constants/theme';
 import InstallPrompt from '@/components/InstallPrompt';
+import { addNotificationResponseListener } from '@/lib/notifications';
 
 const SPLASH_DURATION = 2600; // ms
 
@@ -50,6 +52,22 @@ function RootLayoutNav() {
     return () => clearTimeout(timer);
   }, []);
 
+  // Handle tapping a push notification — navigate to the correct screen
+  useEffect(() => {
+    const sub = addNotificationResponseListener(response => {
+      const data = response.notification.request.content.data as any;
+      if (!data?.screen) return;
+      if (data.screen === 'chat' && data.conversation_id) {
+        router.push(`/chat/${data.conversation_id}` as any);
+      } else if (data.screen === 'post' && data.post_id) {
+        router.push(`/post/${data.post_id}` as any);
+      } else if (data.screen === 'profile' && data.user_id) {
+        router.push(`/profile/${data.user_id}` as any);
+      }
+    });
+    return () => sub.remove();
+  }, [router]);
+
   useEffect(() => {
     if (loading || !splashDone) return;
     const inAuthGroup = segments[0] === '(auth)';
@@ -74,8 +92,10 @@ function RootLayoutNav() {
       <Stack.Screen name="(tabs)" />
       <Stack.Screen name="settings" options={{ presentation: 'card', animation: 'slide_from_right' }} />
       <Stack.Screen name="chat/[id]" options={{ presentation: 'card', animation: 'slide_from_right' }} />
+      <Stack.Screen name="post/[id]" options={{ presentation: 'card', animation: 'slide_from_right' }} />
       <Stack.Screen name="verify" options={{ presentation: 'card', animation: 'slide_from_bottom' }} />
       <Stack.Screen name="admin" options={{ presentation: 'card', animation: 'slide_from_right' }} />
+      <Stack.Screen name="invite/[userId]" options={{ presentation: 'card', animation: 'fade' }} />
       <Stack.Screen name="setup-size" options={{ presentation: 'fullScreenModal', animation: 'fade' }} />
     </Stack>
   );
@@ -88,9 +108,11 @@ export default function RootLayout() {
   return (
     <AuthProvider>
       <PurchaseProvider>
-        <StatusBar style="light" />
-        <RootLayoutNav />
-        <InstallPrompt />
+        <UnreadProvider>
+          <StatusBar style="light" />
+          <RootLayoutNav />
+          <InstallPrompt />
+        </UnreadProvider>
       </PurchaseProvider>
     </AuthProvider>
   );

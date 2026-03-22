@@ -4,13 +4,17 @@ import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '@/constants/theme';
 import WebNavbar from '@/components/WebNavbar';
+import { useUnread } from '@/context/UnreadContext';
 
 type IconName = 'home' | 'home-outline' | 'trophy' | 'trophy-outline' | 'git-compare' | 'git-compare-outline' | 'chatbubbles' | 'chatbubbles-outline' | 'person' | 'person-outline';
 
-function TabIcon({ name, focused, label }: { name: IconName; focused: boolean; label: string }) {
+function TabIcon({ name, focused, label, badge }: { name: IconName; focused: boolean; label: string; badge?: boolean }) {
   return (
     <View style={styles.tabItem}>
-      <Ionicons name={focused ? name : `${name}-outline` as IconName} size={22} color={focused ? COLORS.gold : COLORS.muted} />
+      <View>
+        <Ionicons name={focused ? name : `${name}-outline` as IconName} size={22} color={focused ? COLORS.gold : COLORS.muted} />
+        {badge && <View style={styles.badgeDot} />}
+      </View>
       <Text style={[styles.tabLabel, focused && styles.tabLabelActive]} numberOfLines={1}>{label}</Text>
     </View>
   );
@@ -19,6 +23,7 @@ function TabIcon({ name, focused, label }: { name: IconName; focused: boolean; l
 export default function TabLayout() {
   const { width } = useWindowDimensions();
   const isDesktopWeb = Platform.OS === 'web' && width >= 768;
+  const { hasUnread } = useUnread();
 
   return (
     <>
@@ -44,7 +49,7 @@ export default function TabLayout() {
         />
         <Tabs.Screen
           name="messages"
-          options={{ tabBarIcon: ({ focused }) => <TabIcon name="chatbubbles" focused={focused} label="Messages" /> }}
+          options={{ tabBarIcon: ({ focused }) => <TabIcon name="chatbubbles" focused={focused} label="Messages" badge={hasUnread} /> }}
         />
         <Tabs.Screen
           name="profile"
@@ -70,6 +75,7 @@ const styles = StyleSheet.create({
     height: 0,
   },
   tabItem: { alignItems: 'center', gap: 2, width: 60 },
+  badgeDot: { position: 'absolute', top: -1, right: -4, width: 8, height: 8, borderRadius: 4, backgroundColor: COLORS.gold, borderWidth: 1.5, borderColor: '#111111' },
   tabLabel: { fontSize: 9, color: COLORS.muted, fontWeight: '600', letterSpacing: 0.3 },
   tabLabelActive: { color: COLORS.gold },
 });

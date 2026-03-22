@@ -1,31 +1,19 @@
 import { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, SafeAreaView, TouchableOpacity,
-  ScrollView, Alert, ActivityIndicator, Platform, Share, Clipboard,
+  ScrollView, ActivityIndicator, Alert, Platform,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import PageContainer from '@/components/PageContainer';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SIZES, RADIUS, getSizeTier } from '@/constants/theme';
 import { WORLD_AVERAGE } from '@/lib/mockData';
-import { fetchUserRank, fetchUserPostCount, fetchTotalUserCount, fetchUserPosts } from '@/lib/api';
+import {
+  fetchPublicProfile, fetchUserRank, fetchUserPostCount,
+  fetchTotalUserCount, fetchUserPosts, getOrCreateConversation,
+} from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
-import { Post } from '@/lib/types';
-
-type ProfileTab = 'posts' | 'comments' | 'saved';
-
-function timeAgo(ts: string): string {
-  const s = Math.floor((Date.now() - new Date(ts).getTime()) / 1000);
-  if (s < 60) return 'just now';
-  const m = Math.floor(s / 60);
-  if (m < 60) return `${m}m`;
-  const h = Math.floor(m / 60);
-  if (h < 24) return `${h}h`;
-  const d = Math.floor(h / 24);
-  if (d < 7) return `${d}d`;
-  return new Date(ts).toLocaleDateString([], { month: 'short', day: 'numeric' });
-}
+import { Profile, Post } from '@/lib/types';
 
 const TAG_COLORS: Record<string, string> = {
   size: '#A78BFA',
@@ -40,6 +28,18 @@ const TAG_CATEGORIES: Record<string, string> = {
   'Guess My Size': 'viral', 'Be Honest': 'viral', 'Brutal Rating': 'viral',
   'Top %': 'viral', "Biggest You've Seen?": 'viral',
 };
+
+function timeAgo(ts: string): string {
+  const s = Math.floor((Date.now() - new Date(ts).getTime()) / 1000);
+  if (s < 60) return 'just now';
+  const m = Math.floor(s / 60);
+  if (m < 60) return `${m}m`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h`;
+  const d = Math.floor(h / 24);
+  if (d < 7) return `${d}d`;
+  return new Date(ts).toLocaleDateString([], { month: 'short', day: 'numeric' });
+}
 
 function PostItem({ post }: { post: Post }) {
   const totalVotes = post.poll_options?.reduce((s, o) => s + o.vote_count, 0) ?? 0;
@@ -75,80 +75,60 @@ function PostItem({ post }: { post: Post }) {
   );
 }
 
-export default function ProfileScreen() {
+export default function PublicProfileScreen() {
+  const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const { profile, session, signOut, demoMode } = useAuth();
+  const { session } = useAuth();
+  const [profile, setProfile] = useState<Profile | null>(null);
   const [rank, setRank] = useState<number | null>(null);
   const [postCount, setPostCount] = useState(0);
   const [totalUsers, setTotalUsers] = useState(0);
-  const [showSize, setShowSize] = useState(true);
-  const [signingOut, setSigningOut] = useState(false);
-  const [activeTab, setActiveTab] = useState<ProfileTab>('posts');
   const [userPosts, setUserPosts] = useState<Post[]>([]);
+  const [loading, setLoading] = useState(true);
   const [postsLoading, setPostsLoading] = useState(false);
+  const [messaging, setMessaging] = useState(false);
 
-  const size = profile?.size_inches ?? 0;
-  const tier = getSizeTier(size);
+  const isOwnProfile = session?.user.id === id;
 
   useEffect(() => {
-    if (!session?.user.id) return;
-    fetchUserRank(session.user.id).then(setRank).catch(() => setRank(null));
-    fetchUserPostCount(session.user.id).then(setPostCount).catch(() => setPostCount(0));
-    fetchTotalUserCount().then(setTotalUsers).catch(() => setTotalUsers(0));
-    setPostsLoading(true);
-    fetchUserPosts(session.user.id)
-      .then(data => setUserPosts(data))
-      .catch(() => setUserPosts([]))
-      .finally(() => setPostsLoading(false));
-  }, [session?.user.id]);
+    if (!id) return;
+    async function load() {
+      const [p, r, pc, tu] = await Promise.all([
+        fetchPublicProfile(id),
+        fetchUserRank(id),
+        fetchUserPostCount(id),
+        fetchTotalUserCount(),
+      ]);
+      setProfile(p);
+      setRank(r || null);
+      setPostCount(pc);
+      setTotalUsers(tu);
+      setLoading(false);
+      setPostsLoading(true);
+      fetchUserPosts(id)
+        .then(setUserPosts)
+        .finally(() => setPostsLoading(false));
+    }
+    load();
+  }, [id]);
 
-  const percentile = rank && totalUsers ? Math.round((1 - rank / totalUsers) * 100) : null;
-
-  async function handleShare() {
+  async function handleMessage() {
     if (!session) return;
-    const inviteUrl = `https://wheresizematters.com/invite/${session.user.id}`;
-    const message = `Hey. Join me on SIZE. 🍆\n\nThe app where size actually matters — rankings, real stats, and the most honest size community on the internet.\n\nSee where you stack up 👇\n${inviteUrl}`;
-
-    if (Platform.OS === 'web') {
-      if (typeof navigator !== 'undefined' && navigator.share) {
-        try {
-          await navigator.share({ title: 'Join me on SIZE.', text: message, url: inviteUrl });
-          return;
-        } catch {}
-      }
-      // Fallback: copy to clipboard
-      try {
-        await navigator.clipboard.writeText(message);
-        window.alert('Invite link copied to clipboard!');
-      } catch {
-        window.alert(`Share this link:\n${inviteUrl}`);
+    setMessaging(true);
+    const { id: convId, error } = await getOrCreateConversation(session.user.id, id);
+    setMessaging(false);
+    if (error) {
+      if (Platform.OS === 'web') {
+        window.alert(`Could not start conversation: ${error}`);
+      } else {
+        Alert.alert('Error', `Could not start conversation: ${error}`);
       }
       return;
     }
-
-    await Share.share({ message, url: inviteUrl });
+    if (convId) router.push(`/chat/${convId}` as any);
   }
 
-  async function handleSignOut() {
-    if (Platform.OS === 'web') {
-      if (!window.confirm('Are you sure you want to sign out?')) return;
-      setSigningOut(true);
-      await signOut();
-      return;
-    }
-    Alert.alert('Sign Out', 'Are you sure?', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Sign Out', style: 'destructive',
-        onPress: async () => {
-          setSigningOut(true);
-          await signOut();
-        },
-      },
-    ]);
-  }
-
-  if (!profile) {
+  if (loading) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingWrap}>
@@ -158,25 +138,35 @@ export default function ProfileScreen() {
     );
   }
 
+  if (!profile) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.loadingWrap}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+            <Ionicons name="chevron-back" size={22} color={COLORS.white} />
+          </TouchableOpacity>
+          <Text style={{ color: COLORS.muted, marginTop: 20 }}>User not found.</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  const size = profile.size_inches;
+  const tier = getSizeTier(size);
+  const percentile = rank && totalUsers ? Math.round((1 - rank / totalUsers) * 100) : null;
+
   return (
     <SafeAreaView style={styles.container}>
-      <PageContainer>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.inner}>
 
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.title}>PROFILE</Text>
-          <TouchableOpacity onPress={() => router.push('/settings' as any)}>
-            <Ionicons name="settings-outline" size={22} color={COLORS.muted} />
+          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+            <Ionicons name="chevron-back" size={22} color={COLORS.white} />
           </TouchableOpacity>
+          <Text style={styles.title}>PROFILE</Text>
+          <View style={{ width: 40 }} />
         </View>
-
-        {demoMode && (
-          <View style={styles.demoBanner}>
-            <Ionicons name="warning-outline" size={14} color={COLORS.gold} />
-            <Text style={styles.demoText}>Demo mode — connect Supabase to go live</Text>
-          </View>
-        )}
 
         {/* Avatar */}
         <View style={styles.avatarSection}>
@@ -191,6 +181,7 @@ export default function ProfileScreen() {
               </View>
             )}
           </View>
+          {isOwnProfile && <Text style={styles.ownHint}>This is your profile</Text>}
         </View>
 
         {/* Size card */}
@@ -206,37 +197,19 @@ export default function ProfileScreen() {
             end={{ x: 1, y: 1 }}
             style={styles.sizeCardInner}
           >
-            <View style={styles.sizeCardTop}>
-              <Text style={styles.sizeCardLabel}>YOUR SIZE</Text>
-              <TouchableOpacity onPress={() => setShowSize(!showSize)}>
-                <Ionicons name={showSize ? 'eye-outline' : 'eye-off-outline'} size={18} color={COLORS.muted} />
-              </TouchableOpacity>
-            </View>
-            {showSize ? (
-              <LinearGradient
-                colors={['#FF6B2B', '#E8500A', '#C9A84C', '#BF5AF2']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={styles.sizeDisplayGrad}
-              >
-                <Text style={styles.sizeDisplay}>{size.toFixed(1)}"</Text>
-              </LinearGradient>
-            ) : (
-              <Text style={styles.sizeDisplayHidden}>••••</Text>
-            )}
+            <Text style={styles.sizeCardLabel}>SIZE</Text>
+            <LinearGradient
+              colors={['#FF6B2B', '#E8500A', '#C9A84C', '#BF5AF2']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.sizeDisplayGrad}
+            >
+              <Text style={styles.sizeDisplay}>{size.toFixed(1)}"</Text>
+            </LinearGradient>
             <View style={[styles.tierBadge, { borderColor: tier.color }]}>
               <Text style={styles.tierEmoji}>{tier.emoji}</Text>
               <Text style={[styles.tierText, { color: tier.color }]}>{tier.label}</Text>
             </View>
-            {!profile.is_verified && (
-              <TouchableOpacity
-                style={styles.verifyBtn}
-                onPress={() => router.push('/verify' as any)}
-              >
-                <Ionicons name="shield-checkmark-outline" size={16} color={COLORS.gold} />
-                <Text style={styles.verifyText}>Get Verified</Text>
-              </TouchableOpacity>
-            )}
           </LinearGradient>
         </LinearGradient>
 
@@ -252,7 +225,9 @@ export default function ProfileScreen() {
           </View>
           <View style={[styles.statCell, styles.statCellTop]}>
             <Text style={styles.statVal}>
-              {size >= WORLD_AVERAGE ? `+${(size - WORLD_AVERAGE).toFixed(1)}"` : `-${(WORLD_AVERAGE - size).toFixed(1)}"`}
+              {size >= WORLD_AVERAGE
+                ? `+${(size - WORLD_AVERAGE).toFixed(1)}"`
+                : `-${(WORLD_AVERAGE - size).toFixed(1)}"`}
             </Text>
             <Text style={styles.statLbl}>vs Avg</Text>
           </View>
@@ -262,7 +237,7 @@ export default function ProfileScreen() {
           </View>
         </View>
 
-        {/* Info */}
+        {/* Country / Age Range */}
         {(profile.country || profile.age_range) && (
           <View style={styles.infoSection}>
             {profile.country && (
@@ -282,89 +257,39 @@ export default function ProfileScreen() {
           </View>
         )}
 
-        {/* Posts / Comments / Saved tabs */}
+        {/* Message button — hide for own profile */}
+        {!isOwnProfile && session && (
+          <TouchableOpacity style={styles.messageBtn} onPress={handleMessage} disabled={messaging} activeOpacity={0.85}>
+            {messaging
+              ? <ActivityIndicator size="small" color={COLORS.bg} />
+              : <>
+                  <Ionicons name="chatbubble-outline" size={18} color={COLORS.bg} />
+                  <Text style={styles.messageBtnText}>Message</Text>
+                </>
+            }
+          </TouchableOpacity>
+        )}
+
+        {/* Posts */}
         <View style={styles.tabSection}>
-          <View style={styles.tabBar}>
-            {(['posts', 'comments', 'saved'] as ProfileTab[]).map(tab => (
-              <TouchableOpacity
-                key={tab}
-                style={styles.tabBtn}
-                onPress={() => setActiveTab(tab)}
-              >
-                <Text style={[styles.tabLabel, activeTab === tab && styles.tabLabelActive]}>
-                  {tab.charAt(0).toUpperCase() + tab.slice(1)}
-                </Text>
-                {activeTab === tab && <View style={styles.tabUnderline} />}
-              </TouchableOpacity>
-            ))}
+          <View style={styles.tabHeader}>
+            <Text style={styles.tabHeaderText}>POSTS</Text>
           </View>
-
-          {/* Posts tab */}
-          {activeTab === 'posts' && (
-            postsLoading ? (
-              <ActivityIndicator style={{ marginTop: 32 }} color={COLORS.gold} />
-            ) : userPosts.length === 0 ? (
-              <View style={styles.tabEmpty}>
-                <Ionicons name="document-text-outline" size={36} color={COLORS.muted} />
-                <Text style={styles.tabEmptyText}>No posts yet</Text>
-              </View>
-            ) : (
-              <View style={styles.postList}>
-                {userPosts.map(post => <PostItem key={post.id} post={post} />)}
-              </View>
-            )
-          )}
-
-          {/* Comments tab */}
-          {activeTab === 'comments' && (
+          {postsLoading ? (
+            <ActivityIndicator style={{ marginTop: 32 }} color={COLORS.gold} />
+          ) : userPosts.length === 0 ? (
             <View style={styles.tabEmpty}>
-              <Ionicons name="chatbubble-outline" size={36} color={COLORS.muted} />
-              <Text style={styles.tabEmptyText}>No comments yet</Text>
+              <Ionicons name="document-text-outline" size={36} color={COLORS.muted} />
+              <Text style={styles.tabEmptyText}>No posts yet</Text>
             </View>
-          )}
-
-          {/* Saved tab */}
-          {activeTab === 'saved' && (
-            <View style={styles.tabEmpty}>
-              <Ionicons name="bookmark-outline" size={36} color={COLORS.muted} />
-              <Text style={styles.tabEmptyText}>No saved posts yet</Text>
+          ) : (
+            <View style={styles.postList}>
+              {userPosts.map(post => <PostItem key={post.id} post={post} />)}
             </View>
           )}
         </View>
 
-        {/* Invite friends */}
-        <TouchableOpacity style={styles.inviteBtn} onPress={handleShare}>
-          <Ionicons name="person-add-outline" size={18} color={COLORS.gold} />
-          <View style={styles.inviteBtnText}>
-            <Text style={styles.inviteBtnLabel}>Invite Friends</Text>
-            <Text style={styles.inviteBtnSub}>Share your invite link</Text>
-          </View>
-          <Ionicons name="share-outline" size={18} color={COLORS.gold} />
-        </TouchableOpacity>
-
-        {/* Admin panel link */}
-        {(profile as any).is_admin && (
-          <TouchableOpacity
-            style={styles.adminBtn}
-            onPress={() => router.push('/admin' as any)}
-          >
-            <Ionicons name="shield-outline" size={18} color={COLORS.purple} />
-            <Text style={styles.adminText}>Verify Queue</Text>
-          </TouchableOpacity>
-        )}
-
-        {/* Sign out */}
-        <TouchableOpacity style={styles.signOutBtn} onPress={handleSignOut} disabled={signingOut}>
-          {signingOut
-            ? <ActivityIndicator size="small" color={COLORS.red} />
-            : <>
-                <Ionicons name="log-out-outline" size={18} color={COLORS.red} />
-                <Text style={styles.signOutText}>Sign Out</Text>
-              </>
-          }
-        </TouchableOpacity>
       </ScrollView>
-      </PageContainer>
     </SafeAreaView>
   );
 }
@@ -374,9 +299,8 @@ const styles = StyleSheet.create({
   inner: { paddingBottom: 100 },
   loadingWrap: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 14 },
+  backBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
   title: { fontSize: SIZES.xl, fontWeight: '900', color: COLORS.white, letterSpacing: 3 },
-  demoBanner: { flexDirection: 'row', alignItems: 'center', gap: 8, marginHorizontal: 16, marginBottom: 12, backgroundColor: `${COLORS.gold}15`, borderRadius: RADIUS.md, borderWidth: 1, borderColor: `${COLORS.gold}40`, paddingHorizontal: 14, paddingVertical: 10 },
-  demoText: { color: COLORS.gold, fontSize: SIZES.sm, flex: 1 },
   avatarSection: { alignItems: 'center', paddingVertical: 20, gap: 8 },
   avatar: { width: 80, height: 80, borderRadius: 40, backgroundColor: COLORS.card, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
   avatarText: { color: COLORS.white, fontSize: SIZES.xxxl, fontWeight: '900' },
@@ -384,18 +308,15 @@ const styles = StyleSheet.create({
   username: { color: COLORS.white, fontSize: SIZES.xl, fontWeight: '800' },
   verifiedBadge: { backgroundColor: COLORS.gold, borderRadius: RADIUS.full, width: 20, height: 20, alignItems: 'center', justifyContent: 'center' },
   verifiedText: { color: COLORS.bg, fontSize: 11, fontWeight: '900' },
+  ownHint: { color: COLORS.muted, fontSize: SIZES.sm, marginTop: 2 },
   sizeCard: { marginHorizontal: 16, borderRadius: RADIUS.xl, borderWidth: 1, borderColor: 'rgba(232,80,10,0.3)', overflow: 'hidden', marginBottom: 16 },
   sizeCardInner: { padding: 24, alignItems: 'center', gap: 12 },
-  sizeCardTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', width: '100%' },
-  sizeCardLabel: { color: COLORS.gold, fontSize: 9, letterSpacing: 3, textTransform: 'uppercase', fontWeight: '800' },
+  sizeCardLabel: { color: COLORS.gold, fontSize: 9, letterSpacing: 3, textTransform: 'uppercase', fontWeight: '800', alignSelf: 'flex-start' },
   sizeDisplayGrad: { paddingHorizontal: 28, paddingVertical: 14, borderRadius: RADIUS.full, alignItems: 'center', justifyContent: 'center' },
   sizeDisplay: { fontSize: 56, fontWeight: '900', lineHeight: 64, color: COLORS.white, textShadowColor: 'rgba(0,0,0,0.4)', textShadowOffset: { width: 0, height: 2 }, textShadowRadius: 6 },
-  sizeDisplayHidden: { fontSize: 56, fontWeight: '900', lineHeight: 64, color: COLORS.mutedDark },
   tierBadge: { flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1, borderRadius: RADIUS.full, paddingHorizontal: 14, paddingVertical: 6 },
   tierEmoji: { fontSize: 16 },
   tierText: { fontSize: SIZES.sm, fontWeight: '700', letterSpacing: 1 },
-  verifyBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 },
-  verifyText: { color: COLORS.gold, fontSize: SIZES.sm, fontWeight: '700' },
   statsGrid: { flexDirection: 'row', flexWrap: 'wrap', marginHorizontal: 16, backgroundColor: COLORS.card, borderRadius: RADIUS.lg, borderWidth: 1, borderColor: COLORS.cardBorder, marginBottom: 16, overflow: 'hidden' },
   statCell: { width: '50%', padding: 16, alignItems: 'center' },
   statCellBorder: { borderLeftWidth: 1, borderLeftColor: COLORS.cardBorder },
@@ -406,16 +327,13 @@ const styles = StyleSheet.create({
   infoRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: COLORS.cardBorder },
   infoLabel: { color: COLORS.muted, fontSize: SIZES.md, flex: 1 },
   infoValue: { color: COLORS.white, fontSize: SIZES.md, fontWeight: '600' },
-  // Tab section
-  tabSection: { marginTop: 8, marginBottom: 16 },
-  tabBar: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: COLORS.cardBorder, marginBottom: 4 },
-  tabBtn: { flex: 1, alignItems: 'center', paddingVertical: 14, position: 'relative' },
-  tabLabel: { fontSize: SIZES.md, fontWeight: '700', color: COLORS.muted },
-  tabLabelActive: { color: COLORS.white },
-  tabUnderline: { position: 'absolute', bottom: 0, left: '15%', right: '15%', height: 2, backgroundColor: COLORS.gold, borderRadius: 2 },
+  messageBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginHorizontal: 16, marginBottom: 20, paddingVertical: 16, backgroundColor: COLORS.gold, borderRadius: RADIUS.md },
+  messageBtnText: { color: COLORS.bg, fontWeight: '800', fontSize: SIZES.md, letterSpacing: 1 },
+  tabSection: { marginTop: 8 },
+  tabHeader: { paddingHorizontal: 16, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: COLORS.cardBorder },
+  tabHeaderText: { color: COLORS.muted, fontSize: 10, fontWeight: '800', letterSpacing: 2 },
   tabEmpty: { paddingVertical: 48, alignItems: 'center', gap: 10 },
   tabEmptyText: { color: COLORS.muted, fontSize: SIZES.md },
-  // Post items
   postList: { gap: 1 },
   postItem: { paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: COLORS.cardBorder, gap: 8 },
   postItemTop: { flexDirection: 'row', alignItems: 'center', gap: 8 },
@@ -430,15 +348,4 @@ const styles = StyleSheet.create({
   postTypePillPoll: { backgroundColor: `${COLORS.purple}25` },
   postTypePillDisc: { backgroundColor: `${COLORS.blue}25` },
   postTypeText: { fontSize: 10, fontWeight: '700', color: COLORS.muted },
-  // Invite
-  inviteBtn: { flexDirection: 'row', alignItems: 'center', gap: 14, marginHorizontal: 16, paddingVertical: 16, paddingHorizontal: 18, backgroundColor: `${COLORS.gold}10`, borderRadius: RADIUS.lg, borderWidth: 1, borderColor: `${COLORS.gold}40`, marginBottom: 10 },
-  inviteBtnText: { flex: 1 },
-  inviteBtnLabel: { color: COLORS.gold, fontWeight: '800', fontSize: SIZES.md },
-  inviteBtnSub: { color: COLORS.muted, fontSize: SIZES.xs, marginTop: 2 },
-  // Admin
-  adminBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginHorizontal: 16, paddingVertical: 16, backgroundColor: COLORS.card, borderRadius: RADIUS.md, borderWidth: 1, borderColor: `${COLORS.purple}40`, marginBottom: 10 },
-  adminText: { color: COLORS.purple, fontWeight: '700', fontSize: SIZES.md },
-  // Sign out
-  signOutBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginHorizontal: 16, paddingVertical: 16, backgroundColor: COLORS.card, borderRadius: RADIUS.md, borderWidth: 1, borderColor: `${COLORS.red}40` },
-  signOutText: { color: COLORS.red, fontWeight: '700', fontSize: SIZES.md },
 });

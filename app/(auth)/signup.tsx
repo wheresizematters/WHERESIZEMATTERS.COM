@@ -5,14 +5,28 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { Link } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/context/AuthContext';
 import { COLORS, SIZES, RADIUS, getSizeTier } from '@/constants/theme';
 import AuthContainer from '@/components/AuthContainer';
 
 const AGE_RANGES = ['18–24', '25–34', '35–44', '45–54', '55+'];
 
+type OAuthProvider = 'google' | 'x';
+const SOCIAL_PROVIDERS: { provider: OAuthProvider; label: string; icon: any; bg: string; color: string }[] = [
+  { provider: 'x', label: 'Sign up with X', icon: 'logo-twitter', bg: '#000', color: '#fff' },
+  { provider: 'google', label: 'Sign up with Google', icon: 'logo-google', bg: '#fff', color: '#444' },
+];
+
 export default function SignupScreen() {
-  const { signUp } = useAuth();
+  const { signUp, signInWithOAuth } = useAuth();
+  const [oauthLoading, setOauthLoading] = useState<OAuthProvider | null>(null);
+
+  async function handleOAuth(provider: OAuthProvider) {
+    setOauthLoading(provider);
+    await signInWithOAuth(provider);
+    setOauthLoading(null);
+  }
   const [step, setStep] = useState<'account' | 'size'>('account');
 
   // Step 1
@@ -83,6 +97,35 @@ export default function SignupScreen() {
           <View style={[styles.stepDot, step === 'size' && styles.stepActive]} />
         </View>
 
+        {step === 'account' && (
+          <>
+            <View style={styles.socialGroup}>
+              {SOCIAL_PROVIDERS.map(({ provider, label, icon, bg, color }) => (
+                <TouchableOpacity
+                  key={provider}
+                  style={[styles.socialBtn, { backgroundColor: bg }]}
+                  onPress={() => handleOAuth(provider)}
+                  disabled={oauthLoading !== null}
+                  activeOpacity={0.85}
+                >
+                  {oauthLoading === provider
+                    ? <ActivityIndicator size="small" color={color} />
+                    : <>
+                        <Ionicons name={icon} size={18} color={color} />
+                        <Text style={[styles.socialBtnText, { color }]}>{label}</Text>
+                      </>
+                  }
+                </TouchableOpacity>
+              ))}
+            </View>
+            <View style={styles.divider}>
+              <View style={styles.dividerLine} />
+              <Text style={styles.dividerText}>or sign up with email</Text>
+              <View style={styles.dividerLine} />
+            </View>
+          </>
+        )}
+
         {step === 'account' ? (
           <View style={styles.form}>
             <TextInput
@@ -98,7 +141,7 @@ export default function SignupScreen() {
             <TextInput
               style={styles.input} placeholder="Password (min 8 chars)"
               placeholderTextColor={COLORS.muted} value={password}
-              onChangeText={setPassword} secureTextEntry
+              onChangeText={setPassword} secureTextEntry autoComplete="new-password"
             />
 
             <Text style={styles.label}>Age Range</Text>
@@ -218,6 +261,12 @@ const styles = StyleSheet.create({
   stepDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: COLORS.mutedDark },
   stepActive: { backgroundColor: COLORS.gold },
   stepLine: { width: 40, height: 2, backgroundColor: COLORS.mutedDark },
+  socialGroup: { gap: 10, marginBottom: 4 },
+  socialBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, borderRadius: RADIUS.md, paddingVertical: 15, paddingHorizontal: 20 },
+  socialBtnText: { fontSize: SIZES.md, fontWeight: '700' },
+  divider: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 4 },
+  dividerLine: { flex: 1, height: 1, backgroundColor: COLORS.cardBorder },
+  dividerText: { color: COLORS.muted, fontSize: SIZES.sm },
   form: { gap: 14 },
   input: {
     backgroundColor: COLORS.card, borderWidth: 1, borderColor: COLORS.cardBorder,
@@ -261,7 +310,7 @@ const styles = StyleSheet.create({
   unitTextActive: { color: COLORS.gold, fontWeight: '700' },
   sizeInputRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   sizeInput: { flex: 1 },
-  sizeUnit: { color: COLORS.gold, fontSize: SIZES.xl, fontWeight: '700', width: 30 },
+  sizeUnit: { color: COLORS.gold, fontSize: SIZES.xl, fontWeight: '700', width: 40 },
   tierBadge: {
     flexDirection: 'row', alignItems: 'center', gap: 10,
     borderWidth: 1, borderRadius: RADIUS.md,

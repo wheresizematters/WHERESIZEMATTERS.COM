@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image, Dimensions } from 'react-native';
 import { BlurView } from 'expo-blur';
+import { Video, ResizeMode } from 'expo-av';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SIZES, RADIUS } from '@/constants/theme';
 import PaywallModal from './PaywallModal';
@@ -12,17 +13,29 @@ interface Props {
   uri: string;
   type: 'image' | 'video';
   isPremium: boolean;
+  isOwner?: boolean;
 }
 
-export default function LockedMedia({ uri, type, isPremium }: Props) {
+export default function LockedMedia({ uri, type, isPremium, isOwner = false }: Props) {
   const [showPaywall, setShowPaywall] = useState(false);
+  const canView = isPremium || isOwner;
 
   return (
     <>
       <View style={styles.container}>
-        <Image source={{ uri }} style={styles.media} resizeMode="cover" />
+        {canView && type === 'video' ? (
+          <Video
+            source={{ uri }}
+            style={styles.media}
+            resizeMode={ResizeMode.COVER}
+            useNativeControls
+            isLooping={false}
+          />
+        ) : (
+          <Image source={{ uri }} style={styles.media} resizeMode="cover" />
+        )}
 
-        {!isPremium && (
+        {!canView && (
           <BlurView intensity={60} tint="dark" style={StyleSheet.absoluteFill}>
             <TouchableOpacity
               style={styles.lockedOverlay}
@@ -41,14 +54,6 @@ export default function LockedMedia({ uri, type, isPremium }: Props) {
               </View>
             </TouchableOpacity>
           </BlurView>
-        )}
-
-        {isPremium && type === 'video' && (
-          <View style={styles.playOverlay} pointerEvents="none">
-            <View style={styles.playBtn}>
-              <Ionicons name="play" size={28} color={COLORS.white} />
-            </View>
-          </View>
         )}
       </View>
 
@@ -73,9 +78,4 @@ const styles = StyleSheet.create({
     borderRadius: RADIUS.full, paddingHorizontal: 20, paddingVertical: 10,
   },
   unlockText: { color: COLORS.bg, fontWeight: '800', fontSize: SIZES.sm },
-  playOverlay: { ...StyleSheet.absoluteFillObject, alignItems: 'center', justifyContent: 'center' },
-  playBtn: {
-    width: 56, height: 56, borderRadius: 28,
-    backgroundColor: 'rgba(0,0,0,0.6)', alignItems: 'center', justifyContent: 'center',
-  },
 });

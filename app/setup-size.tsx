@@ -140,7 +140,7 @@ const styles = StyleSheet.create({
     color: COLORS.white, fontSize: SIZES.base,
   },
   sizeInput: { flex: 1 },
-  sizeUnit: { color: COLORS.gold, fontSize: SIZES.xl, fontWeight: '700', width: 30 },
+  sizeUnit: { color: COLORS.gold, fontSize: SIZES.xl, fontWeight: '700', width: 40 },
   tierBadge: {
     flexDirection: 'row', alignItems: 'center', gap: 10,
     borderWidth: 1, borderRadius: RADIUS.md, paddingHorizontal: 18, paddingVertical: 12,

@@ -2,18 +2,20 @@ import { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, FlatList, TouchableOpacity, StyleSheet,
   SafeAreaView, ActivityIndicator, RefreshControl, Modal,
-  TextInput, KeyboardAvoidingView, Platform, ScrollView, Image, Alert,
+  TextInput, KeyboardAvoidingView, Platform, ScrollView, Image, Alert, Linking,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useRouter } from 'expo-router';
 import PageContainer from '@/components/PageContainer';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SIZES, RADIUS, getSizeTier } from '@/constants/theme';
-import { fetchPosts, createPost, voteOnPoll } from '@/lib/api';
+import { fetchPosts, createPost, voteOnPoll, voteOnPost } from '@/lib/api';
 import { pickMedia, uploadMedia } from '@/lib/media';
 import { useAuth } from '@/context/AuthContext';
 import { usePurchase } from '@/context/PurchaseContext';
 import { Post } from '@/lib/types';
 import LockedMedia from '@/components/LockedMedia';
+import LinkPreview from '@/components/LinkPreview';
 import PaywallModal from '@/components/PaywallModal';
 
 const FEED_TABS = ['FEED', 'DISCUSSIONS', 'MEDIA'] as const;
@@ -76,6 +78,41 @@ function TagChip({ tag }: { tag: string }) {
   );
 }
 
+const URL_REGEX = /https?:\/\/[^\s]+/g;
+
+function extractFirstUrl(text: string): string | null {
+  const match = text.match(URL_REGEX);
+  return match ? match[0] : null;
+}
+
+// Only open http/https URLs — prevents javascript: and other protocol attacks
+function safeOpenURL(url: string) {
+  if (!url.startsWith('http://') && !url.startsWith('https://')) return;
+  Linking.openURL(url);
+}
+
+function LinkedText({ text, style }: { text: string; style?: any }) {
+  const parts: { text: string; isUrl: boolean }[] = [];
+  let lastIndex = 0;
+  const regex = new RegExp(URL_REGEX.source, 'g');
+  let match;
+  while ((match = regex.exec(text)) !== null) {
+    if (match.index > lastIndex) parts.push({ text: text.slice(lastIndex, match.index), isUrl: false });
+    parts.push({ text: match[0], isUrl: true });
+    lastIndex = match.index + match[0].length;
+  }
+  if (lastIndex < text.length) parts.push({ text: text.slice(lastIndex), isUrl: false });
+  return (
+    <Text style={style}>
+      {parts.map((p, i) =>
+        p.isUrl
+          ? <Text key={i} style={styles.link} onPress={() => safeOpenURL(p.text)}>{p.text}</Text>
+          : p.text
+      )}
+    </Text>
+  );
+}
+
 function SizeBadge({ inches, verified, isPremium }: { inches: number; verified: boolean; isPremium: boolean }) {
   if (isPremium) {
     return (
@@ -102,9 +139,14 @@ function SizeBadge({ inches, verified, isPremium }: { inches: number; verified: 
 }
 
 function AuthorRow({ post, isPremium }: { post: Post; isPremium: boolean }) {
+  const router = useRouter();
   const tier = getSizeTier(post.author.size_inches);
   return (
-    <View style={styles.authorRow}>
+    <TouchableOpacity
+      style={styles.authorRow}
+      onPress={() => router.push(`/profile/${post.author.id}` as any)}
+      activeOpacity={0.7}
+    >
       <View style={[styles.authorAvatar, { borderColor: tier.color }]}>
         <Text style={[styles.authorAvatarLetter, { color: tier.color }]}>
           {post.author.username.charAt(0).toUpperCase()}
@@ -115,32 +157,54 @@ function AuthorRow({ post, isPremium }: { post: Post; isPremium: boolean }) {
         <SizeBadge inches={post.author.size_inches} verified={post.author.is_verified} isPremium={isPremium} />
       </View>
       <Text style={styles.postTime}>{timeAgo(post.created_at)}</Text>
-    </View>
+    </TouchableOpacity>
   );
 }
 
-function ActionBar({ voteCount, commentCount }: { voteCount?: number; commentCount: number }) {
+function VoteBar({
+  post, onVote, pollVoteCount,
+}: { post: Post; onVote: (v: 1 | -1 | 0) => void; pollVoteCount?: number }) {
+  const score = post.score ?? 0;
+  const userVote = post.user_vote ?? 0;
   return (
     <View style={styles.actionBar}>
-      {voteCount !== undefined && (
+      <View style={styles.voteRow}>
+        <TouchableOpacity
+          onPress={() => onVote(userVote === 1 ? 0 : 1)}
+          style={styles.voteBtn}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 4 }}
+        >
+          <Ionicons name="arrow-up" size={18} color={userVote === 1 ? COLORS.gold : COLORS.muted} />
+        </TouchableOpacity>
+        <Text style={[styles.voteScore, userVote === 1 && styles.voteScoreUp, userVote === -1 && styles.voteScoreDown]}>
+          {score}
+        </Text>
+        <TouchableOpacity
+          onPress={() => onVote(userVote === -1 ? 0 : -1)}
+          style={styles.voteBtn}
+          hitSlop={{ top: 8, bottom: 8, left: 4, right: 8 }}
+        >
+          <Ionicons name="arrow-down" size={18} color={userVote === -1 ? '#60A5FA' : COLORS.muted} />
+        </TouchableOpacity>
+      </View>
+      {pollVoteCount !== undefined && (
         <View style={styles.actionItem}>
           <Ionicons name="stats-chart-outline" size={13} color={COLORS.muted} />
-          <Text style={styles.actionText}>{voteCount.toLocaleString()} votes</Text>
+          <Text style={styles.actionText}>{pollVoteCount.toLocaleString()} votes</Text>
         </View>
       )}
       <View style={styles.actionItem}>
         <Ionicons name="chatbubble-outline" size={13} color={COLORS.muted} />
-        <Text style={styles.actionText}>{commentCount} comments</Text>
-      </View>
-      <View style={styles.actionItem}>
-        <Ionicons name="arrow-redo-outline" size={13} color={COLORS.muted} />
-        <Text style={styles.actionText}>Share</Text>
+        <Text style={styles.actionText}>{post.comment_count} comments</Text>
       </View>
     </View>
   );
 }
 
-function PollCard({ post, userId, isPremium }: { post: Post; userId: string; isPremium: boolean }) {
+function PollCard({ post, userId, isPremium, onVotePost }: {
+  post: Post; userId: string; isPremium: boolean; onVotePost: (v: 1 | -1 | 0) => void;
+}) {
+  const router = useRouter();
   const [voted, setVoted] = useState<string | null>(null);
   const options = post.poll_options ?? [];
   const totalVotes = options.reduce((sum, o) => sum + o.vote_count, 0);
@@ -152,10 +216,10 @@ function PollCard({ post, userId, isPremium }: { post: Post; userId: string; isP
   }
 
   return (
-    <View style={styles.card}>
+    <TouchableOpacity style={styles.card} onPress={() => router.push(`/post/${post.id}` as any)} activeOpacity={0.95}>
       <AuthorRow post={post} isPremium={isPremium} />
       {post.tag && <TagChip tag={post.tag} />}
-      <Text style={styles.pollQuestion}>{post.content}</Text>
+      <LinkedText text={post.content} style={styles.pollQuestion} />
       <View style={styles.pollOptions}>
         {options.map(opt => {
           const pct = totalVotes > 0 ? (opt.vote_count / totalVotes) * 100 : 0;
@@ -181,37 +245,45 @@ function PollCard({ post, userId, isPremium }: { post: Post; userId: string; isP
           );
         })}
       </View>
-      <ActionBar voteCount={totalVotes} commentCount={post.comment_count} />
-    </View>
+      <VoteBar post={post} onVote={onVotePost} pollVoteCount={totalVotes} />
+    </TouchableOpacity>
   );
 }
 
-function DiscussionCard({ post, isPremium }: { post: Post; isPremium: boolean }) {
+function DiscussionCard({ post, isPremium, myId, onVotePost }: {
+  post: Post; isPremium: boolean; myId: string; onVotePost: (v: 1 | -1 | 0) => void;
+}) {
+  const router = useRouter();
+  const isOwner = post.author.id === myId;
+  const linkUrl = extractFirstUrl(post.content);
   return (
-    <View style={styles.card}>
+    <TouchableOpacity style={styles.card} onPress={() => router.push(`/post/${post.id}` as any)} activeOpacity={0.95}>
       <AuthorRow post={post} isPremium={isPremium} />
       {post.tag && <TagChip tag={post.tag} />}
       {post.title && <Text style={styles.discussionTitle}>{post.title}</Text>}
-      <Text style={styles.discussionText}>{post.content}</Text>
+      <LinkedText text={post.content} style={styles.discussionText} />
+      {linkUrl && <LinkPreview url={linkUrl} />}
       {(post as any).media_url && (
         <LockedMedia
           uri={(post as any).media_url}
           type={(post as any).media_type ?? 'image'}
           isPremium={isPremium}
+          isOwner={isOwner}
         />
       )}
-      <ActionBar commentCount={post.comment_count} />
-    </View>
+      <VoteBar post={post} onVote={onVotePost} />
+    </TouchableOpacity>
   );
 }
 
 function DiscussionRow({ post, isPremium }: { post: Post; isPremium: boolean }) {
+  const router = useRouter();
   const meta = TAGS.find(t => t.label === post.tag);
   const tagColor = meta ? TAG_COLORS[meta.category] : COLORS.muted;
   const tier = getSizeTier(post.author.size_inches);
 
   return (
-    <View style={styles.discRow}>
+    <TouchableOpacity style={styles.discRow} onPress={() => router.push(`/post/${post.id}` as any)} activeOpacity={0.8}>
       <View style={styles.discRowTop}>
         {post.tag && (
           <View style={[styles.tagChip, { borderColor: tagColor, backgroundColor: `${tagColor}18` }]}>
@@ -239,7 +311,7 @@ function DiscussionRow({ post, isPremium }: { post: Post; isPremium: boolean }) 
           <Text style={styles.discRowStatText}>{post.comment_count}</Text>
         </View>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 }
 
@@ -304,12 +376,13 @@ function CreatePostModal({ visible, onClose, onPost, isPremium }: {
   }
 
   async function handlePickMedia() {
-    if (!isPremium) { setShowPaywall(true); return; }
     const asset = await pickMedia();
     if (asset) setMediaAsset(asset);
   }
 
-  const canPost = type === 'poll' ? content.trim().length > 0 : content.trim().length > 0;
+  const canPost = type === 'poll'
+    ? content.trim().length > 0
+    : content.trim().length > 0 && title.trim().length > 0;
 
   async function handlePost() {
     if (!canPost || !session) return;
@@ -396,7 +469,7 @@ function CreatePostModal({ visible, onClose, onPost, isPremium }: {
             {/* Title — only for discussions */}
             {type === 'discussion' && (
               <>
-                <Text style={styles.fieldLabel}>TITLE <Text style={styles.fieldLabelOptional}>(optional)</Text></Text>
+                <Text style={styles.fieldLabel}>TITLE <Text style={styles.fieldLabelRequired}>*</Text></Text>
                 <TextInput
                   style={styles.titleInput}
                   placeholder="Give your post a title..."
@@ -447,11 +520,10 @@ function CreatePostModal({ visible, onClose, onPost, isPremium }: {
 
             {/* Media picker */}
             <TouchableOpacity style={styles.mediaPickerBtn} onPress={handlePickMedia}>
-              <Ionicons name="images-outline" size={20} color={isPremium ? COLORS.gold : COLORS.muted} />
-              <Text style={[styles.mediaPickerText, isPremium && styles.mediaPickerTextActive]}>
-                {isPremium ? 'Add Photo / Video' : 'Add Media (Premium)'}
+              <Ionicons name="images-outline" size={20} color={COLORS.gold} />
+              <Text style={[styles.mediaPickerText, styles.mediaPickerTextActive]}>
+                Add Photo / Video
               </Text>
-              {!isPremium && <Ionicons name="lock-closed-outline" size={14} color={COLORS.muted} />}
             </TouchableOpacity>
 
             {mediaAsset && (
@@ -488,8 +560,9 @@ export default function FeedScreen() {
   const activeFilterCount = (activeTag ? 1 : 0) + (verifiedOnly ? 1 : 0);
 
   const loadPosts = useCallback(async () => {
+    if (!session) { setLoading(false); setRefreshing(false); return; }
     try {
-      const data = await fetchPosts();
+      const data = await fetchPosts(session.user.id);
       setPosts(data);
     } catch {
       // Keep existing posts on error rather than clearing
@@ -497,7 +570,18 @@ export default function FeedScreen() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, []);
+  }, [session]);
+
+  const handleVoteOnPost = useCallback(async (postId: string, vote: 1 | -1 | 0) => {
+    if (!session) return;
+    setPosts(prev => prev.map(p => {
+      if (p.id !== postId) return p;
+      const prevVote = p.user_vote ?? 0;
+      const scoreDelta = vote - prevVote;
+      return { ...p, score: (p.score ?? 0) + scoreDelta, user_vote: vote };
+    }));
+    await voteOnPost(postId, session.user.id, vote);
+  }, [session]);
 
   useEffect(() => { loadPosts(); }, [loadPosts]);
 
@@ -516,7 +600,7 @@ export default function FeedScreen() {
       {!(Platform.OS === 'web' && typeof window !== 'undefined' && window.innerWidth >= 768) && (
       <View style={styles.header}>
         <Text style={styles.logo}>SIZE.</Text>
-        <TouchableOpacity>
+        <TouchableOpacity onPress={() => Alert.alert('Notifications', 'Push notifications coming soon.')}>
           <Ionicons name="notifications-outline" size={24} color={COLORS.muted} />
         </TouchableOpacity>
       </View>
@@ -628,12 +712,19 @@ export default function FeedScreen() {
           }
           renderItem={({ item }) =>
             item.type === 'poll'
-              ? <PollCard post={item} userId={session?.user.id ?? ''} isPremium={isPremium} />
-              : <DiscussionCard post={item} isPremium={isPremium} />
+              ? <PollCard post={item} userId={session?.user.id ?? ''} isPremium={isPremium} onVotePost={v => handleVoteOnPost(item.id, v)} />
+              : <DiscussionCard post={item} isPremium={isPremium} myId={session?.user.id ?? ''} onVotePost={v => handleVoteOnPost(item.id, v)} />
           }
           ListEmptyComponent={
             <View style={styles.empty}>
-              <Text style={styles.emptyText}>No posts yet. Be the first.</Text>
+              <Text style={styles.emptyText}>
+                {activeFilterCount > 0 ? 'No posts match your filters.' : 'No posts yet. Be the first.'}
+              </Text>
+              {activeFilterCount > 0 && (
+                <TouchableOpacity onPress={() => { setActiveTag(null); setVerifiedOnly(false); }}>
+                  <Text style={[styles.emptyText, { color: COLORS.gold, marginTop: 8, fontSize: SIZES.sm }]}>Clear filters</Text>
+                </TouchableOpacity>
+              )}
             </View>
           }
         />
@@ -725,13 +816,19 @@ const styles = StyleSheet.create({
   pollOptionVoted: { color: COLORS.white, fontWeight: '700' },
   pollPct: { color: COLORS.muted, fontSize: SIZES.sm, fontWeight: '600' },
   pollPctVoted: { color: COLORS.gold, fontWeight: '800' },
-  // Action bar
-  actionBar: { flexDirection: 'row', alignItems: 'center', gap: 18, paddingTop: 4, borderTopWidth: 1, borderTopColor: COLORS.cardBorder, marginTop: 2 },
+  // Action / vote bar
+  actionBar: { flexDirection: 'row', alignItems: 'center', gap: 16, paddingTop: 4, borderTopWidth: 1, borderTopColor: COLORS.cardBorder, marginTop: 2 },
   actionItem: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   actionText: { color: COLORS.muted, fontSize: SIZES.xs, fontWeight: '600' },
+  voteRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  voteBtn: { padding: 2 },
+  voteScore: { color: COLORS.muted, fontSize: SIZES.sm, fontWeight: '800', minWidth: 20, textAlign: 'center' },
+  voteScoreUp: { color: COLORS.gold },
+  voteScoreDown: { color: '#60A5FA' },
   fab: { position: 'absolute', bottom: 96, right: 20, width: 56, height: 56, borderRadius: 28, backgroundColor: COLORS.gold, alignItems: 'center', justifyContent: 'center', shadowColor: COLORS.gold, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.4, shadowRadius: 12, elevation: 8 },
   fabIcon: { fontSize: 32, fontWeight: '300', color: COLORS.bg, lineHeight: 36, marginTop: -2 },
   // Discussion title in card
+  link: { color: '#60A5FA', textDecorationLine: 'underline' },
   discussionTitle: { color: COLORS.white, fontSize: SIZES.lg, fontWeight: '800', lineHeight: 24 },
   // Discussion list view
   searchWrap: { flexDirection: 'row', alignItems: 'center', marginHorizontal: 14, marginTop: 8, marginBottom: 8, backgroundColor: COLORS.card, borderRadius: RADIUS.md, borderWidth: 1, borderColor: COLORS.cardBorder, paddingHorizontal: 12 },

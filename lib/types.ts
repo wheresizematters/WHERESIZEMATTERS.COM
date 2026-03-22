@@ -25,6 +25,8 @@ export interface Post {
   };
   poll_options?: PollOption[];
   comment_count: number;
+  score: number;
+  user_vote?: 0 | 1 | -1;
   created_at: string;
 }
 
@@ -57,6 +59,8 @@ export interface Conversation {
   user_2_id: string;
   last_message_at: string;
   last_message_preview: string | null;
+  user_1_last_read: string | null;
+  user_2_last_read: string | null;
   user1: ConversationUser;
   user2: ConversationUser;
 }
@@ -66,6 +70,23 @@ export interface Message {
   conversation_id: string;
   sender_id: string;
   content: string;
+  media_url: string | null;
+  media_type: 'image' | 'video' | null;
+  viewed_at: string | null;
+  created_at: string;
+}
+
+export interface Comment {
+  id: string;
+  post_id: string;
+  user_id: string;
+  content: string;
+  author: {
+    id: string;
+    username: string;
+    size_inches: number;
+    is_verified: boolean;
+  };
   created_at: string;
 }
 

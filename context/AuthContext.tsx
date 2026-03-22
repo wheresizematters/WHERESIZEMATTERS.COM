@@ -5,6 +5,7 @@ import * as WebBrowser from 'expo-web-browser';
 import * as Linking from 'expo-linking';
 import { supabase, SUPABASE_READY } from '@/lib/supabase';
 import { Profile } from '@/lib/types';
+import { registerPushToken } from '@/lib/notifications';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -25,7 +26,9 @@ interface AuthContextType {
   demoMode: boolean;
   signIn: (email: string, password: string) => Promise<{ error: string | null }>;
   signUp: (email: string, password: string, username: string, sizeInches: number) => Promise<{ error: string | null }>;
-  signInWithOAuth: (provider: 'google') => Promise<{ error: string | null }>;
+  signInWithOAuth: (provider: 'google' | 'x') => Promise<{ error: string | null }>;
+  signInWithPhone: (phone: string) => Promise<{ error: string | null }>;
+  verifyPhoneOtp: (phone: string, token: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
   updateProfile: (updates: Partial<Profile>) => Promise<void>;
 }
@@ -54,8 +57,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
-      if (session) fetchProfile(session.user.id);
-      else { setProfile(null); setLoading(false); }
+      if (session) {
+        fetchProfile(session.user.id);
+        // Auto-follow if user arrived via an invite link
+        if (typeof window !== 'undefined') {
+          const inviteFrom = sessionStorage.getItem('size_invite_from');
+          const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+          if (inviteFrom && UUID_REGEX.test(inviteFrom) && inviteFrom !== session.user.id) {
+            sessionStorage.removeItem('size_invite_from');
+            supabase.from('follows').upsert([
+              { follower_id: session.user.id, following_id: inviteFrom },
+              { follower_id: inviteFrom, following_id: session.user.id },
+            ]).then(() => {});
+          } else if (inviteFrom) {
+            // Invalid value — clear it
+            sessionStorage.removeItem('size_invite_from');
+          }
+        }
+      } else { setProfile(null); setLoading(false); }
     });
 
     return () => subscription.unsubscribe();
@@ -72,6 +91,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setProfile(data);
     }
     setLoading(false);
+    // Register for push notifications in the background — don't block auth flow
+    registerPushToken(userId).catch(() => {});
   }
 
   async function signIn(email: string, password: string) {
@@ -91,13 +112,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return { error: null };
   }
 
-  async function signInWithOAuth(provider: 'google') {
+  async function signInWithOAuth(provider: 'google' | 'x') {
     if (!SUPABASE_READY) return { error: 'Supabase not configured' };
 
     if (Platform.OS === 'web') {
       const { error } = await supabase.auth.signInWithOAuth({
         provider,
-        options: { redirectTo: `${window.location.origin}/` },
+        options: { redirectTo: 'https://www.wheresizematters.com/' },
       });
       return { error: error?.message ?? null };
     }
@@ -133,6 +154,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return { error: null };
   }
 
+  async function signInWithPhone(phone: string) {
+    if (!SUPABASE_READY) return { error: 'Supabase not configured' };
+    const { error } = await supabase.auth.signInWithOtp({ phone });
+    return { error: error?.message ?? null };
+  }
+
+  async function verifyPhoneOtp(phone: string, token: string) {
+    if (!SUPABASE_READY) return { error: 'Supabase not configured' };
+    const { error } = await supabase.auth.verifyOtp({ phone, token, type: 'sms' });
+    return { error: error?.message ?? null };
+  }
+
   async function signOut() {
     if (!SUPABASE_READY) return;
     await supabase.auth.signOut();
@@ -161,7 +194,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ session, profile, loading, demoMode: !SUPABASE_READY, signIn, signUp, signInWithOAuth, signOut, updateProfile }}>
+    <AuthContext.Provider value={{ session, profile, loading, demoMode: !SUPABASE_READY, signIn, signUp, signInWithOAuth, signInWithPhone, verifyPhoneOtp, signOut, updateProfile }}>
       {children}
     </AuthContext.Provider>
   );

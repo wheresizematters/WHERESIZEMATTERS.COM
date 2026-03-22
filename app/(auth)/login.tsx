@@ -9,9 +9,10 @@ import { useAuth } from '@/context/AuthContext';
 import { COLORS, SIZES, RADIUS } from '@/constants/theme';
 import AuthContainer from '@/components/AuthContainer';
 
-type OAuthProvider = 'google';
+type OAuthProvider = 'google' | 'x';
 
 const SOCIAL_PROVIDERS: { provider: OAuthProvider; label: string; icon: any; bg: string; color: string }[] = [
+  { provider: 'x', label: 'Continue with X', icon: 'logo-twitter', bg: '#000', color: '#fff' },
   { provider: 'google', label: 'Continue with Google', icon: 'logo-google', bg: '#fff', color: '#444' },
 ];
 
@@ -100,6 +101,7 @@ export default function LoginScreen() {
             value={password}
             onChangeText={setPassword}
             secureTextEntry
+            autoComplete="current-password"
           />
 
           {error ? <Text style={styles.error}>{error}</Text> : null}
