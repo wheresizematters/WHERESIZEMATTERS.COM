@@ -5,15 +5,18 @@ export const STRIPE_PUBLISHABLE_KEY = 'pk_test_51TDr6WRgeoqeXUgeg1i0V3Uz8NwJGGwy
 export const STRIPE_PRICE_MONTHLY = 'price_1TDrAIRgeoqeXUge2NFprjqt';
 export const STRIPE_PRICE_ANNUAL  = 'price_1TDrApRgeoqeXUgeFR8rUpD6';
 
-const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL ?? '';
-const SUPABASE_ANON_KEY = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? '';
-
 export async function stripeCheckout(priceId: string, userId: string, email: string) {
-  const res = await fetch(`${SUPABASE_URL}/functions/v1/stripe-checkout`, {
+  const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL ?? '';
+  const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? '';
+
+  if (!supabaseUrl || !supabaseAnonKey) throw new Error('Supabase not configured');
+
+  const res = await fetch(`${supabaseUrl}/functions/v1/stripe-checkout`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+      'Authorization': `Bearer ${supabaseAnonKey}`,
+      'apikey': supabaseAnonKey,
     },
     body: JSON.stringify({
       priceId,
@@ -23,9 +26,18 @@ export async function stripeCheckout(priceId: string, userId: string, email: str
       cancelUrl: window.location.href,
     }),
   });
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Checkout error (${res.status}): ${text}`);
+  }
+
   const data = await res.json();
-  if (data.url) window.location.href = data.url;
-  else throw new Error(data.error ?? 'Failed to create checkout session');
+  if (data.url) {
+    window.location.href = data.url;
+  } else {
+    throw new Error(data.error ?? 'No checkout URL returned');
+  }
 }
 
 // ── RevenueCat (native iOS/Android) ──────────────────────────────────────────
