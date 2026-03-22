@@ -101,6 +101,7 @@ export async function fetchLeaderboard(filter?: {
   let query = supabase
     .from('leaderboard')
     .select('rank, id, username, size_inches, is_verified, country, age_range')
+    .eq('is_verified', true)
     .limit(100);
 
   if (filter?.country) query = query.eq('country', filter.country);
@@ -256,7 +257,8 @@ export async function fetchTotalUserCount(): Promise<number> {
 
   const { count } = await supabase
     .from('profiles')
-    .select('*', { count: 'exact', head: true });
+    .select('*', { count: 'exact', head: true })
+    .eq('is_verified', true);
 
   return count ?? 0;
 }

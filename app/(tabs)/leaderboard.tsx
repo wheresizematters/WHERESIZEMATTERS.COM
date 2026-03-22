@@ -321,7 +321,7 @@ export default function LeaderboardScreen() {
             ItemSeparatorComponent={() => <View style={styles.sep} />}
             ListHeaderComponent={
               <Text style={styles.listHeader}>
-                {nearbyEntries.length} USERS WITHIN {activeRadius} MI
+                {nearbyEntries.length} VERIFIED NEARBY · {activeRadius} MI
               </Text>
             }
           />
@@ -418,7 +418,7 @@ export default function LeaderboardScreen() {
                 ))}
               </View>
             )}
-            <Text style={styles.listHeader}>TOP RANKED</Text>
+            <Text style={styles.listHeader}>TOP VERIFIED MEMBERS</Text>
           </>
         }
         ListFooterComponent={!isPremium && entries.length > 13 ? (
@@ -441,7 +441,13 @@ export default function LeaderboardScreen() {
             <Text style={styles.logo}>SIZE.</Text>
             <Text style={styles.title}>LEADERBOARD</Text>
           </View>
-          <Ionicons name="trophy" size={22} color={COLORS.gold} />
+          <View style={styles.headerRight}>
+            <View style={styles.verifiedOnlyBadge}>
+              <Ionicons name="checkmark-circle" size={11} color={COLORS.gold} />
+              <Text style={styles.verifiedOnlyText}>VERIFIED</Text>
+            </View>
+            <Ionicons name="trophy" size={22} color={COLORS.gold} />
+          </View>
         </View>
 
         {/* Mode toggle: Global / Nearby */}
@@ -473,6 +479,9 @@ export default function LeaderboardScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.bg },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 14 },
+  headerRight: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  verifiedOnlyBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: `${COLORS.gold}18`, borderWidth: 1, borderColor: `${COLORS.gold}40`, borderRadius: RADIUS.full, paddingHorizontal: 8, paddingVertical: 3 },
+  verifiedOnlyText: { color: COLORS.gold, fontSize: 9, fontWeight: '800', letterSpacing: 1 },
   headerTitle: { flexDirection: 'row', alignItems: 'baseline', gap: 8 },
   title: { fontSize: SIZES.xl, fontWeight: '900', color: COLORS.white, letterSpacing: 3 },
   logo: { fontSize: 28, fontWeight: '900', color: COLORS.gold, letterSpacing: 4 },
