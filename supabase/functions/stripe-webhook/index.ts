@@ -50,7 +50,7 @@ serve(async (req) => {
     switch (event.type) {
       case 'checkout.session.completed': {
         const session = event.data.object;
-        const userId = session.metadata?.supabase_user_id;
+        const userId = session.client_reference_id ?? session.metadata?.supabase_user_id;
         if (!userId) break;
 
         // Get subscription end date

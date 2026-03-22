@@ -5,39 +5,14 @@ export const STRIPE_PUBLISHABLE_KEY = 'pk_test_51TDr6WRgeoqeXUgeg1i0V3Uz8NwJGGwy
 export const STRIPE_PRICE_MONTHLY = 'price_1TDrAIRgeoqeXUge2NFprjqt';
 export const STRIPE_PRICE_ANNUAL  = 'price_1TDrApRgeoqeXUgeFR8rUpD6';
 
-export async function stripeCheckout(priceId: string, userId: string, email: string) {
-  const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL ?? '';
-  const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? '';
+// Stripe Payment Links — no backend needed
+const STRIPE_LINK_MONTHLY = 'https://buy.stripe.com/test_3cIfZj3TngiY3DjfQC9Zm01';
+const STRIPE_LINK_ANNUAL  = 'https://buy.stripe.com/test_3cI28tblPeaQa1H1ZM9Zm00';
 
-  if (!supabaseUrl || !supabaseAnonKey) throw new Error('Supabase not configured');
-
-  const res = await fetch(`${supabaseUrl}/functions/v1/stripe-checkout`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${supabaseAnonKey}`,
-      'apikey': supabaseAnonKey,
-    },
-    body: JSON.stringify({
-      priceId,
-      userId,
-      email,
-      successUrl: `${window.location.origin}/?subscribed=1`,
-      cancelUrl: window.location.href,
-    }),
-  });
-
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`Checkout error (${res.status}): ${text}`);
-  }
-
-  const data = await res.json();
-  if (data.url) {
-    window.location.href = data.url;
-  } else {
-    throw new Error(data.error ?? 'No checkout URL returned');
-  }
+export async function stripeCheckout(plan: 'monthly' | 'annual', userId: string) {
+  const base = plan === 'annual' ? STRIPE_LINK_ANNUAL : STRIPE_LINK_MONTHLY;
+  // client_reference_id lets the webhook identify the user
+  window.location.href = `${base}?client_reference_id=${userId}`;
 }
 
 // ── RevenueCat (native iOS/Android) ──────────────────────────────────────────

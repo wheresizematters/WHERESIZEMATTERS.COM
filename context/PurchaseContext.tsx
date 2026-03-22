@@ -2,8 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Platform } from 'react-native';
 import {
   initPurchases, getOfferings, purchasePackage,
-  restorePurchases, isPremiumUser,
-  stripeCheckout, STRIPE_PRICE_MONTHLY, STRIPE_PRICE_ANNUAL,
+  restorePurchases, isPremiumUser, stripeCheckout,
 } from '@/lib/purchases';
 import { useAuth } from './AuthContext';
 import { supabase } from '@/lib/supabase';
@@ -83,8 +82,7 @@ export function PurchaseProvider({ children }: { children: React.ReactNode }) {
 
   async function purchaseWeb(plan: 'monthly' | 'annual') {
     if (!session?.user.id) throw new Error('Not logged in');
-    const priceId = plan === 'annual' ? STRIPE_PRICE_ANNUAL : STRIPE_PRICE_MONTHLY;
-    await stripeCheckout(priceId, session.user.id, session.user.email ?? '');
+    await stripeCheckout(plan, session.user.id);
   }
 
   async function restore() {
