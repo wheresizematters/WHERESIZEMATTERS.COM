@@ -156,7 +156,7 @@ export default function LeaderboardScreen() {
   const [activeRadius, setActiveRadius] = useState(25);
   const [nearbyEntries, setNearbyEntries] = useState<NearbyEntry[]>([]);
   const [nearbyLoading, setNearbyLoading] = useState(false);
-  const [mapView, setMapView] = useState(false);
+  const [mapView, setMapView] = useState(true);
 
   const visibleEntries = isPremium ? entries.slice(3) : entries.slice(3, 10);
 
@@ -288,12 +288,6 @@ export default function LeaderboardScreen() {
           <View style={styles.loadingWrap}>
             <ActivityIndicator size="large" color={COLORS.gold} />
           </View>
-        ) : nearbyEntries.length === 0 ? (
-          <View style={styles.emptyNearby}>
-            <Ionicons name="people-outline" size={48} color={COLORS.muted} />
-            <Text style={styles.emptyNearbyText}>No users found within {activeRadius} miles.</Text>
-            <Text style={styles.emptyNearbySub}>Try a larger radius.</Text>
-          </View>
         ) : mapView ? (
           <View style={styles.mapWrap}>
             <NearbyMap
@@ -305,9 +299,15 @@ export default function LeaderboardScreen() {
             />
             <View style={styles.mapStats}>
               <Text style={styles.mapStatsText}>
-                {nearbyEntries.length} users within {activeRadius} mi
+                {nearbyEntries.length > 0 ? `${nearbyEntries.length} verified nearby · ${activeRadius} mi` : `No verified users within ${activeRadius} mi`}
               </Text>
             </View>
+          </View>
+        ) : nearbyEntries.length === 0 ? (
+          <View style={styles.emptyNearby}>
+            <Ionicons name="people-outline" size={48} color={COLORS.muted} />
+            <Text style={styles.emptyNearbyText}>No verified users within {activeRadius} miles.</Text>
+            <Text style={styles.emptyNearbySub}>Try a larger radius.</Text>
           </View>
         ) : (
           <FlatList
