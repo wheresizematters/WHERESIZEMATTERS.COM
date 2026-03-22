@@ -361,7 +361,7 @@ function CreatePostModal({ visible, onClose, onPost, isPremium }: {
   visible: boolean; onClose: () => void; onPost: () => void; isPremium: boolean;
 }) {
   const { session } = useAuth();
-  const [type, setType] = useState<'discussion' | 'poll'>('discussion');
+  const [type, setType] = useState<'post' | 'discussion' | 'poll'>('post');
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [pollOptions, setPollOptions] = useState(['', '', '', '']);
@@ -372,7 +372,7 @@ function CreatePostModal({ visible, onClose, onPost, isPremium }: {
 
   function reset() {
     setTitle(''); setContent(''); setMediaAsset(null); setSelectedTag(null);
-    setPollOptions(['', '', '', '']);
+    setPollOptions(['', '', '', '']); setType('post');
   }
 
   async function handlePickMedia() {
@@ -382,7 +382,9 @@ function CreatePostModal({ visible, onClose, onPost, isPremium }: {
 
   const canPost = type === 'poll'
     ? content.trim().length > 0
-    : content.trim().length > 0 && title.trim().length > 0;
+    : type === 'discussion'
+      ? content.trim().length > 0 && title.trim().length > 0
+      : content.trim().length > 0;
 
   async function handlePost() {
     if (!canPost || !session) return;
@@ -393,10 +395,11 @@ function CreatePostModal({ visible, onClose, onPost, isPremium }: {
       const url = await uploadMedia(session.user.id, postId, mediaAsset.uri, mediaAsset.mimeType ?? 'image/jpeg');
       if (url) mediaUrl = url;
     }
+    const dbType = type === 'poll' ? 'poll' : 'discussion';
     const opts = type === 'poll' ? pollOptions.filter(o => o.trim()) : undefined;
     const { error } = await createPost(
-      session.user.id, type, content.trim(), opts, mediaUrl,
-      selectedTag ?? undefined, title.trim() || undefined,
+      session.user.id, dbType, content.trim(), opts, mediaUrl,
+      selectedTag ?? undefined, type === 'discussion' ? title.trim() || undefined : undefined,
     );
     setLoading(false);
     if (error) {
@@ -405,6 +408,12 @@ function CreatePostModal({ visible, onClose, onPost, isPremium }: {
       reset(); onPost(); onClose();
     }
   }
+
+  const TYPE_OPTIONS = [
+    { key: 'post',       icon: 'create-outline',      label: 'Post' },
+    { key: 'discussion', icon: 'chatbubbles-outline',  label: 'Discussion' },
+    { key: 'poll',       icon: 'stats-chart-outline',  label: 'Poll' },
+  ] as const;
 
   return (
     <>
@@ -415,7 +424,9 @@ function CreatePostModal({ visible, onClose, onPost, isPremium }: {
             <TouchableOpacity onPress={() => { reset(); onClose(); }}>
               <Text style={styles.modalCancel}>Cancel</Text>
             </TouchableOpacity>
-            <Text style={styles.modalTitle}>New Post</Text>
+            <Text style={styles.modalTitle}>
+              {type === 'post' ? 'New Post' : type === 'discussion' ? 'New Discussion' : 'New Poll'}
+            </Text>
             <TouchableOpacity onPress={handlePost} disabled={loading || !canPost}>
               {loading
                 ? <ActivityIndicator size="small" color={COLORS.gold} />
@@ -431,22 +442,26 @@ function CreatePostModal({ visible, onClose, onPost, isPremium }: {
           <ScrollView style={styles.modalBody} keyboardShouldPersistTaps="handled">
             {/* Type selector */}
             <View style={styles.typeRow}>
-              {(['discussion', 'poll'] as const).map(t => (
+              {TYPE_OPTIONS.map(t => (
                 <TouchableOpacity
-                  key={t}
-                  style={[styles.typeBtn, type === t && styles.typeBtnActive]}
-                  onPress={() => setType(t)}
+                  key={t.key}
+                  style={[styles.typeBtn, type === t.key && styles.typeBtnActive]}
+                  onPress={() => setType(t.key)}
                 >
-                  <Ionicons
-                    name={t === 'discussion' ? 'chatbubbles-outline' : 'stats-chart-outline'}
-                    size={16} color={type === t ? COLORS.gold : COLORS.muted}
-                  />
-                  <Text style={[styles.typeBtnText, type === t && styles.typeBtnTextActive]}>
-                    {t === 'discussion' ? 'Discussion' : 'Poll'}
-                  </Text>
+                  <Ionicons name={t.icon} size={16} color={type === t.key ? COLORS.gold : COLORS.muted} />
+                  <Text style={[styles.typeBtnText, type === t.key && styles.typeBtnTextActive]}>{t.label}</Text>
                 </TouchableOpacity>
               ))}
             </View>
+
+            {/* Context hint */}
+            <Text style={styles.typeHint}>
+              {type === 'post'
+                ? 'Posts go directly to the feed. Quick thoughts, pics, or updates.'
+                : type === 'discussion'
+                  ? 'Discussions are threaded topics others can reply inside.'
+                  : 'Polls let the community vote on a question.'}
+            </Text>
 
             {/* Tag picker */}
             <Text style={styles.fieldLabel}>TAG <Text style={styles.fieldLabelOptional}>(optional)</Text></Text>
@@ -472,7 +487,7 @@ function CreatePostModal({ visible, onClose, onPost, isPremium }: {
                 <Text style={styles.fieldLabel}>TITLE <Text style={styles.fieldLabelRequired}>*</Text></Text>
                 <TextInput
                   style={styles.titleInput}
-                  placeholder="Give your post a title..."
+                  placeholder="Give your discussion a title..."
                   placeholderTextColor={COLORS.muted}
                   value={title}
                   onChangeText={setTitle}
@@ -484,11 +499,11 @@ function CreatePostModal({ visible, onClose, onPost, isPremium }: {
 
             {/* Body */}
             <Text style={styles.fieldLabel}>
-              {type === 'poll' ? 'QUESTION' : 'BODY'} <Text style={styles.fieldLabelRequired}>*</Text>
+              {type === 'poll' ? 'QUESTION' : type === 'discussion' ? 'BODY' : 'WHAT\'S ON YOUR MIND'} <Text style={styles.fieldLabelRequired}>*</Text>
             </Text>
             <TextInput
               style={styles.contentInput}
-              placeholder={type === 'poll' ? 'Ask a question...' : "What's on your mind?"}
+              placeholder={type === 'poll' ? 'Ask a question...' : type === 'discussion' ? 'Start the conversation...' : "Share something with the community..."}
               placeholderTextColor={COLORS.muted}
               value={content}
               onChangeText={setContent}
@@ -856,7 +871,8 @@ const styles = StyleSheet.create({
   modalPostBtnDisabled: { opacity: 0.35 },
   modalPostBtnText: { color: COLORS.bg, fontWeight: '800', fontSize: SIZES.sm },
   modalBody: { flex: 1, padding: 20 },
-  typeRow: { flexDirection: 'row', gap: 10, marginBottom: 20 },
+  typeRow: { flexDirection: 'row', gap: 8, marginBottom: 10 },
+  typeHint: { color: COLORS.muted, fontSize: SIZES.xs, marginBottom: 16, lineHeight: 18 },
   typeBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 12, borderRadius: RADIUS.md, borderWidth: 1, borderColor: COLORS.cardBorder, backgroundColor: COLORS.card },
   typeBtnActive: { borderColor: COLORS.gold, backgroundColor: `${COLORS.gold}15` },
   typeBtnText: { color: COLORS.muted, fontSize: SIZES.md, fontWeight: '600' },
