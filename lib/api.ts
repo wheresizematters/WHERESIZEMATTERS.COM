@@ -257,8 +257,7 @@ export async function fetchTotalUserCount(): Promise<number> {
 
   const { count } = await supabase
     .from('profiles')
-    .select('*', { count: 'exact', head: true })
-    .eq('is_verified', true);
+    .select('*', { count: 'exact', head: true });
 
   return count ?? 0;
 }

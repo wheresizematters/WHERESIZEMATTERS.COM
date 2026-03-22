@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, SafeAreaView, TouchableOpacity,
-  ScrollView, ActivityIndicator, Alert, Platform,
+  ScrollView, ActivityIndicator, Alert, Platform, Image,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -16,9 +16,7 @@ import { useAuth } from '@/context/AuthContext';
 import { Profile, Post } from '@/lib/types';
 
 const TAG_COLORS: Record<string, string> = {
-  size: '#A78BFA',
-  content: '#60A5FA',
-  viral: '#F87171',
+  size: '#A78BFA', content: '#60A5FA', viral: '#F87171',
 };
 const TAG_CATEGORIES: Record<string, string> = {
   Hung: 'size', Massive: 'size', 'Above Average': 'size', Average: 'size',
@@ -32,19 +30,19 @@ const TAG_CATEGORIES: Record<string, string> = {
 function timeAgo(ts: string): string {
   const s = Math.floor((Date.now() - new Date(ts).getTime()) / 1000);
   if (s < 60) return 'just now';
-  const m = Math.floor(s / 60);
-  if (m < 60) return `${m}m`;
-  const h = Math.floor(m / 60);
-  if (h < 24) return `${h}h`;
-  const d = Math.floor(h / 24);
-  if (d < 7) return `${d}d`;
+  const m = Math.floor(s / 60); if (m < 60) return `${m}m`;
+  const h = Math.floor(m / 60); if (h < 24) return `${h}h`;
+  const d = Math.floor(h / 24); if (d < 7) return `${d}d`;
   return new Date(ts).toLocaleDateString([], { month: 'short', day: 'numeric' });
+}
+
+function joinedDate(ts: string): string {
+  return new Date(ts).toLocaleDateString([], { month: 'long', year: 'numeric' });
 }
 
 function PostItem({ post }: { post: Post }) {
   const totalVotes = post.poll_options?.reduce((s, o) => s + o.vote_count, 0) ?? 0;
   const tagColor = post.tag ? (TAG_COLORS[TAG_CATEGORIES[post.tag]] ?? COLORS.muted) : null;
-
   return (
     <View style={styles.postItem}>
       <View style={styles.postItemTop}>
@@ -142,7 +140,7 @@ export default function PublicProfileScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingWrap}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backBtnAbs}>
             <Ionicons name="chevron-back" size={22} color={COLORS.white} />
           </TouchableOpacity>
           <Text style={{ color: COLORS.muted, marginTop: 20 }}>User not found.</Text>
@@ -153,122 +151,136 @@ export default function PublicProfileScreen() {
 
   const size = profile.size_inches;
   const tier = getSizeTier(size);
-  const percentile = rank && totalUsers ? Math.round((1 - rank / totalUsers) * 100) : null;
+  const percentile = rank && totalUsers
+    ? Math.max(0, Math.min(100, Math.round((1 - rank / totalUsers) * 100)))
+    : null;
 
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.inner}>
 
-        {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-            <Ionicons name="chevron-back" size={22} color={COLORS.white} />
-          </TouchableOpacity>
-          <Text style={styles.title}>PROFILE</Text>
-          <View style={{ width: 40 }} />
+        {/* Header banner */}
+        <View style={styles.headerBanner}>
+          {profile.header_url
+            ? <Image source={{ uri: profile.header_url }} style={styles.headerImg} resizeMode="cover" />
+            : <LinearGradient colors={['#1A0A00', '#0A0A0A']} style={styles.headerPlaceholder} />
+          }
+          {/* Back button */}
+          <View style={styles.topBar}>
+            <TouchableOpacity onPress={() => router.back()} style={styles.topBarBtn}>
+              <Ionicons name="chevron-back" size={20} color="#fff" />
+            </TouchableOpacity>
+          </View>
         </View>
 
-        {/* Avatar */}
-        <View style={styles.avatarSection}>
-          <View style={[styles.avatar, { borderColor: tier.color }]}>
-            <Text style={styles.avatarText}>{profile.username.charAt(0).toUpperCase()}</Text>
+        {/* Avatar row */}
+        <View style={styles.avatarRow}>
+          <View style={[styles.avatarWrap, { borderColor: tier.color }]}>
+            {profile.avatar_url
+              ? <Image source={{ uri: profile.avatar_url }} style={styles.avatarImg} />
+              : <Text style={styles.avatarInitial}>{profile.username.charAt(0).toUpperCase()}</Text>
+            }
           </View>
+
+          {/* Action buttons */}
+          <View style={styles.actionBtns}>
+            {isOwnProfile ? (
+              <TouchableOpacity style={styles.outlineBtn} onPress={() => router.push('/profile' as any)}>
+                <Text style={styles.outlineBtnText}>Your Profile</Text>
+              </TouchableOpacity>
+            ) : session ? (
+              <TouchableOpacity
+                style={styles.messageBtn}
+                onPress={handleMessage}
+                disabled={messaging}
+                activeOpacity={0.85}
+              >
+                {messaging
+                  ? <ActivityIndicator size="small" color={COLORS.bg} />
+                  : <><Ionicons name="chatbubble-outline" size={15} color={COLORS.bg} /><Text style={styles.messageBtnText}>Message</Text></>
+                }
+              </TouchableOpacity>
+            ) : null}
+          </View>
+        </View>
+
+        {/* Name + bio */}
+        <View style={styles.bioSection}>
           <View style={styles.nameRow}>
             <Text style={styles.username}>@{profile.username}</Text>
             {profile.is_verified && (
-              <View style={styles.verifiedBadge}>
-                <Text style={styles.verifiedText}>✓</Text>
-              </View>
+              <View style={styles.verifiedBadge}><Text style={styles.verifiedText}>✓</Text></View>
             )}
+            <View style={[styles.tierPill, { borderColor: tier.color }]}>
+              <Text style={styles.tierEmoji}>{tier.emoji}</Text>
+              <Text style={[styles.tierLabel, { color: tier.color }]}>{tier.label}</Text>
+            </View>
           </View>
-          {isOwnProfile && <Text style={styles.ownHint}>This is your profile</Text>}
+
+          {profile.bio ? <Text style={styles.bioText}>{profile.bio}</Text> : null}
+
+          {profile.website ? (
+            <TouchableOpacity onPress={() => {
+              const u = profile.website!.startsWith('http') ? profile.website! : `https://${profile.website}`;
+              if (Platform.OS === 'web') window.open(u, '_blank');
+            }}>
+              <View style={styles.metaRow}>
+                <Ionicons name="link-outline" size={14} color={COLORS.gold} />
+                <Text style={styles.metaLink}>{profile.website}</Text>
+              </View>
+            </TouchableOpacity>
+          ) : null}
+
+          <View style={styles.metaRowGroup}>
+            {profile.country ? (
+              <View style={styles.metaRow}>
+                <Ionicons name="location-outline" size={14} color={COLORS.muted} />
+                <Text style={styles.metaText}>{profile.country}</Text>
+              </View>
+            ) : null}
+            <View style={styles.metaRow}>
+              <Ionicons name="calendar-outline" size={14} color={COLORS.muted} />
+              <Text style={styles.metaText}>Joined {joinedDate(profile.created_at)}</Text>
+            </View>
+          </View>
         </View>
 
         {/* Size card */}
         <LinearGradient
           colors={['#1A1200', '#111111', '#0A0A0A']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
+          start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
           style={styles.sizeCard}
         >
           <LinearGradient
             colors={['rgba(232,80,10,0.21)', 'rgba(201,168,76,0.09)', 'rgba(191,90,242,0.06)']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
+            start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
             style={styles.sizeCardInner}
           >
             <Text style={styles.sizeCardLabel}>SIZE</Text>
             <LinearGradient
               colors={['#FF6B2B', '#E8500A', '#C9A84C', '#BF5AF2']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
+              start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
               style={styles.sizeDisplayGrad}
             >
               <Text style={styles.sizeDisplay}>{size.toFixed(1)}"</Text>
             </LinearGradient>
-            <View style={[styles.tierBadge, { borderColor: tier.color }]}>
-              <Text style={styles.tierEmoji}>{tier.emoji}</Text>
-              <Text style={[styles.tierText, { color: tier.color }]}>{tier.label}</Text>
-            </View>
           </LinearGradient>
         </LinearGradient>
 
         {/* Stats grid */}
         <View style={styles.statsGrid}>
-          <View style={styles.statCell}>
-            <Text style={styles.statVal}>{rank ? `#${rank.toLocaleString()}` : '—'}</Text>
-            <Text style={styles.statLbl}>Global Rank</Text>
-          </View>
-          <View style={[styles.statCell, styles.statCellBorder]}>
-            <Text style={styles.statVal}>{percentile !== null ? `${percentile}th` : '—'}</Text>
-            <Text style={styles.statLbl}>Percentile</Text>
-          </View>
-          <View style={[styles.statCell, styles.statCellTop]}>
-            <Text style={styles.statVal}>
-              {size >= WORLD_AVERAGE
-                ? `+${(size - WORLD_AVERAGE).toFixed(1)}"`
-                : `-${(WORLD_AVERAGE - size).toFixed(1)}"`}
-            </Text>
-            <Text style={styles.statLbl}>vs Avg</Text>
-          </View>
-          <View style={[styles.statCell, styles.statCellBorder, styles.statCellTop]}>
-            <Text style={styles.statVal}>{postCount}</Text>
-            <Text style={styles.statLbl}>Posts</Text>
-          </View>
+          {[
+            { val: rank ? `#${rank.toLocaleString()}` : '—', lbl: 'Global Rank' },
+            { val: percentile !== null ? `${percentile}th` : '—', lbl: 'Percentile' },
+            { val: size >= WORLD_AVERAGE ? `+${(size - WORLD_AVERAGE).toFixed(1)}"` : `-${(WORLD_AVERAGE - size).toFixed(1)}"`, lbl: 'vs Avg' },
+            { val: String(postCount), lbl: 'Posts' },
+          ].map((s, i) => (
+            <View key={i} style={[styles.statCell, i % 2 !== 0 && styles.statCellBorder, i >= 2 && styles.statCellTop]}>
+              <Text style={styles.statVal}>{s.val}</Text>
+              <Text style={styles.statLbl}>{s.lbl}</Text>
+            </View>
+          ))}
         </View>
-
-        {/* Country / Age Range */}
-        {(profile.country || profile.age_range) && (
-          <View style={styles.infoSection}>
-            {profile.country && (
-              <View style={styles.infoRow}>
-                <Ionicons name="location-outline" size={16} color={COLORS.muted} />
-                <Text style={styles.infoLabel}>Country</Text>
-                <Text style={styles.infoValue}>{profile.country}</Text>
-              </View>
-            )}
-            {profile.age_range && (
-              <View style={[styles.infoRow, { borderBottomWidth: 0 }]}>
-                <Ionicons name="calendar-outline" size={16} color={COLORS.muted} />
-                <Text style={styles.infoLabel}>Age Range</Text>
-                <Text style={styles.infoValue}>{profile.age_range}</Text>
-              </View>
-            )}
-          </View>
-        )}
-
-        {/* Message button — hide for own profile */}
-        {!isOwnProfile && session && (
-          <TouchableOpacity style={styles.messageBtn} onPress={handleMessage} disabled={messaging} activeOpacity={0.85}>
-            {messaging
-              ? <ActivityIndicator size="small" color={COLORS.bg} />
-              : <>
-                  <Ionicons name="chatbubble-outline" size={18} color={COLORS.bg} />
-                  <Text style={styles.messageBtnText}>Message</Text>
-                </>
-            }
-          </TouchableOpacity>
-        )}
 
         {/* Posts */}
         <View style={styles.tabSection}>
@@ -298,37 +310,59 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.bg },
   inner: { paddingBottom: 100 },
   loadingWrap: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 14 },
-  backBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
-  title: { fontSize: SIZES.xl, fontWeight: '900', color: COLORS.white, letterSpacing: 3 },
-  avatarSection: { alignItems: 'center', paddingVertical: 20, gap: 8 },
-  avatar: { width: 80, height: 80, borderRadius: 40, backgroundColor: COLORS.card, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
-  avatarText: { color: COLORS.white, fontSize: SIZES.xxxl, fontWeight: '900' },
-  nameRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  username: { color: COLORS.white, fontSize: SIZES.xl, fontWeight: '800' },
+  backBtnAbs: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
+
+  // Header banner
+  headerBanner: { height: 140, position: 'relative', overflow: 'hidden' },
+  headerImg: { width: '100%', height: '100%' },
+  headerPlaceholder: { width: '100%', height: '100%' },
+  topBar: { position: 'absolute', top: 12, left: 14 },
+  topBarBtn: { width: 34, height: 34, borderRadius: 17, backgroundColor: 'rgba(0,0,0,0.55)', alignItems: 'center', justifyContent: 'center' },
+
+  // Avatar row
+  avatarRow: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', paddingHorizontal: 16, marginTop: -36, marginBottom: 12 },
+  avatarWrap: { width: 80, height: 80, borderRadius: 40, borderWidth: 3, backgroundColor: COLORS.card, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  avatarImg: { width: 80, height: 80, borderRadius: 40 },
+  avatarInitial: { color: COLORS.white, fontSize: SIZES.xxxl, fontWeight: '900' },
+
+  // Action buttons
+  actionBtns: { flexDirection: 'row', gap: 10, alignItems: 'center' },
+  messageBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: COLORS.gold, borderRadius: RADIUS.full, paddingHorizontal: 16, paddingVertical: 9 },
+  messageBtnText: { color: COLORS.bg, fontWeight: '800', fontSize: SIZES.sm },
+  outlineBtn: { borderWidth: 1, borderColor: COLORS.cardBorder, borderRadius: RADIUS.full, paddingHorizontal: 16, paddingVertical: 9 },
+  outlineBtnText: { color: COLORS.white, fontWeight: '700', fontSize: SIZES.sm },
+
+  // Bio
+  bioSection: { paddingHorizontal: 16, marginBottom: 16, gap: 8 },
+  nameRow: { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
+  username: { color: COLORS.white, fontSize: SIZES.xl, fontWeight: '900' },
   verifiedBadge: { backgroundColor: COLORS.gold, borderRadius: RADIUS.full, width: 20, height: 20, alignItems: 'center', justifyContent: 'center' },
   verifiedText: { color: COLORS.bg, fontSize: 11, fontWeight: '900' },
-  ownHint: { color: COLORS.muted, fontSize: SIZES.sm, marginTop: 2 },
+  tierPill: { flexDirection: 'row', alignItems: 'center', gap: 4, borderWidth: 1, borderRadius: RADIUS.full, paddingHorizontal: 10, paddingVertical: 3 },
+  tierEmoji: { fontSize: 12 },
+  tierLabel: { fontSize: 10, fontWeight: '700', letterSpacing: 0.5 },
+  bioText: { color: COLORS.offWhite, fontSize: SIZES.md, lineHeight: 22 },
+  metaRowGroup: { flexDirection: 'row', flexWrap: 'wrap', gap: 14 },
+  metaRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  metaText: { color: COLORS.muted, fontSize: SIZES.sm },
+  metaLink: { color: COLORS.gold, fontSize: SIZES.sm, fontWeight: '600' },
+
+  // Size card
   sizeCard: { marginHorizontal: 16, borderRadius: RADIUS.xl, borderWidth: 1, borderColor: 'rgba(232,80,10,0.3)', overflow: 'hidden', marginBottom: 16 },
   sizeCardInner: { padding: 24, alignItems: 'center', gap: 12 },
   sizeCardLabel: { color: COLORS.gold, fontSize: 9, letterSpacing: 3, textTransform: 'uppercase', fontWeight: '800', alignSelf: 'flex-start' },
   sizeDisplayGrad: { paddingHorizontal: 28, paddingVertical: 14, borderRadius: RADIUS.full, alignItems: 'center', justifyContent: 'center' },
   sizeDisplay: { fontSize: 56, fontWeight: '900', lineHeight: 64, color: COLORS.white, textShadowColor: 'rgba(0,0,0,0.4)', textShadowOffset: { width: 0, height: 2 }, textShadowRadius: 6 },
-  tierBadge: { flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1, borderRadius: RADIUS.full, paddingHorizontal: 14, paddingVertical: 6 },
-  tierEmoji: { fontSize: 16 },
-  tierText: { fontSize: SIZES.sm, fontWeight: '700', letterSpacing: 1 },
+
+  // Stats
   statsGrid: { flexDirection: 'row', flexWrap: 'wrap', marginHorizontal: 16, backgroundColor: COLORS.card, borderRadius: RADIUS.lg, borderWidth: 1, borderColor: COLORS.cardBorder, marginBottom: 16, overflow: 'hidden' },
   statCell: { width: '50%', padding: 16, alignItems: 'center' },
   statCellBorder: { borderLeftWidth: 1, borderLeftColor: COLORS.cardBorder },
   statCellTop: { borderTopWidth: 1, borderTopColor: COLORS.cardBorder },
   statVal: { color: COLORS.gold, fontSize: SIZES.xl, fontWeight: '900' },
   statLbl: { color: COLORS.muted, fontSize: SIZES.xs, marginTop: 2, letterSpacing: 0.5 },
-  infoSection: { marginHorizontal: 16, backgroundColor: COLORS.card, borderRadius: RADIUS.lg, borderWidth: 1, borderColor: COLORS.cardBorder, overflow: 'hidden', marginBottom: 16 },
-  infoRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: COLORS.cardBorder },
-  infoLabel: { color: COLORS.muted, fontSize: SIZES.md, flex: 1 },
-  infoValue: { color: COLORS.white, fontSize: SIZES.md, fontWeight: '600' },
-  messageBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginHorizontal: 16, marginBottom: 20, paddingVertical: 16, backgroundColor: COLORS.gold, borderRadius: RADIUS.md },
-  messageBtnText: { color: COLORS.bg, fontWeight: '800', fontSize: SIZES.md, letterSpacing: 1 },
+
+  // Posts
   tabSection: { marginTop: 8 },
   tabHeader: { paddingHorizontal: 16, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: COLORS.cardBorder },
   tabHeaderText: { color: COLORS.muted, fontSize: 10, fontWeight: '800', letterSpacing: 2 },

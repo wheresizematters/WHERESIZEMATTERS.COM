@@ -562,6 +562,7 @@ function CreatePostModal({ visible, onClose, onPost, isPremium }: {
 }
 
 export default function FeedScreen() {
+  const router = useRouter();
   const { session } = useAuth();
   const { isPremium } = usePurchase();
   const [posts, setPosts] = useState<Post[]>([]);
@@ -615,7 +616,7 @@ export default function FeedScreen() {
       {!(Platform.OS === 'web' && typeof window !== 'undefined' && window.innerWidth >= 768) && (
       <View style={styles.header}>
         <Text style={styles.logo}>SIZE.</Text>
-        <TouchableOpacity onPress={() => Alert.alert('Notifications', 'Push notifications coming soon.')}>
+        <TouchableOpacity onPress={() => router.push('/settings' as any)}>
           <Ionicons name="notifications-outline" size={24} color={COLORS.muted} />
         </TouchableOpacity>
       </View>

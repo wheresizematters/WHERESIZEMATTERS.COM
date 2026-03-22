@@ -21,7 +21,9 @@ export default function LinkPreview({ url }: { url: string }) {
     // Only fetch previews for http/https URLs
     if (!isSafeUrl(url)) { setLoading(false); return; }
     let cancelled = false;
-    fetch(`https://api.microlink.io/?url=${encodeURIComponent(url)}`)
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000);
+    fetch(`https://api.microlink.io/?url=${encodeURIComponent(url)}`, { signal: controller.signal })
       .then(r => r.json())
       .then(res => {
         if (cancelled) return;
@@ -35,8 +37,8 @@ export default function LinkPreview({ url }: { url: string }) {
         }
       })
       .catch(() => {})
-      .finally(() => { if (!cancelled) setLoading(false); });
-    return () => { cancelled = true; };
+      .finally(() => { clearTimeout(timeout); if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; controller.abort(); clearTimeout(timeout); };
   }, [url]);
 
   if (loading) {

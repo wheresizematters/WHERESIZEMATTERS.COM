@@ -20,6 +20,7 @@ export interface Post {
   title?: string | null;
   content: string;
   tag?: string | null;
+  media_url?: string | null;
   author: {
     id: string;
     username: string;
