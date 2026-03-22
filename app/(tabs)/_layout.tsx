@@ -6,7 +6,7 @@ import { COLORS } from '@/constants/theme';
 import WebNavbar from '@/components/WebNavbar';
 import { useUnread } from '@/context/UnreadContext';
 
-type IconName = 'home' | 'home-outline' | 'trophy' | 'trophy-outline' | 'git-compare' | 'git-compare-outline' | 'chatbubbles' | 'chatbubbles-outline' | 'person' | 'person-outline';
+type IconName = 'home' | 'home-outline' | 'trophy' | 'trophy-outline' | 'flash' | 'flash-outline' | 'chatbubbles' | 'chatbubbles-outline' | 'person' | 'person-outline' | 'git-compare' | 'git-compare-outline';
 
 function TabIcon({ name, focused, label, badge }: { name: IconName; focused: boolean; label: string; badge?: boolean }) {
   return (
@@ -16,6 +16,15 @@ function TabIcon({ name, focused, label, badge }: { name: IconName; focused: boo
         {badge && <View style={styles.badgeDot} />}
       </View>
       <Text style={[styles.tabLabel, focused && styles.tabLabelActive]} numberOfLines={1}>{label}</Text>
+    </View>
+  );
+}
+
+function EarnTabIcon({ focused }: { focused: boolean }) {
+  return (
+    <View style={[styles.earnBtn, focused && styles.earnBtnActive]}>
+      <Text style={styles.earnEmoji}>🪙</Text>
+      <Text style={[styles.earnLabel, focused && styles.earnLabelActive]}>EARN</Text>
     </View>
   );
 }
@@ -44,17 +53,19 @@ export default function TabLayout() {
           options={{ tabBarIcon: ({ focused }) => <TabIcon name="trophy" focused={focused} label="Ranks" /> }}
         />
         <Tabs.Screen
-          name="compare"
-          options={{ tabBarIcon: ({ focused }) => <TabIcon name="git-compare" focused={focused} label="Compare" /> }}
+          name="earn"
+          options={{ tabBarIcon: ({ focused }) => <EarnTabIcon focused={focused} /> }}
         />
         <Tabs.Screen
           name="messages"
-          options={{ tabBarIcon: ({ focused }) => <TabIcon name="chatbubbles" focused={focused} label="Messages" badge={hasUnread} /> }}
+          options={{ tabBarIcon: ({ focused }) => <TabIcon name="chatbubbles" focused={focused} label="DMs" badge={hasUnread} /> }}
         />
         <Tabs.Screen
           name="profile"
           options={{ tabBarIcon: ({ focused }) => <TabIcon name="person" focused={focused} label="Profile" /> }}
         />
+        {/* Hidden from tab bar but still routable */}
+        <Tabs.Screen name="compare" options={{ href: null }} />
         <Tabs.Screen name="explore" options={{ href: null }} />
       </Tabs>
     </>
@@ -78,4 +89,11 @@ const styles = StyleSheet.create({
   badgeDot: { position: 'absolute', top: -1, right: -4, width: 8, height: 8, borderRadius: 4, backgroundColor: COLORS.gold, borderWidth: 1.5, borderColor: '#111111' },
   tabLabel: { fontSize: 9, color: COLORS.muted, fontWeight: '600', letterSpacing: 0.3 },
   tabLabelActive: { color: COLORS.gold },
+
+  // EARN center button
+  earnBtn: { alignItems: 'center', justifyContent: 'center', width: 56, height: 44, borderRadius: 16, backgroundColor: '#1A1200', borderWidth: 1, borderColor: '#333', gap: 1 },
+  earnBtnActive: { backgroundColor: `${COLORS.gold}20`, borderColor: `${COLORS.gold}60` },
+  earnEmoji: { fontSize: 20 },
+  earnLabel: { fontSize: 8, color: COLORS.muted, fontWeight: '800', letterSpacing: 1 },
+  earnLabelActive: { color: COLORS.gold },
 });
