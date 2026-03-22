@@ -31,6 +31,7 @@ interface AuthContextType {
   verifyPhoneOtp: (phone: string, token: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
   updateProfile: (updates: Partial<Profile>) => Promise<void>;
+  refreshProfile: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -193,8 +194,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
+  function refreshProfile() {
+    if (session?.user.id) fetchProfile(session.user.id);
+  }
+
   return (
-    <AuthContext.Provider value={{ session, profile, loading, demoMode: !SUPABASE_READY, signIn, signUp, signInWithOAuth, signInWithPhone, verifyPhoneOtp, signOut, updateProfile }}>
+    <AuthContext.Provider value={{ session, profile, loading, demoMode: !SUPABASE_READY, signIn, signUp, signInWithOAuth, signInWithPhone, verifyPhoneOtp, signOut, updateProfile, refreshProfile }}>
       {children}
     </AuthContext.Provider>
   );

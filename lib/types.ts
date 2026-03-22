@@ -7,6 +7,9 @@ export interface Profile {
   country?: string;
   age_range?: string;
   bio?: string;
+  website?: string;
+  avatar_url?: string;
+  header_url?: string;
   rank?: number;
   created_at: string;
 }

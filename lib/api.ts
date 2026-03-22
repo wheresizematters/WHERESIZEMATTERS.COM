@@ -160,7 +160,7 @@ export async function fetchPublicProfile(userId: string): Promise<Profile | null
 
   const { data } = await supabase
     .from('profiles')
-    .select('id, username, size_inches, is_verified, has_set_size, country, age_range, bio, created_at')
+    .select('id, username, size_inches, is_verified, has_set_size, country, age_range, bio, website, avatar_url, header_url, created_at')
     .eq('id', userId)
     .single();
 
