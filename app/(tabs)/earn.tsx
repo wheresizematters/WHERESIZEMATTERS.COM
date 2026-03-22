@@ -56,7 +56,7 @@ export default function EarnScreen() {
             <Text style={styles.title}>EARN</Text>
           </View>
           <View style={styles.coinBadge}>
-            <Text style={styles.coinEmoji}>🪙</Text>
+            <Text style={styles.coinEmoji}>💰</Text>
             {loading
               ? <ActivityIndicator size="small" color={COLORS.gold} />
               : <Text style={styles.coinCount}>{coins.toLocaleString()}</Text>
@@ -82,7 +82,7 @@ export default function EarnScreen() {
             >
               <Text style={styles.balanceLabel}>YOUR $SIZE BALANCE</Text>
               <View style={styles.balanceRow}>
-                <Text style={styles.coinBig}>🪙</Text>
+                <Text style={styles.coinBig}>💰</Text>
                 <Text style={styles.balanceAmount}>{loading ? '—' : coins.toLocaleString()}</Text>
               </View>
               <Text style={styles.balanceSub}>$SIZE Coins · Earn more below</Text>
@@ -119,7 +119,7 @@ export default function EarnScreen() {
                   </View>
                   <View style={styles.actionCoins}>
                     <Text style={styles.actionCoinText}>+{action.coins}</Text>
-                    <Text style={styles.actionCoinSub}>🪙</Text>
+                    <Text style={styles.actionCoinSub}>💰</Text>
                   </View>
                 </View>
               ))}
@@ -142,7 +142,7 @@ export default function EarnScreen() {
                     <Text style={[styles.actionCoinText, { color: coins >= reward.cost ? COLORS.gold : COLORS.muted }]}>
                       {reward.cost.toLocaleString()}
                     </Text>
-                    <Text style={styles.actionCoinSub}>🪙</Text>
+                    <Text style={styles.actionCoinSub}>💰</Text>
                   </View>
                 </TouchableOpacity>
               ))}

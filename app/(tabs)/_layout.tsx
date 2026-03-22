@@ -23,7 +23,9 @@ function TabIcon({ name, focused, label, badge }: { name: IconName; focused: boo
 function EarnTabIcon({ focused }: { focused: boolean }) {
   return (
     <View style={[styles.earnBtn, focused && styles.earnBtnActive]}>
-      <Text style={styles.earnEmoji}>🪙</Text>
+      <View style={[styles.goldCoin, focused && styles.goldCoinActive]}>
+        <Text style={styles.goldCoinText}>$</Text>
+      </View>
       <Text style={[styles.earnLabel, focused && styles.earnLabelActive]}>EARN</Text>
     </View>
   );
@@ -93,7 +95,9 @@ const styles = StyleSheet.create({
   // EARN center button
   earnBtn: { alignItems: 'center', justifyContent: 'center', width: 56, height: 44, borderRadius: 16, backgroundColor: '#1A1200', borderWidth: 1, borderColor: '#333', gap: 1 },
   earnBtnActive: { backgroundColor: `${COLORS.gold}20`, borderColor: `${COLORS.gold}60` },
-  earnEmoji: { fontSize: 20 },
+  goldCoin: { width: 22, height: 22, borderRadius: 11, backgroundColor: '#8B7355', alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: '#6B5A3E' },
+  goldCoinActive: { backgroundColor: COLORS.gold, borderColor: '#A88430' },
+  goldCoinText: { color: '#fff', fontSize: 12, fontWeight: '900', lineHeight: 14 },
   earnLabel: { fontSize: 8, color: COLORS.muted, fontWeight: '800', letterSpacing: 1 },
   earnLabelActive: { color: COLORS.gold },
 });
