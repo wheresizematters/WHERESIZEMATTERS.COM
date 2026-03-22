@@ -10,7 +10,7 @@ export async function fetchPosts(userId?: string): Promise<Post[]> {
   const { data, error } = await supabase
     .from('posts')
     .select(`
-      id, type, title, content, tag, comment_count, score, created_at,
+      id, type, title, content, tag, media_url, media_type, comment_count, score, created_at,
       author:profiles(id, username, size_inches, is_verified),
       poll_options(id, text, vote_count)
     `)
@@ -185,7 +185,7 @@ export async function fetchPost(postId: string): Promise<Post | null> {
   const { data } = await supabase
     .from('posts')
     .select(`
-      id, type, title, content, tag, comment_count, score, created_at,
+      id, type, title, content, tag, media_url, media_type, comment_count, score, created_at,
       author:profiles(id, username, size_inches, is_verified),
       poll_options(id, text, vote_count)
     `)
@@ -230,7 +230,7 @@ export async function fetchUserPosts(userId: string): Promise<Post[]> {
   const { data } = await supabase
     .from('posts')
     .select(`
-      id, type, title, content, tag, comment_count, created_at,
+      id, type, title, content, tag, media_url, media_type, comment_count, score, created_at,
       author:profiles(id, username, size_inches, is_verified),
       poll_options(id, text, vote_count)
     `)

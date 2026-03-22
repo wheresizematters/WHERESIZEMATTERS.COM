@@ -444,7 +444,7 @@ export default function ProfileScreen() {
             <Ionicons name="person-add-outline" size={18} color={COLORS.gold} />
             <View style={{ flex: 1 }}>
               <Text style={styles.inviteBtnLabel}>Invite Friends</Text>
-              <Text style={styles.inviteBtnSub}>Share your invite link & earn 250 🪙</Text>
+              <Text style={styles.inviteBtnSub}>Share your invite link & earn 250 $SIZE coins</Text>
             </View>
             <Ionicons name="share-outline" size={18} color={COLORS.gold} />
           </TouchableOpacity>

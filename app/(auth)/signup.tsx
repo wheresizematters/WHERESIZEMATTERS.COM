@@ -70,7 +70,7 @@ export default function SignupScreen() {
     }
     setLoading(true);
     setError('');
-    const { error } = await signUp(email.trim(), password, username.trim(), inches);
+    const { error } = await signUp(email.trim(), password, username.trim(), inches, ageRange || undefined);
     if (error) setError(error);
     setLoading(false);
   }
