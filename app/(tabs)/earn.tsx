@@ -13,18 +13,18 @@ import PageContainer from '@/components/PageContainer';
 import PaywallModal from '@/components/PaywallModal';
 
 const EARN_ACTIONS = [
-  { icon: 'shield-checkmark', label: 'Get Verified',       coins: 500,  desc: 'Verify your size to earn coins',          key: 'is_verified' },
-  { icon: 'people',           label: 'Refer a Friend',     coins: 250,  desc: 'Earn 250 coins per friend who joins',     key: 'referral' },
-  { icon: 'create',           label: 'Post to Feed',       coins: 10,   desc: 'Earn 10 coins per post (daily max)',      key: 'post' },
-  { icon: 'chatbubbles',      label: 'Send a Message',     coins: 5,    desc: 'Earn 5 coins per conversation started',  key: 'message' },
-  { icon: 'star',             label: 'Get Upvoted',        coins: 15,   desc: 'Earn 15 coins when your post is upvoted',key: 'upvote' },
-  { icon: 'calendar',         label: 'Daily Login',        coins: 20,   desc: 'Earn 20 coins just for showing up',      key: 'login' },
+  { icon: 'shield-checkmark', label: 'Get Verified',       coins: 50000,  desc: 'Verify your size to earn coins',              key: 'is_verified' },
+  { icon: 'people',           label: 'Refer a Friend',     coins: 25000,  desc: 'Earn 25,000 coins per friend who joins',      key: 'referral' },
+  { icon: 'create',           label: 'Post to Feed',       coins: 1000,   desc: 'Earn 1,000 coins per post (daily max)',       key: 'post' },
+  { icon: 'chatbubbles',      label: 'Send a Message',     coins: 500,    desc: 'Earn 500 coins per conversation started',     key: 'message' },
+  { icon: 'star',             label: 'Get Upvoted',        coins: 1500,   desc: 'Earn 1,500 coins when your post is upvoted', key: 'upvote' },
+  { icon: 'calendar',         label: 'Daily Login',        coins: 2000,   desc: 'Earn 2,000 coins just for showing up',       key: 'login' },
 ];
 
 const REWARDS = [
-  { icon: 'ribbon',    label: 'Premium — 1 Month',  cost: 2500, desc: 'Redeem for 1 month of SIZE Premium' },
-  { icon: 'flash',     label: 'Feed Boost',          cost: 500,  desc: 'Boost your post to the top of the feed' },
-  { icon: 'shirt',     label: 'Exclusive Badge',     cost: 1000, desc: 'Unlock a rare profile badge' },
+  { icon: 'ribbon',    label: 'Premium — 1 Month',  cost: 250000,  desc: 'Redeem for 1 month of SIZE Premium' },
+  { icon: 'flash',     label: 'Feed Boost',          cost: 50000,   desc: 'Boost your post to the top of the feed' },
+  { icon: 'shirt',     label: 'Exclusive Badge',     cost: 100000,  desc: 'Unlock a rare profile badge' },
 ];
 
 export default function EarnScreen() {
