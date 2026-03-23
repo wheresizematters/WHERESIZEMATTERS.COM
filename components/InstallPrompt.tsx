@@ -186,21 +186,22 @@ function InstallPromptInner() {
               <View style={styles.iosStep}>
                 <View style={styles.iosStepBadge}><Text style={styles.iosStepNum}>1</Text></View>
                 <Text style={styles.iosStepText}>
-                  Tap the <Text style={styles.iosStepHighlight}>Share</Text> button{' '}
-                  <Text style={styles.iosShareIcon}>□↑</Text> at the bottom of Safari.
+                  Tap the <Text style={styles.iosStepHighlight}>three dots ···</Text> in the{' '}
+                  <Text style={styles.iosStepHighlight}>bottom right</Text> of Safari.
                 </Text>
               </View>
               <View style={styles.iosStep}>
                 <View style={styles.iosStepBadge}><Text style={styles.iosStepNum}>2</Text></View>
                 <Text style={styles.iosStepText}>
-                  Scroll down and tap{' '}
-                  <Text style={styles.iosStepHighlight}>"Add to Home Screen"</Text>.
+                  Tap <Text style={styles.iosStepHighlight}>Share</Text>{' '}
+                  <Text style={styles.iosShareIcon}>□↑</Text> from the menu.
                 </Text>
               </View>
               <View style={styles.iosStep}>
                 <View style={styles.iosStepBadge}><Text style={styles.iosStepNum}>3</Text></View>
                 <Text style={styles.iosStepText}>
-                  Tap <Text style={styles.iosStepHighlight}>"Add"</Text> in the top-right corner.
+                  Tap <Text style={styles.iosStepHighlight}>"Add to Home Screen"</Text> then{' '}
+                  <Text style={styles.iosStepHighlight}>"Add"</Text>.
                 </Text>
               </View>
               <TouchableOpacity style={styles.iosDismiss} onPress={handleDismissIOSSheet}>
