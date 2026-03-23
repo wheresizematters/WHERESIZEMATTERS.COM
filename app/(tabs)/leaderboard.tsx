@@ -456,7 +456,7 @@ export default function LeaderboardScreen() {
         <View style={styles.header}>
           <View style={styles.headerTitle}>
             <Text style={styles.logo}>SIZE.</Text>
-            <Text style={styles.title}>LEADERBOARD</Text>
+            <Text style={styles.title}>RANKS</Text>
           </View>
           <View style={styles.headerRight}>
             <View style={styles.verifiedOnlyBadge}>

@@ -145,7 +145,7 @@ export default function EarnScreen() {
       <PageContainer>
         {/* Header */}
         <View style={styles.header}>
-          <View>
+          <View style={styles.headerTitle}>
             <Text style={styles.logo}>SIZE.</Text>
             <Text style={styles.title}>EARN</Text>
           </View>
@@ -297,8 +297,9 @@ export default function EarnScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.bg },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 14 },
-  logo: { fontSize: 14, fontWeight: '900', color: COLORS.gold, letterSpacing: 3 },
-  title: { fontSize: 22, fontWeight: '900', color: COLORS.white, letterSpacing: 3 },
+  headerTitle: { flexDirection: 'row', alignItems: 'baseline', gap: 8 },
+  logo: { fontSize: 28, fontWeight: '900', color: COLORS.gold, letterSpacing: 4 },
+  title: { fontSize: SIZES.xl, fontWeight: '900', color: COLORS.white, letterSpacing: 3 },
   coinBadge: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: `${COLORS.gold}15`, borderWidth: 1, borderColor: `${COLORS.gold}40`, borderRadius: RADIUS.full, paddingHorizontal: 14, paddingVertical: 8 },
   coinEmoji: { fontSize: 18 },
   coinCount: { color: COLORS.gold, fontWeight: '900', fontSize: SIZES.md },

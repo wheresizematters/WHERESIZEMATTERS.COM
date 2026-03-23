@@ -649,7 +649,10 @@ export default function FeedScreen() {
       {/* Show header on native and mobile web, hide on desktop web (WebNavbar handles it) */}
       {!(Platform.OS === 'web' && typeof window !== 'undefined' && window.innerWidth >= 768) && (
       <View style={styles.header}>
-        <Text style={styles.logo}>SIZE.</Text>
+        <View style={styles.headerTitle}>
+          <Text style={styles.logo}>SIZE.</Text>
+          <Text style={styles.tabTitle}>FEED</Text>
+        </View>
         <TouchableOpacity onPress={() => router.push('/settings' as any)}>
           <Ionicons name="notifications-outline" size={24} color={COLORS.muted} />
         </TouchableOpacity>
@@ -812,7 +815,9 @@ export default function FeedScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.bg },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 18, paddingVertical: 10 },
-  logo: { fontSize: 24, fontWeight: '900', color: COLORS.gold, letterSpacing: 4 },
+  headerTitle: { flexDirection: 'row', alignItems: 'baseline', gap: 8 },
+  logo: { fontSize: 28, fontWeight: '900', color: COLORS.gold, letterSpacing: 4 },
+  tabTitle: { fontSize: SIZES.xl, fontWeight: '900', color: COLORS.white, letterSpacing: 3 },
   feedTabBar: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: COLORS.cardBorder },
   feedTabBtn: { flex: 1, alignItems: 'center', paddingVertical: 10, position: 'relative' },
   feedTabLabel: { fontSize: 11, fontWeight: '600', color: COLORS.muted, letterSpacing: 0.6, textTransform: 'uppercase' },
