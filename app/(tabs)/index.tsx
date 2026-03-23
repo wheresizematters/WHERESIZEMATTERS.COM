@@ -418,6 +418,7 @@ function CreatePostModal({ visible, onClose, onPost, isPremium }: {
   return (
     <>
       <Modal visible={visible} animationType="slide" presentationStyle="pageSheet">
+        <SafeAreaView style={{ flex: 0, backgroundColor: COLORS.bg }} />
         <KeyboardAvoidingView style={styles.modal} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
           {/* Header */}
           <View style={styles.modalHeader}>
@@ -918,7 +919,7 @@ const styles = StyleSheet.create({
   discRowStatText: { color: COLORS.muted, fontSize: SIZES.xs },
   // Modal
   modal: { flex: 1, backgroundColor: COLORS.bg },
-  modalHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: COLORS.cardBorder },
+  modalHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.15)', borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.15)' },
   modalCancel: { color: COLORS.muted, fontSize: SIZES.md, minWidth: 60 },
   modalTitle: { color: COLORS.white, fontSize: SIZES.md, fontWeight: '800' },
   modalPostBtn: { backgroundColor: COLORS.gold, borderRadius: RADIUS.full, paddingHorizontal: 18, paddingVertical: 7 },
