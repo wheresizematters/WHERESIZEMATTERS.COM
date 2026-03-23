@@ -36,6 +36,8 @@ export default function EarnScreen() {
   const [tab, setTab] = useState<'earn' | 'rewards'>('earn');
   const [redeeming, setRedeeming] = useState<string | null>(null);
   const [showPaywall, setShowPaywall] = useState(false);
+  const [walletAddress, setWalletAddress] = useState<string | null>(profile?.wallet_address ?? null);
+  const [connectingWallet, setConnectingWallet] = useState(false);
 
   const loadCoins = useCallback(async () => {
     if (!session?.user.id) { setLoading(false); return; }
@@ -50,6 +52,39 @@ export default function EarnScreen() {
   }, [session?.user.id]);
 
   useEffect(() => { loadCoins(); }, [loadCoins]);
+
+  async function connectWallet() {
+    if (Platform.OS !== 'web') return;
+    const eth = (window as any).ethereum;
+    if (!eth) {
+      window.alert('No wallet detected. Install MetaMask or Coinbase Wallet to connect.');
+      return;
+    }
+    setConnectingWallet(true);
+    try {
+      const accounts: string[] = await eth.request({ method: 'eth_requestAccounts' });
+      const address = accounts[0];
+      if (address) {
+        setWalletAddress(address);
+        await updateProfile({ wallet_address: address } as any);
+      }
+    } catch (err: any) {
+      if (err?.code !== 4001) {
+        window.alert('Failed to connect wallet. Please try again.');
+      }
+    } finally {
+      setConnectingWallet(false);
+    }
+  }
+
+  async function disconnectWallet() {
+    setWalletAddress(null);
+    await updateProfile({ wallet_address: null } as any);
+  }
+
+  function truncateAddress(addr: string) {
+    return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
+  }
 
   async function redeemReward(reward: typeof REWARDS[number]) {
     if (!session?.user.id) return;
@@ -147,6 +182,42 @@ export default function EarnScreen() {
               <Text style={styles.balanceSub}>$SIZE Coins · Earn more below</Text>
             </LinearGradient>
           </LinearGradient>
+
+          {/* Wallet card */}
+          <View style={styles.walletCard}>
+            <View style={styles.walletTop}>
+              <View style={styles.walletIconWrap}>
+                <Text style={styles.walletIcon}>💎</Text>
+              </View>
+              <View style={styles.walletInfo}>
+                <Text style={styles.walletTitle}>$SIZE Wallet</Text>
+                {walletAddress
+                  ? <Text style={styles.walletAddress}>{truncateAddress(walletAddress)}</Text>
+                  : <Text style={styles.walletSub}>Connect to receive $SIZE tokens</Text>
+                }
+              </View>
+              {walletAddress ? (
+                <TouchableOpacity style={styles.walletDisconnectBtn} onPress={disconnectWallet}>
+                  <Text style={styles.walletDisconnectText}>Disconnect</Text>
+                </TouchableOpacity>
+              ) : (
+                <TouchableOpacity style={styles.walletConnectBtn} onPress={connectWallet} disabled={connectingWallet}>
+                  {connectingWallet
+                    ? <ActivityIndicator size="small" color={COLORS.bg} />
+                    : <Text style={styles.walletConnectText}>Connect</Text>
+                  }
+                </TouchableOpacity>
+              )}
+            </View>
+            {walletAddress ? (
+              <View style={styles.walletConnectedBadge}>
+                <View style={styles.walletDot} />
+                <Text style={styles.walletConnectedText}>Connected · Ready for $SIZE token launch</Text>
+              </View>
+            ) : (
+              <Text style={styles.walletHint}>Works with MetaMask, Coinbase Wallet, and all browser wallets</Text>
+            )}
+          </View>
 
           {/* Tab toggle */}
           <View style={styles.tabBar}>
@@ -267,4 +338,22 @@ const styles = StyleSheet.create({
   redeemActive: {},
   redeemLocked: { opacity: 0.45 },
   comingSoon: { color: COLORS.muted, fontSize: SIZES.xs, textAlign: 'center', paddingVertical: 16 },
+
+  // Wallet card
+  walletCard: { marginHorizontal: 16, marginBottom: 16, backgroundColor: COLORS.card, borderRadius: RADIUS.lg, borderWidth: 1, borderColor: `${COLORS.gold}30`, padding: 16, gap: 10 },
+  walletTop: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  walletIconWrap: { width: 42, height: 42, borderRadius: 12, backgroundColor: `${COLORS.gold}15`, borderWidth: 1, borderColor: `${COLORS.gold}25`, alignItems: 'center', justifyContent: 'center' },
+  walletIcon: { fontSize: 20 },
+  walletInfo: { flex: 1 },
+  walletTitle: { color: COLORS.white, fontWeight: '700', fontSize: SIZES.md },
+  walletAddress: { color: COLORS.gold, fontSize: SIZES.sm, fontWeight: '600', marginTop: 2, fontFamily: 'monospace' },
+  walletSub: { color: COLORS.muted, fontSize: SIZES.xs, marginTop: 2 },
+  walletConnectBtn: { backgroundColor: COLORS.gold, borderRadius: RADIUS.md, paddingHorizontal: 16, paddingVertical: 8 },
+  walletConnectText: { color: COLORS.bg, fontWeight: '800', fontSize: SIZES.sm },
+  walletDisconnectBtn: { backgroundColor: `${COLORS.red}15`, borderRadius: RADIUS.md, paddingHorizontal: 12, paddingVertical: 8, borderWidth: 1, borderColor: `${COLORS.red}30` },
+  walletDisconnectText: { color: COLORS.red, fontWeight: '700', fontSize: SIZES.xs },
+  walletConnectedBadge: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  walletDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: COLORS.green },
+  walletConnectedText: { color: COLORS.green, fontSize: SIZES.xs, fontWeight: '600' },
+  walletHint: { color: COLORS.mutedDark, fontSize: SIZES.xs, lineHeight: 16 },
 });
