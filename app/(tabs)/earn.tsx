@@ -109,26 +109,31 @@ export default function EarnScreen() {
     if (!confirm) return;
 
     setRedeeming(reward.label);
-    // Deduct coins
+
+    // Build atomic update — deduct coins + grant reward in one DB call
+    const updateData: Record<string, any> = { size_coins: coins - reward.cost };
+    if (reward.label === 'Premium — 1 Month') {
+      const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+      updateData.is_premium = true;
+      updateData.premium_expires_at = expiresAt;
+    }
+
     const { error } = await supabase
       .from('profiles')
-      .update({ size_coins: coins - reward.cost })
+      .update(updateData)
       .eq('id', session.user.id);
 
+    setRedeeming(null);
+
     if (error) {
-      setRedeeming(null);
       if (Platform.OS === 'web') window.alert('Redemption failed. Please try again.');
       else Alert.alert('Error', 'Redemption failed. Please try again.');
       return;
     }
 
     setCoins(prev => prev - reward.cost);
-    setRedeeming(null);
 
     if (reward.label === 'Premium — 1 Month') {
-      // Grant 30 days premium
-      const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
-      await supabase.from('profiles').update({ is_premium: true, premium_expires_at: expiresAt }).eq('id', session.user.id);
       if (Platform.OS === 'web') window.alert('Premium unlocked for 30 days! Refresh to see your benefits.');
       else Alert.alert('Premium Unlocked! 👑', 'You have 30 days of SIZE. Premium.');
     } else if (reward.label === 'Feed Boost') {

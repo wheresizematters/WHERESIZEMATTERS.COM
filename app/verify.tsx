@@ -45,7 +45,7 @@ export default function VerifyScreen() {
       if (!req) { setStep('instructions'); return; }
       if (req.status === 'pending') setStep('pending_review');
       else setStep('instructions'); // rejected — can retry
-    });
+    }).catch(() => setStep('instructions'));
   }, [session?.user.id, profile?.is_verified]);
 
   function goToGirth(source: 'camera' | 'library') {
