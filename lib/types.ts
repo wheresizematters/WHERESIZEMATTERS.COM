@@ -15,6 +15,9 @@ export interface Profile {
   notifications_enabled?: boolean;
   size_coins?: number;
   last_daily_coin_at?: string | null;
+  is_admin?: boolean;
+  is_premium?: boolean;
+  premium_expires_at?: string | null;
   created_at: string;
 }
 
@@ -25,6 +28,7 @@ export interface Post {
   content: string;
   tag?: string | null;
   media_url?: string | null;
+  media_type?: 'image' | 'video' | null;
   author: {
     id: string;
     username: string;
