@@ -385,7 +385,7 @@ export default function LeaderboardScreen() {
                 >
                   <View style={styles.heroLeft}>
                     <Text style={styles.heroLabel}>YOUR RANKING</Text>
-                    <Text style={styles.heroRank}>
+                    <Text style={styles.heroRank} numberOfLines={1} adjustsFontSizeToFit>
                       {myRank ? `#${myRank.toLocaleString()}` : '—'}
                       {totalUsers > 0 && <Text style={styles.heroRankTotal}> / {totalUsers.toLocaleString()}</Text>}
                     </Text>
@@ -513,10 +513,10 @@ const styles = StyleSheet.create({
 
   // Hero card
   heroCard: { marginHorizontal: 16, marginBottom: 16, borderRadius: RADIUS.xl, borderWidth: 1, borderColor: 'rgba(232,80,10,0.3)', overflow: 'hidden' },
-  heroCardInner: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 20, paddingRight: 16 },
-  heroLeft: { flex: 1 },
+  heroCardInner: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 20, paddingRight: 16, gap: 12 },
+  heroLeft: { flex: 1, minWidth: 0 },
   heroLabel: { color: COLORS.gold, fontSize: 9, fontWeight: '800', letterSpacing: 2.5, textTransform: 'uppercase', marginBottom: 4 },
-  heroRank: { color: COLORS.white, fontSize: 32, fontWeight: '900', letterSpacing: -0.5, lineHeight: 36 },
+  heroRank: { color: COLORS.white, fontSize: 32, fontWeight: '900', letterSpacing: -0.5, lineHeight: 38 },
   heroRankTotal: { color: COLORS.muted, fontSize: 16, fontWeight: '600' },
   heroUsername: { color: COLORS.muted, fontSize: SIZES.sm, fontWeight: '600', marginTop: 4 },
   verifiedRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 6 },
@@ -525,16 +525,16 @@ const styles = StyleSheet.create({
   unverifiedHint: { color: COLORS.gold, fontSize: SIZES.xs },
 
   // Holo badge
-  holoBadge: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: RADIUS.full, alignItems: 'center', justifyContent: 'center' },
+  holoBadge: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: RADIUS.full, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   holoBadgeLg: { paddingHorizontal: 20, paddingVertical: 12 },
   holoBadgeSm: { paddingHorizontal: 10, paddingVertical: 5 },
   holoBadgeText: { color: COLORS.white, fontSize: SIZES.md, fontWeight: '900', letterSpacing: 0.3, textShadowColor: 'rgba(0,0,0,0.4)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 3 },
   holoBadgeTextLg: { fontSize: SIZES.xxl, letterSpacing: -0.5 },
   holoBadgeTextSm: { fontSize: SIZES.sm },
-  holoBadgeMuted: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: RADIUS.full, alignItems: 'center', justifyContent: 'center', borderWidth: 1 },
-  holoBadgeMutedLg: { paddingHorizontal: 20, paddingVertical: 12 },
-  holoBadgeMutedSm: { paddingHorizontal: 10, paddingVertical: 5 },
-  holoBadgeMutedText: { fontSize: SIZES.md, fontWeight: '800', letterSpacing: 0.3 },
+  holoBadgeMuted: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: RADIUS.full, alignItems: 'center', justifyContent: 'center', borderWidth: 1, flexShrink: 0, maxWidth: 140 },
+  holoBadgeMutedLg: { paddingHorizontal: 14, paddingVertical: 10, maxWidth: 150 },
+  holoBadgeMutedSm: { paddingHorizontal: 8, paddingVertical: 5 },
+  holoBadgeMutedText: { fontSize: SIZES.sm, fontWeight: '800', letterSpacing: 0.3, textAlign: 'center' },
 
   // Filter
   filterList: { paddingHorizontal: 16, paddingBottom: 12, paddingTop: 4, gap: 8, alignItems: 'center' },
