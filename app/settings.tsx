@@ -41,7 +41,9 @@ export default function SettingsScreen() {
   const [newUsername, setNewUsername] = useState(profile?.username ?? '');
   const [editingSize, setEditingSize] = useState(false);
   const [newSize, setNewSize] = useState(profile?.size_inches?.toString() ?? '');
-  const [notifications, setNotifications] = useState(true);
+  const [editingGirth, setEditingGirth] = useState(false);
+  const [newGirth, setNewGirth] = useState(profile?.girth_inches?.toString() ?? '');
+  const [notifications, setNotifications] = useState(profile?.notifications_enabled ?? true);
   const [saving, setSaving] = useState(false);
   const [showPaywall, setShowPaywall] = useState(false);
 
@@ -60,6 +62,22 @@ export default function SettingsScreen() {
     await updateProfile({ size_inches: inches });
     setSaving(false);
     setEditingSize(false);
+  }
+
+  async function saveGirth() {
+    if (!newGirth.trim()) {
+      setSaving(true);
+      await updateProfile({ girth_inches: null } as any);
+      setSaving(false);
+      setEditingGirth(false);
+      return;
+    }
+    const inches = parseFloat(newGirth);
+    if (isNaN(inches) || inches <= 0 || inches > 12) { Alert.alert('Invalid girth'); return; }
+    setSaving(true);
+    await updateProfile({ girth_inches: inches });
+    setSaving(false);
+    setEditingGirth(false);
   }
 
   return (
@@ -135,9 +153,38 @@ export default function SettingsScreen() {
           ) : (
             <SettingsRow
               icon="resize-outline"
-              label="My Size"
+              label="My Size (Length)"
               value={profile ? `${profile.size_inches.toFixed(1)}"  ${getSizeTier(profile.size_inches).emoji}` : '—'}
               onPress={() => setEditingSize(true)}
+            />
+          )}
+
+          <View style={styles.divider} />
+
+          {editingGirth ? (
+            <View style={styles.editRow}>
+              <TextInput
+                style={styles.editInput}
+                value={newGirth}
+                onChangeText={setNewGirth}
+                keyboardType="decimal-pad"
+                autoFocus
+                placeholder='e.g. 5.0" (leave blank to clear)'
+                placeholderTextColor={COLORS.muted}
+              />
+              <TouchableOpacity onPress={saveGirth} disabled={saving}>
+                {saving ? <ActivityIndicator size="small" color={COLORS.gold} /> : <Text style={styles.saveBtn}>Save</Text>}
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => setEditingGirth(false)}>
+                <Text style={styles.cancelBtn}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <SettingsRow
+              icon="expand-outline"
+              label="My Girth (Optional)"
+              value={profile?.girth_inches ? `${profile.girth_inches.toFixed(1)}"` : 'Not set'}
+              onPress={() => setEditingGirth(true)}
             />
           )}
         </View>
@@ -150,7 +197,7 @@ export default function SettingsScreen() {
             label="Push Notifications"
             toggle
             toggleValue={notifications}
-            onToggle={setNotifications}
+            onToggle={async (v) => { setNotifications(v); await updateProfile({ notifications_enabled: v }); }}
           />
         </View>
 

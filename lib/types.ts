@@ -2,6 +2,7 @@ export interface Profile {
   id: string;
   username: string;
   size_inches: number;
+  girth_inches?: number | null;
   is_verified: boolean;
   has_set_size: boolean;
   country?: string;
@@ -11,6 +12,9 @@ export interface Profile {
   avatar_url?: string;
   header_url?: string;
   rank?: number;
+  notifications_enabled?: boolean;
+  size_coins?: number;
+  last_daily_coin_at?: string | null;
   created_at: string;
 }
 

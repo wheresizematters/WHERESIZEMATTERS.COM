@@ -6,6 +6,7 @@ import * as Linking from 'expo-linking';
 import { supabase, SUPABASE_READY } from '@/lib/supabase';
 import { Profile } from '@/lib/types';
 import { registerPushToken } from '@/lib/notifications';
+import { maybeAwardDailyLoginCoins } from '@/lib/api';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -25,7 +26,7 @@ interface AuthContextType {
   loading: boolean;
   demoMode: boolean;
   signIn: (email: string, password: string) => Promise<{ error: string | null }>;
-  signUp: (email: string, password: string, username: string, sizeInches: number, ageRange?: string) => Promise<{ error: string | null }>;
+  signUp: (email: string, password: string, username: string, sizeInches: number, ageRange?: string, girthInches?: number) => Promise<{ error: string | null }>;
   signInWithOAuth: (provider: 'google' | 'x') => Promise<{ error: string | null }>;
   signInWithPhone: (phone: string) => Promise<{ error: string | null }>;
   verifyPhoneOtp: (phone: string, token: string) => Promise<{ error: string | null }>;
@@ -94,6 +95,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setLoading(false);
     // Register for push notifications in the background — don't block auth flow
     registerPushToken(userId).catch(() => {});
+    // Award daily login coins in the background
+    maybeAwardDailyLoginCoins(userId).catch(() => {});
   }
 
   async function signIn(email: string, password: string) {
@@ -102,12 +105,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return { error: error?.message ?? null };
   }
 
-  async function signUp(email: string, password: string, username: string, sizeInches: number, ageRange?: string) {
+  async function signUp(email: string, password: string, username: string, sizeInches: number, ageRange?: string, girthInches?: number) {
     if (!SUPABASE_READY) return { error: 'Supabase not configured — running in demo mode' };
     const { error } = await supabase.auth.signUp({
       email,
       password,
-      options: { data: { username: username.trim(), size_inches: sizeInches, age_range: ageRange ?? null } },
+      options: { data: { username: username.trim(), size_inches: sizeInches, age_range: ageRange ?? null, girth_inches: girthInches ?? null } },
     });
     if (error) return { error: error.message };
     return { error: null };

@@ -10,6 +10,7 @@ import AuthContainer from '@/components/AuthContainer';
 export default function SetupSizeScreen() {
   const { updateProfile } = useAuth();
   const [sizeInput, setSizeInput] = useState('');
+  const [girthInput, setGirthInput] = useState('');
   const [unit, setUnit] = useState<'in' | 'cm'>('in');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -22,6 +23,13 @@ export default function SetupSizeScreen() {
 
   const tier = sizeInput ? getSizeTier(getSizeInches()) : null;
 
+  function getGirthInches(): number | undefined {
+    if (!girthInput.trim()) return undefined;
+    const val = parseFloat(girthInput);
+    if (isNaN(val) || val <= 0 || val > 12) return undefined;
+    return unit === 'cm' ? val / 2.54 : val;
+  }
+
   async function handleSubmit() {
     const inches = getSizeInches();
     if (!sizeInput || inches <= 0 || inches > 16) {
@@ -30,7 +38,10 @@ export default function SetupSizeScreen() {
     setLoading(true);
     setError('');
     try {
-      await updateProfile({ size_inches: inches, has_set_size: true });
+      const updates: any = { size_inches: inches, has_set_size: true };
+      const girth = getGirthInches();
+      if (girth !== undefined) updates.girth_inches = girth;
+      await updateProfile(updates);
     } catch {
       setError('Something went wrong. Please try again.');
     } finally {
@@ -90,6 +101,19 @@ export default function SetupSizeScreen() {
             <Text style={styles.sizeUnit}>{unit === 'in' ? '"' : 'cm'}</Text>
           </View>
 
+          <Text style={styles.label}>Girth <Text style={styles.optionalTag}>(optional)</Text></Text>
+          <View style={styles.sizeRow}>
+            <TextInput
+              style={[styles.input, styles.sizeInput]}
+              placeholder={unit === 'in' ? 'e.g. 5.0' : 'e.g. 12.7'}
+              placeholderTextColor={COLORS.muted}
+              value={girthInput}
+              onChangeText={setGirthInput}
+              keyboardType="decimal-pad"
+            />
+            <Text style={styles.sizeUnit}>{unit === 'in' ? '"' : 'cm'}</Text>
+          </View>
+
           {tier && sizeInput ? (
             <View style={[styles.tierBadge, { borderColor: tier.color }]}>
               <Text style={styles.tierEmoji}>{tier.emoji}</Text>
@@ -131,6 +155,8 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: COLORS.cardBorder, backgroundColor: COLORS.card, alignItems: 'center',
   },
   unitBtnActive: { borderColor: COLORS.gold, backgroundColor: `${COLORS.gold}20` },
+  label: { color: COLORS.muted, fontSize: SIZES.sm, letterSpacing: 1, textTransform: 'uppercase' },
+  optionalTag: { color: COLORS.mutedDark, fontSize: SIZES.xs, fontWeight: '400', textTransform: 'none', letterSpacing: 0 },
   unitText: { color: COLORS.muted, fontSize: SIZES.md },
   unitTextActive: { color: COLORS.gold, fontWeight: '700' },
   sizeRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },

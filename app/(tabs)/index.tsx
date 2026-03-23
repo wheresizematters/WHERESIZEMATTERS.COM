@@ -561,6 +561,29 @@ function CreatePostModal({ visible, onClose, onPost, isPremium }: {
   );
 }
 
+function PremiumNudgeBanner({ onDismiss, onUpgrade }: { onDismiss: () => void; onUpgrade: () => void }) {
+  return (
+    <View style={styles.nudgeBanner}>
+      <LinearGradient
+        colors={[`${COLORS.gold}22`, `${COLORS.gold}08`]}
+        start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+        style={styles.nudgeBannerInner}
+      >
+        <View style={styles.nudgeBannerContent}>
+          <Text style={styles.nudgeBannerTitle}>👑 SIZE. Premium</Text>
+          <Text style={styles.nudgeBannerSub}>See exact sizes, unlock photos & videos, get verified.</Text>
+          <TouchableOpacity style={styles.nudgeUpgradeBtn} onPress={onUpgrade} activeOpacity={0.85}>
+            <Text style={styles.nudgeUpgradeBtnText}>Upgrade</Text>
+          </TouchableOpacity>
+        </View>
+        <TouchableOpacity style={styles.nudgeDismissBtn} onPress={onDismiss} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+          <Ionicons name="close" size={16} color={COLORS.muted} />
+        </TouchableOpacity>
+      </LinearGradient>
+    </View>
+  );
+}
+
 export default function FeedScreen() {
   const router = useRouter();
   const { session } = useAuth();
@@ -573,6 +596,8 @@ export default function FeedScreen() {
   const [verifiedOnly, setVerifiedOnly] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
   const [showFilter, setShowFilter] = useState(false);
+  const [dismissedNudge, setDismissedNudge] = useState(false);
+  const [showPaywall, setShowPaywall] = useState(false);
   const activeFilterCount = (activeTag ? 1 : 0) + (verifiedOnly ? 1 : 0);
 
   const loadPosts = useCallback(async () => {
@@ -601,12 +626,21 @@ export default function FeedScreen() {
 
   useEffect(() => { loadPosts(); }, [loadPosts]);
 
-  const filtered = posts.filter(p => {
+  const filteredPosts = posts.filter(p => {
     if (activeFilter === 'DISCUSSIONS') return p.type === 'discussion';
     if (activeFilter === 'MEDIA') return !!(p as any).media_url;
     if (activeTag && p.tag !== activeTag) return false;
     if (verifiedOnly && !p.author.is_verified) return false;
     return true;
+  });
+
+  // Inject nudge banners every 5 real posts for free users
+  const filtered: any[] = [];
+  filteredPosts.forEach((post, i) => {
+    filtered.push(post);
+    if (!isPremium && !dismissedNudge && (i + 1) % 5 === 0) {
+      filtered.push({ _nudge: true, id: `nudge-${i}` });
+    }
   });
 
   return (
@@ -726,11 +760,19 @@ export default function FeedScreen() {
               tintColor={COLORS.gold}
             />
           }
-          renderItem={({ item }) =>
-            item.type === 'poll'
+          renderItem={({ item }) => {
+            if ((item as any)._nudge) {
+              return (
+                <PremiumNudgeBanner
+                  onDismiss={() => setDismissedNudge(true)}
+                  onUpgrade={() => setShowPaywall(true)}
+                />
+              );
+            }
+            return item.type === 'poll'
               ? <PollCard post={item} userId={session?.user.id ?? ''} isPremium={isPremium} onVotePost={v => handleVoteOnPost(item.id, v)} />
-              : <DiscussionCard post={item} isPremium={isPremium} myId={session?.user.id ?? ''} onVotePost={v => handleVoteOnPost(item.id, v)} />
-          }
+              : <DiscussionCard post={item} isPremium={isPremium} myId={session?.user.id ?? ''} onVotePost={v => handleVoteOnPost(item.id, v)} />;
+          }}
           ListEmptyComponent={
             <View style={styles.empty}>
               <Text style={styles.emptyText}>
@@ -755,6 +797,12 @@ export default function FeedScreen() {
         onClose={() => setShowCreate(false)}
         onPost={loadPosts}
         isPremium={isPremium}
+      />
+
+      <PaywallModal
+        visible={showPaywall}
+        onClose={() => setShowPaywall(false)}
+        trigger="See exact sizes, unlock photos & videos, get verified."
       />
       </PageContainer>
     </SafeAreaView>
@@ -892,4 +940,13 @@ const styles = StyleSheet.create({
   mediaPreviewWrap: { position: 'relative', marginVertical: 8, borderRadius: RADIUS.md, overflow: 'hidden' },
   mediaPreview: { width: '100%', height: 200, borderRadius: RADIUS.md },
   removeMedia: { position: 'absolute', top: 8, right: 8 },
+  // Premium nudge banner
+  nudgeBanner: { marginHorizontal: 0, marginBottom: 2 },
+  nudgeBannerInner: { borderRadius: RADIUS.lg, borderWidth: 1, borderColor: `${COLORS.gold}40`, padding: 14, flexDirection: 'row', alignItems: 'flex-start' },
+  nudgeBannerContent: { flex: 1, gap: 6 },
+  nudgeBannerTitle: { color: COLORS.gold, fontSize: SIZES.md, fontWeight: '900', letterSpacing: 0.5 },
+  nudgeBannerSub: { color: COLORS.muted, fontSize: SIZES.sm, lineHeight: 18 },
+  nudgeUpgradeBtn: { alignSelf: 'flex-start', backgroundColor: COLORS.gold, borderRadius: RADIUS.full, paddingHorizontal: 16, paddingVertical: 7, marginTop: 4 },
+  nudgeUpgradeBtnText: { color: COLORS.bg, fontWeight: '800', fontSize: SIZES.sm },
+  nudgeDismissBtn: { padding: 4, marginLeft: 8 },
 });

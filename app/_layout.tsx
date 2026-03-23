@@ -103,7 +103,7 @@ function RootLayoutNav() {
 
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({ ...Ionicons.font });
-  if (!fontsLoaded) return null;
+  if (!fontsLoaded) return <SplashScreen />;
 
   return (
     <AuthProvider>

@@ -26,7 +26,7 @@ export default function WebNavbar() {
 
         <View style={styles.tabs}>
           {TABS.map(tab => {
-            const active = pathname === tab.href || (tab.href !== '/' && pathname.startsWith(tab.href));
+            const active = pathname === tab.href || (tab.href !== '/' && pathname.startsWith(tab.href + '/'));
             return (
               <TouchableOpacity
                 key={tab.href}

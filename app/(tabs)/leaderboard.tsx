@@ -32,9 +32,26 @@ const RANK_PALETTES: Record<number, [string, string, string]> = {
   3: ['#CD7F32', '#A0522D', '#D4956A'],
 };
 
-function HoloBadge({ inches, size = 'md' }: { inches: number; size?: 'sm' | 'md' | 'lg' }) {
+function HoloBadge({ inches, size = 'md', isPremium }: { inches: number; size?: 'sm' | 'md' | 'lg'; isPremium?: boolean }) {
   const isLg = size === 'lg';
   const isSm = size === 'sm';
+
+  if (isPremium === false) {
+    const tier = getSizeTier(inches);
+    return (
+      <View style={[
+        styles.holoBadgeMuted,
+        isLg && styles.holoBadgeMutedLg,
+        isSm && styles.holoBadgeMutedSm,
+        { borderColor: tier.color, backgroundColor: tier.color + '20' },
+      ]}>
+        <Text style={[styles.holoBadgeMutedText, isLg && styles.holoBadgeTextLg, isSm && styles.holoBadgeTextSm, { color: tier.color }]}>
+          {tier.emoji} {tier.label}
+        </Text>
+      </View>
+    );
+  }
+
   return (
     <LinearGradient
       colors={HOLO_COLORS}
@@ -65,7 +82,7 @@ function RankBadge({ rank }: { rank: number }) {
   );
 }
 
-function TopThreeCard({ entry, position, onPress }: { entry: LeaderboardEntry; position: 1 | 2 | 3; onPress: () => void }) {
+function TopThreeCard({ entry, position, onPress, isPremium }: { entry: LeaderboardEntry; position: 1 | 2 | 3; onPress: () => void; isPremium?: boolean }) {
   const colors = RANK_PALETTES[position];
   const isFirst = position === 1;
   return (
@@ -87,13 +104,13 @@ function TopThreeCard({ entry, position, onPress }: { entry: LeaderboardEntry; p
         </View>
         <Text style={styles.topCardUsername}>@{entry.username}</Text>
         {entry.country ? <Text style={styles.topCardCountry}>{entry.country}</Text> : null}
-        <HoloBadge inches={entry.size_inches} size={isFirst ? 'lg' : 'md'} />
+        <HoloBadge inches={entry.size_inches} size={isFirst ? 'lg' : 'md'} isPremium={isPremium} />
       </LinearGradient>
     </TouchableOpacity>
   );
 }
 
-function LeaderboardRow({ entry, onPress }: { entry: LeaderboardEntry; onPress: () => void }) {
+function LeaderboardRow({ entry, onPress, isPremium }: { entry: LeaderboardEntry; onPress: () => void; isPremium?: boolean }) {
   return (
     <TouchableOpacity style={styles.row} onPress={onPress} activeOpacity={0.7}>
       <RankBadge rank={entry.rank} />
@@ -106,13 +123,12 @@ function LeaderboardRow({ entry, onPress }: { entry: LeaderboardEntry; onPress: 
         </View>
         {entry.country ? <Text style={styles.countryText}>{entry.country}</Text> : null}
       </View>
-      <HoloBadge inches={entry.size_inches} size="sm" />
+      <HoloBadge inches={entry.size_inches} size="sm" isPremium={isPremium} />
     </TouchableOpacity>
   );
 }
 
-function NearbyRow({ entry, onPress }: { entry: NearbyEntry; onPress: () => void }) {
-  const tier = getSizeTier(entry.size_inches);
+function NearbyRow({ entry, onPress, isPremium }: { entry: NearbyEntry; onPress: () => void; isPremium?: boolean }) {
   return (
     <TouchableOpacity style={styles.row} onPress={onPress} activeOpacity={0.7}>
       <View style={styles.rankNumWrap}>
@@ -127,7 +143,7 @@ function NearbyRow({ entry, onPress }: { entry: NearbyEntry; onPress: () => void
         </View>
         <Text style={styles.countryText}>{entry.distance_miles.toFixed(1)} mi away</Text>
       </View>
-      <HoloBadge inches={entry.size_inches} size="sm" />
+      <HoloBadge inches={entry.size_inches} size="sm" isPremium={isPremium} />
     </TouchableOpacity>
   );
 }
@@ -213,7 +229,7 @@ export default function LeaderboardScreen() {
       // Try to get cached location silently first
       getCurrentLocation().then(loc => {
         if (loc) { setLocation(loc); loadNearby(loc, activeRadius); }
-      });
+      }).catch(() => {});
     }
   }, [mode]);
 
@@ -316,7 +332,7 @@ export default function LeaderboardScreen() {
             contentContainerStyle={styles.list}
             showsVerticalScrollIndicator={false}
             renderItem={({ item }) => (
-              <NearbyRow entry={item} onPress={() => router.push(`/profile/${item.id}` as any)} />
+              <NearbyRow entry={item} onPress={() => router.push(`/profile/${item.id}` as any)} isPremium={isPremium} />
             )}
             ItemSeparatorComponent={() => <View style={styles.sep} />}
             ListHeaderComponent={
@@ -350,7 +366,7 @@ export default function LeaderboardScreen() {
           <RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} tintColor={COLORS.gold} />
         }
         renderItem={({ item }) => (
-          <LeaderboardRow entry={item} onPress={() => router.push(`/profile/${item.id}` as any)} />
+          <LeaderboardRow entry={item} onPress={() => router.push(`/profile/${item.id}` as any)} isPremium={isPremium} />
         )}
         ItemSeparatorComponent={() => <View style={styles.sep} />}
         ListHeaderComponent={
@@ -386,7 +402,7 @@ export default function LeaderboardScreen() {
                       </TouchableOpacity>
                     )}
                   </View>
-                  <HoloBadge inches={profile.size_inches} size="lg" />
+                  <HoloBadge inches={profile.size_inches} size="lg" isPremium={isPremium} />
                 </LinearGradient>
               </LinearGradient>
             )}
@@ -413,6 +429,7 @@ export default function LeaderboardScreen() {
                       entry={entry}
                       position={(i === 0 ? 2 : i === 1 ? 1 : 3) as 1 | 2 | 3}
                       onPress={() => router.push(`/profile/${entry.id}` as any)}
+                      isPremium={isPremium}
                     />
                   </View>
                 ))}
@@ -514,6 +531,10 @@ const styles = StyleSheet.create({
   holoBadgeText: { color: COLORS.white, fontSize: SIZES.md, fontWeight: '900', letterSpacing: 0.3, textShadowColor: 'rgba(0,0,0,0.4)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 3 },
   holoBadgeTextLg: { fontSize: SIZES.xxl, letterSpacing: -0.5 },
   holoBadgeTextSm: { fontSize: SIZES.sm },
+  holoBadgeMuted: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: RADIUS.full, alignItems: 'center', justifyContent: 'center', borderWidth: 1 },
+  holoBadgeMutedLg: { paddingHorizontal: 20, paddingVertical: 12 },
+  holoBadgeMutedSm: { paddingHorizontal: 10, paddingVertical: 5 },
+  holoBadgeMutedText: { fontSize: SIZES.md, fontWeight: '800', letterSpacing: 0.3 },
 
   // Filter
   filterList: { paddingHorizontal: 16, paddingBottom: 12, paddingTop: 4, gap: 8, alignItems: 'center' },

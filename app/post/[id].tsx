@@ -194,7 +194,7 @@ function PostDetail({ post, myId, isPremium, onVotePost }: {
           onPress={() => onVotePost(userVote === -1 ? 0 : -1)}
           hitSlop={{ top: 8, bottom: 8, left: 4, right: 8 }}
         >
-          <Ionicons name="arrow-down" size={22} color={userVote === -1 ? '#60A5FA' : COLORS.muted} />
+          <Ionicons name="arrow-down" size={22} color={userVote === -1 ? COLORS.blue : COLORS.muted} />
         </TouchableOpacity>
         {post.type === 'poll' && totalVotes > 0 && (
           <Text style={styles.pollTotalInBar}>{totalVotes.toLocaleString()} poll votes</Text>
@@ -427,7 +427,7 @@ const styles = StyleSheet.create({
   voteBtnLg: { padding: 4 },
   voteScore: { color: COLORS.muted, fontSize: SIZES.lg, fontWeight: '900', minWidth: 28, textAlign: 'center' },
   voteScoreUp: { color: COLORS.gold },
-  voteScoreDown: { color: '#60A5FA' },
+  voteScoreDown: { color: COLORS.blue },
   pollTotalInBar: { color: COLORS.muted, fontSize: SIZES.xs, fontWeight: '600', marginLeft: 8 },
 
   // Comments section

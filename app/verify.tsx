@@ -1,20 +1,23 @@
 import { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, SafeAreaView, TouchableOpacity,
-  ActivityIndicator, ScrollView, Image, Platform,
+  ActivityIndicator, ScrollView, Image, Platform, TextInput,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { COLORS, SIZES, RADIUS } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
+import { usePurchase } from '@/context/PurchaseContext';
+import PaywallModal from '@/components/PaywallModal';
 import {
   fetchMyVerificationRequest,
   submitVerificationPhoto,
   runVerification,
+  awardCoins,
 } from '@/lib/api';
 
-type Step = 'checking' | 'already_verified' | 'pending_review' | 'instructions' | 'photo' | 'uploading' | 'result_verified' | 'result_pending' | 'error';
+type Step = 'checking' | 'already_verified' | 'pending_review' | 'instructions' | 'girth' | 'photo' | 'uploading' | 'result_verified' | 'result_pending' | 'error';
 
 const REFERENCE_OBJECTS = [
   { icon: '💳', label: 'Credit card', detail: '3.37" wide — lay it flat beside the subject' },
@@ -25,9 +28,14 @@ const REFERENCE_OBJECTS = [
 export default function VerifyScreen() {
   const router = useRouter();
   const { profile, session, updateProfile } = useAuth();
+  const { isPremium } = usePurchase();
   const [step, setStep] = useState<Step>('checking');
   const [photoUri, setPhotoUri] = useState<string | null>(null);
+  const [girthInput, setGirthInput] = useState(profile?.girth_inches?.toString() ?? '');
+  const [girthError, setGirthError] = useState('');
+  const [pendingSource, setPendingSource] = useState<'camera' | 'library'>('camera');
   const [errorMsg, setErrorMsg] = useState('');
+  const [showPaywall, setShowPaywall] = useState(false);
 
   useEffect(() => {
     if (!session?.user.id) return;
@@ -39,6 +47,28 @@ export default function VerifyScreen() {
       else setStep('instructions'); // rejected — can retry
     });
   }, [session?.user.id, profile?.is_verified]);
+
+  function goToGirth(source: 'camera' | 'library') {
+    setPendingSource(source);
+    setGirthError('');
+    setStep('girth');
+  }
+
+  async function confirmGirthAndProceed() {
+    const val = parseFloat(girthInput);
+    if (!girthInput.trim() || isNaN(val) || val <= 0 || val > 12) {
+      setGirthError('Please enter a valid girth measurement (required for verification)');
+      return;
+    }
+    setGirthError('');
+    // Save girth to profile
+    await updateProfile({ girth_inches: val });
+    if (pendingSource === 'camera') {
+      await pickPhoto();
+    } else {
+      await pickFromLibrary();
+    }
+  }
 
   async function pickPhoto() {
     const cameraPermission = await ImagePicker.requestCameraPermissionsAsync();
@@ -98,6 +128,8 @@ export default function VerifyScreen() {
 
     if (result.status === 'auto_verified') {
       await updateProfile({ is_verified: true });
+      // Award verification coins
+      if (session?.user.id) awardCoins(session.user.id, 500).catch(() => {});
       setStep('result_verified');
     } else {
       setStep('result_pending');
@@ -154,58 +186,115 @@ export default function VerifyScreen() {
         {/* ── Instructions ── */}
         {step === 'instructions' && (
           <>
+            {!isPremium ? (
+              <View style={s.centered}>
+                <View style={s.iconCircle}>
+                  <Ionicons name="shield-checkmark" size={48} color={COLORS.gold} />
+                </View>
+                <Text style={s.resultTitle}>Premium Required</Text>
+                <Text style={s.resultSub}>
+                  Verification is a premium feature. Upgrade to get your verified badge.
+                </Text>
+                <TouchableOpacity style={s.primaryBtn} onPress={() => setShowPaywall(true)}>
+                  <Text style={s.primaryBtnText}>Unlock Verification</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={s.secondaryBtn} onPress={() => router.back()}>
+                  <Text style={s.secondaryBtnText}>Go Back</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <>
+                <View style={s.heroSection}>
+                  <View style={s.iconCircle}>
+                    <Ionicons name="shield-checkmark-outline" size={40} color={COLORS.gold} />
+                  </View>
+                  <Text style={s.heroTitle}>Get Verified</Text>
+                  <Text style={s.heroSub}>
+                    Submit a photo with a reference object in frame. Our AI measures the scale and confirms your size.
+                  </Text>
+                </View>
+
+                <Text style={s.sectionLabel}>REFERENCE OBJECTS</Text>
+                <View style={s.refList}>
+                  {REFERENCE_OBJECTS.map(item => (
+                    <View key={item.label} style={s.refRow}>
+                      <Text style={s.refIcon}>{item.icon}</Text>
+                      <View style={s.refText}>
+                        <Text style={s.refLabel}>{item.label}</Text>
+                        <Text style={s.refDetail}>{item.detail}</Text>
+                      </View>
+                    </View>
+                  ))}
+                </View>
+
+                <Text style={s.sectionLabel}>PHOTO TIPS</Text>
+                <View style={s.tipList}>
+                  {[
+                    'Shoot from directly above in good lighting',
+                    'Keep both the subject and reference object fully in frame',
+                    'Measure erect length from base to tip along the top',
+                    'Your photo is deleted immediately after review',
+                  ].map((tip, i) => (
+                    <View key={i} style={s.tipRow}>
+                      <View style={s.tipDot} />
+                      <Text style={s.tipText}>{tip}</Text>
+                    </View>
+                  ))}
+                </View>
+
+                <View style={s.privacyNote}>
+                  <Ionicons name="lock-closed-outline" size={14} color={COLORS.muted} />
+                  <Text style={s.privacyText}>
+                    Photos are stored encrypted, never shared, and permanently deleted after verification — whether approved or rejected.
+                  </Text>
+                </View>
+
+                <TouchableOpacity style={s.primaryBtn} onPress={() => goToGirth('camera')}>
+                  <Ionicons name="camera-outline" size={18} color={COLORS.bg} />
+                  <Text style={s.primaryBtnText}>Take Photo</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={s.secondaryBtn} onPress={() => goToGirth('library')}>
+                  <Ionicons name="images-outline" size={18} color={COLORS.gold} />
+                  <Text style={s.secondaryBtnText}>Choose from Library</Text>
+                </TouchableOpacity>
+              </>
+            )}
+          </>
+        )}
+
+        {/* ── Girth entry (required for verification) ── */}
+        {step === 'girth' && (
+          <>
             <View style={s.heroSection}>
               <View style={s.iconCircle}>
-                <Ionicons name="shield-checkmark-outline" size={40} color={COLORS.gold} />
+                <Ionicons name="expand-outline" size={40} color={COLORS.gold} />
               </View>
-              <Text style={s.heroTitle}>Get Verified</Text>
+              <Text style={s.heroTitle}>Enter Your Girth</Text>
               <Text style={s.heroSub}>
-                Submit a photo with a reference object in frame. Our AI measures the scale and confirms your size.
+                Girth measurement is required for verification so our AI can cross-check both dimensions.
               </Text>
             </View>
 
-            <Text style={s.sectionLabel}>REFERENCE OBJECTS</Text>
-            <View style={s.refList}>
-              {REFERENCE_OBJECTS.map(item => (
-                <View key={item.label} style={s.refRow}>
-                  <Text style={s.refIcon}>{item.icon}</Text>
-                  <View style={s.refText}>
-                    <Text style={s.refLabel}>{item.label}</Text>
-                    <Text style={s.refDetail}>{item.detail}</Text>
-                  </View>
-                </View>
-              ))}
+            <Text style={s.sectionLabel}>GIRTH (circumference)</Text>
+            <View style={s.girthRow}>
+              <TextInput
+                style={s.girthInput}
+                value={girthInput}
+                onChangeText={setGirthInput}
+                keyboardType="decimal-pad"
+                placeholder='e.g. 5.0"'
+                placeholderTextColor={COLORS.muted}
+                autoFocus
+              />
+              <Text style={s.girthUnit}>inches</Text>
             </View>
+            {girthError ? <Text style={s.girthError}>{girthError}</Text> : null}
 
-            <Text style={s.sectionLabel}>PHOTO TIPS</Text>
-            <View style={s.tipList}>
-              {[
-                'Shoot from directly above in good lighting',
-                'Keep both the subject and reference object fully in frame',
-                'Measure erect length from base to tip along the top',
-                'Your photo is deleted immediately after review',
-              ].map((tip, i) => (
-                <View key={i} style={s.tipRow}>
-                  <View style={s.tipDot} />
-                  <Text style={s.tipText}>{tip}</Text>
-                </View>
-              ))}
-            </View>
-
-            <View style={s.privacyNote}>
-              <Ionicons name="lock-closed-outline" size={14} color={COLORS.muted} />
-              <Text style={s.privacyText}>
-                Photos are stored encrypted, never shared, and permanently deleted after verification — whether approved or rejected.
-              </Text>
-            </View>
-
-            <TouchableOpacity style={s.primaryBtn} onPress={pickPhoto}>
-              <Ionicons name="camera-outline" size={18} color={COLORS.bg} />
-              <Text style={s.primaryBtnText}>Take Photo</Text>
+            <TouchableOpacity style={[s.primaryBtn, { marginTop: 24 }]} onPress={confirmGirthAndProceed}>
+              <Text style={s.primaryBtnText}>Continue</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={s.secondaryBtn} onPress={pickFromLibrary}>
-              <Ionicons name="images-outline" size={18} color={COLORS.gold} />
-              <Text style={s.secondaryBtnText}>Choose from Library</Text>
+            <TouchableOpacity style={s.secondaryBtn} onPress={() => setStep('instructions')}>
+              <Text style={s.secondaryBtnText}>Back</Text>
             </TouchableOpacity>
           </>
         )}
@@ -278,6 +367,12 @@ export default function VerifyScreen() {
         )}
 
       </ScrollView>
+
+      <PaywallModal
+        visible={showPaywall}
+        onClose={() => setShowPaywall(false)}
+        trigger="Get verified with a SIZE. Premium subscription"
+      />
     </SafeAreaView>
   );
 }
@@ -344,6 +439,15 @@ const s = StyleSheet.create({
     borderWidth: 1, borderColor: `${COLORS.gold}40`, marginBottom: 12,
   },
   secondaryBtnText: { color: COLORS.gold, fontSize: SIZES.md, fontWeight: '700' },
+
+  girthRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 8 },
+  girthInput: {
+    flex: 1, backgroundColor: COLORS.card, borderWidth: 1, borderColor: COLORS.cardBorder,
+    borderRadius: RADIUS.md, paddingHorizontal: 18, paddingVertical: 16,
+    color: COLORS.white, fontSize: SIZES.base,
+  },
+  girthUnit: { color: COLORS.gold, fontSize: SIZES.lg, fontWeight: '700', width: 52 },
+  girthError: { color: COLORS.red, fontSize: SIZES.sm, textAlign: 'center', marginBottom: 8 },
 
   preview: { width: '100%', height: 320, borderRadius: RADIUS.lg, marginBottom: 12 },
   previewHint: { color: COLORS.muted, fontSize: SIZES.sm, textAlign: 'center', marginBottom: 20 },

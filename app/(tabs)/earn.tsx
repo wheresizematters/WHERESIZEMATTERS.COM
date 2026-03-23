@@ -1,14 +1,16 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  SafeAreaView, ActivityIndicator, RefreshControl,
+  SafeAreaView, ActivityIndicator, RefreshControl, Alert, Platform,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SIZES, RADIUS } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
+import { usePurchase } from '@/context/PurchaseContext';
 import { supabase } from '@/lib/supabase';
 import PageContainer from '@/components/PageContainer';
+import PaywallModal from '@/components/PaywallModal';
 
 const EARN_ACTIONS = [
   { icon: 'shield-checkmark', label: 'Get Verified',       coins: 500,  desc: 'Verify your size to earn coins',          key: 'is_verified' },
@@ -26,11 +28,14 @@ const REWARDS = [
 ];
 
 export default function EarnScreen() {
-  const { profile, session } = useAuth();
+  const { profile, session, updateProfile } = useAuth();
+  const { isPremium } = usePurchase();
   const [coins, setCoins] = useState<number>(0);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [tab, setTab] = useState<'earn' | 'rewards'>('earn');
+  const [redeeming, setRedeeming] = useState<string | null>(null);
+  const [showPaywall, setShowPaywall] = useState(false);
 
   const loadCoins = useCallback(async () => {
     if (!session?.user.id) { setLoading(false); return; }
@@ -45,6 +50,60 @@ export default function EarnScreen() {
   }, [session?.user.id]);
 
   useEffect(() => { loadCoins(); }, [loadCoins]);
+
+  async function redeemReward(reward: typeof REWARDS[number]) {
+    if (!session?.user.id) return;
+    if (coins < reward.cost) {
+      const msg = `You need ${(reward.cost - coins).toLocaleString()} more coins to redeem this reward.`;
+      if (Platform.OS === 'web') window.alert(msg);
+      else Alert.alert('Not enough coins', msg);
+      return;
+    }
+
+    const confirm = await new Promise<boolean>(resolve => {
+      const msg = `Redeem "${reward.label}" for ${reward.cost.toLocaleString()} coins?`;
+      if (Platform.OS === 'web') {
+        resolve(window.confirm(msg));
+      } else {
+        Alert.alert('Confirm Redemption', msg, [
+          { text: 'Cancel', style: 'cancel', onPress: () => resolve(false) },
+          { text: 'Redeem', style: 'default', onPress: () => resolve(true) },
+        ]);
+      }
+    });
+    if (!confirm) return;
+
+    setRedeeming(reward.label);
+    // Deduct coins
+    const { error } = await supabase
+      .from('profiles')
+      .update({ size_coins: coins - reward.cost })
+      .eq('id', session.user.id);
+
+    if (error) {
+      setRedeeming(null);
+      if (Platform.OS === 'web') window.alert('Redemption failed. Please try again.');
+      else Alert.alert('Error', 'Redemption failed. Please try again.');
+      return;
+    }
+
+    setCoins(prev => prev - reward.cost);
+    setRedeeming(null);
+
+    if (reward.label === 'Premium — 1 Month') {
+      // Grant 30 days premium
+      const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+      await supabase.from('profiles').update({ is_premium: true, premium_expires_at: expiresAt }).eq('id', session.user.id);
+      if (Platform.OS === 'web') window.alert('Premium unlocked for 30 days! Refresh to see your benefits.');
+      else Alert.alert('Premium Unlocked! 👑', 'You have 30 days of SIZE. Premium.');
+    } else if (reward.label === 'Feed Boost') {
+      if (Platform.OS === 'web') window.alert('Feed Boost activated! Your next post will be prioritized in the feed.');
+      else Alert.alert('Feed Boost Activated! ⚡', 'Your next post will be prioritized in the feed.');
+    } else if (reward.label === 'Exclusive Badge') {
+      if (Platform.OS === 'web') window.alert('Exclusive badge coming soon! We\'ll add it to your profile shortly.');
+      else Alert.alert('Badge Incoming! 🏅', 'Your exclusive badge will appear on your profile soon.');
+    }
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -128,8 +187,12 @@ export default function EarnScreen() {
             <View style={styles.section}>
               <Text style={styles.sectionLabel}>REDEEM YOUR COINS</Text>
               {REWARDS.map((reward, i) => (
-                <TouchableOpacity key={i} style={styles.rewardCard} activeOpacity={0.8}
-                  onPress={() => {}}
+                <TouchableOpacity
+                  key={i}
+                  style={[styles.rewardCard, coins < reward.cost && styles.rewardCardLocked]}
+                  activeOpacity={0.8}
+                  disabled={redeeming === reward.label}
+                  onPress={() => redeemReward(reward)}
                 >
                   <View style={[styles.actionIcon, { backgroundColor: `${COLORS.gold}25` }]}>
                     <Ionicons name={reward.icon as any} size={20} color={COLORS.gold} />
@@ -139,10 +202,15 @@ export default function EarnScreen() {
                     <Text style={styles.actionDesc}>{reward.desc}</Text>
                   </View>
                   <View style={[styles.actionCoins, coins >= reward.cost ? styles.redeemActive : styles.redeemLocked]}>
-                    <Text style={[styles.actionCoinText, { color: coins >= reward.cost ? COLORS.gold : COLORS.muted }]}>
-                      {reward.cost.toLocaleString()}
-                    </Text>
-                    <Text style={styles.actionCoinSub}>💰</Text>
+                    {redeeming === reward.label
+                      ? <ActivityIndicator size="small" color={COLORS.gold} />
+                      : <>
+                          <Text style={[styles.actionCoinText, { color: coins >= reward.cost ? COLORS.gold : COLORS.muted }]}>
+                            {reward.cost.toLocaleString()}
+                          </Text>
+                          <Text style={styles.actionCoinSub}>💰</Text>
+                        </>
+                    }
                   </View>
                 </TouchableOpacity>
               ))}
@@ -188,6 +256,7 @@ const styles = StyleSheet.create({
   // Action cards
   actionCard: { flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: COLORS.card, borderRadius: RADIUS.lg, borderWidth: 1, borderColor: COLORS.cardBorder, padding: 14 },
   rewardCard: { flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: COLORS.card, borderRadius: RADIUS.lg, borderWidth: 1, borderColor: COLORS.cardBorder, padding: 14 },
+  rewardCardLocked: { opacity: 0.5 },
   actionIcon: { width: 42, height: 42, borderRadius: 12, backgroundColor: `${COLORS.gold}15`, borderWidth: 1, borderColor: `${COLORS.gold}25`, alignItems: 'center', justifyContent: 'center' },
   actionInfo: { flex: 1 },
   actionLabel: { color: COLORS.white, fontWeight: '700', fontSize: SIZES.md },

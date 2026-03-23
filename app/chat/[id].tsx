@@ -159,13 +159,17 @@ export default function ChatScreen() {
   const listRef = useRef<FlatList>(null);
 
   const load = useCallback(async () => {
-    const msgs = await fetchMessages(conversationId);
-    setMessages(msgs);
-    setLoading(false);
-    // Mark as read immediately when chat opens
-    if (myId) {
-      markRead(conversationId);
-      markConversationRead(conversationId, myId);
+    try {
+      const msgs = await fetchMessages(conversationId);
+      setMessages(msgs);
+      if (myId) {
+        markRead(conversationId);
+        markConversationRead(conversationId, myId).catch(() => {});
+      }
+    } catch {
+      // silent — chat still renders empty rather than hanging
+    } finally {
+      setLoading(false);
     }
   }, [conversationId, myId]);
 

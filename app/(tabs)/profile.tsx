@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, StyleSheet, SafeAreaView, TouchableOpacity,
   ScrollView, Alert, ActivityIndicator, Platform, Share,
-  Image, TextInput,
+  Image, TextInput, Linking,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import PageContainer from '@/components/PageContainer';
@@ -288,7 +288,7 @@ export default function ProfileScreen() {
             {profile.bio ? <Text style={styles.bioText}>{profile.bio}</Text> : null}
 
             {profile.website ? (
-              <TouchableOpacity onPress={() => { const u = profile.website!.startsWith('http') ? profile.website! : `https://${profile.website}`; if (Platform.OS === 'web') window.open(u, '_blank'); }}>
+              <TouchableOpacity onPress={() => { const u = profile.website!.startsWith('http') ? profile.website! : `https://${profile.website}`; if (Platform.OS === 'web') window.open(u, '_blank'); else Linking.openURL(u); }}>
                 <View style={styles.metaRow}>
                   <Ionicons name="link-outline" size={14} color={COLORS.gold} />
                   <Text style={styles.metaLink}>{profile.website}</Text>
@@ -327,9 +327,14 @@ export default function ProfileScreen() {
                 </TouchableOpacity>
               </View>
               {showSize
-                ? <LinearGradient colors={['#FF6B2B', '#E8500A', '#C9A84C', '#BF5AF2']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.sizeDisplayGrad}>
-                    <Text style={styles.sizeDisplay}>{size.toFixed(1)}"</Text>
-                  </LinearGradient>
+                ? <>
+                    <LinearGradient colors={['#FF6B2B', '#E8500A', '#C9A84C', '#BF5AF2']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.sizeDisplayGrad}>
+                      <Text style={styles.sizeDisplay}>{size.toFixed(1)}"</Text>
+                    </LinearGradient>
+                    {profile?.girth_inches ? (
+                      <Text style={styles.girthLabel}>{profile.girth_inches.toFixed(1)}" girth</Text>
+                    ) : null}
+                  </>
                 : <Text style={styles.sizeDisplayHidden}>••••</Text>
               }
             </LinearGradient>
@@ -520,6 +525,7 @@ const styles = StyleSheet.create({
   sizeDisplayGrad: { paddingHorizontal: 28, paddingVertical: 12, borderRadius: RADIUS.full, alignItems: 'center', justifyContent: 'center' },
   sizeDisplay: { fontSize: 52, fontWeight: '900', lineHeight: 60, color: COLORS.white },
   sizeDisplayHidden: { fontSize: 52, fontWeight: '900', lineHeight: 60, color: COLORS.mutedDark },
+  girthLabel: { color: COLORS.muted, fontSize: SIZES.sm, marginTop: 6, letterSpacing: 1 },
 
   // Stats
   statsGrid: { flexDirection: 'row', flexWrap: 'wrap', marginHorizontal: 16, backgroundColor: COLORS.card, borderRadius: RADIUS.lg, borderWidth: 1, borderColor: COLORS.cardBorder, marginBottom: 16, overflow: 'hidden' },

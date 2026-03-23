@@ -38,6 +38,7 @@ export default function SignupScreen() {
 
   // Step 2
   const [sizeInput, setSizeInput] = useState('');
+  const [girthInput, setGirthInput] = useState('');
   const [unit, setUnit] = useState<'in' | 'cm'>('in');
 
   const [loading, setLoading] = useState(false);
@@ -46,6 +47,13 @@ export default function SignupScreen() {
   function getSizeInches() {
     const val = parseFloat(sizeInput);
     if (isNaN(val)) return 0;
+    return unit === 'cm' ? val / 2.54 : val;
+  }
+
+  function getGirthInches(): number | undefined {
+    if (!girthInput.trim()) return undefined;
+    const val = parseFloat(girthInput);
+    if (isNaN(val) || val <= 0 || val > 12) return undefined;
     return unit === 'cm' ? val / 2.54 : val;
   }
 
@@ -70,7 +78,7 @@ export default function SignupScreen() {
     }
     setLoading(true);
     setError('');
-    const { error } = await signUp(email.trim(), password, username.trim(), inches, ageRange || undefined);
+    const { error } = await signUp(email.trim(), password, username.trim(), inches, ageRange || undefined, getGirthInches());
     if (error) setError(error);
     setLoading(false);
   }
@@ -210,6 +218,19 @@ export default function SignupScreen() {
               <Text style={styles.sizeUnit}>{unit === 'in' ? '"' : 'cm'}</Text>
             </View>
 
+            <Text style={styles.label}>Girth <Text style={styles.optionalTag}>(optional)</Text></Text>
+            <View style={styles.sizeInputRow}>
+              <TextInput
+                style={[styles.input, styles.sizeInput]}
+                placeholder={unit === 'in' ? 'e.g. 5.0' : 'e.g. 12.7'}
+                placeholderTextColor={COLORS.muted}
+                value={girthInput}
+                onChangeText={setGirthInput}
+                keyboardType="decimal-pad"
+              />
+              <Text style={styles.sizeUnit}>{unit === 'in' ? '"' : 'cm'}</Text>
+            </View>
+
             {tier && sizeInput ? (
               <View style={[styles.tierBadge, { borderColor: tier.color }]}>
                 <Text style={styles.tierEmoji}>{tier.emoji}</Text>
@@ -274,6 +295,7 @@ const styles = StyleSheet.create({
     color: COLORS.white, fontSize: SIZES.base,
   },
   label: { color: COLORS.muted, fontSize: SIZES.sm, letterSpacing: 1, textTransform: 'uppercase' },
+  optionalTag: { color: COLORS.mutedDark, fontSize: SIZES.xs, fontWeight: '400', textTransform: 'none', letterSpacing: 0 },
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   chip: {
     paddingHorizontal: 14, paddingVertical: 8,

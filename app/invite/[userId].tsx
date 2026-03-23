@@ -24,11 +24,11 @@ export default function InviteScreen() {
   const [adding, setAdding] = useState(false);
 
   useEffect(() => {
-    if (!userId) return;
-    fetchPublicProfile(userId).then(p => {
-      setInviter(p);
-      setLoading(false);
-    });
+    if (!userId) { setLoading(false); return; }
+    fetchPublicProfile(userId)
+      .then(p => setInviter(p))
+      .catch(() => {})
+      .finally(() => setLoading(false));
   }, [userId]);
 
   const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;

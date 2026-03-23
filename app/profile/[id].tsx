@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, SafeAreaView, TouchableOpacity,
-  ScrollView, ActivityIndicator, Alert, Platform, Image,
+  ScrollView, ActivityIndicator, Alert, Platform, Image, Linking,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -13,6 +13,8 @@ import {
   fetchTotalUserCount, fetchUserPosts, getOrCreateConversation,
 } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
+import { usePurchase } from '@/context/PurchaseContext';
+import PaywallModal from '@/components/PaywallModal';
 import { Profile, Post } from '@/lib/types';
 
 const TAG_COLORS: Record<string, string> = {
@@ -77,6 +79,7 @@ export default function PublicProfileScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { session } = useAuth();
+  const { isPremium } = usePurchase();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [rank, setRank] = useState<number | null>(null);
   const [postCount, setPostCount] = useState(0);
@@ -85,6 +88,7 @@ export default function PublicProfileScreen() {
   const [loading, setLoading] = useState(true);
   const [postsLoading, setPostsLoading] = useState(false);
   const [messaging, setMessaging] = useState(false);
+  const [showPaywall, setShowPaywall] = useState(false);
 
   const isOwnProfile = session?.user.id === id;
 
@@ -223,6 +227,7 @@ export default function PublicProfileScreen() {
             <TouchableOpacity onPress={() => {
               const u = profile.website!.startsWith('http') ? profile.website! : `https://${profile.website}`;
               if (Platform.OS === 'web') window.open(u, '_blank');
+              else Linking.openURL(u);
             }}>
               <View style={styles.metaRow}>
                 <Ionicons name="link-outline" size={14} color={COLORS.gold} />
@@ -257,13 +262,29 @@ export default function PublicProfileScreen() {
             style={styles.sizeCardInner}
           >
             <Text style={styles.sizeCardLabel}>SIZE</Text>
-            <LinearGradient
-              colors={['#FF6B2B', '#E8500A', '#C9A84C', '#BF5AF2']}
-              start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
-              style={styles.sizeDisplayGrad}
-            >
-              <Text style={styles.sizeDisplay}>{size.toFixed(1)}"</Text>
-            </LinearGradient>
+            {isPremium ? (
+              <>
+                <LinearGradient
+                  colors={['#FF6B2B', '#E8500A', '#C9A84C', '#BF5AF2']}
+                  start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
+                  style={styles.sizeDisplayGrad}
+                >
+                  <Text style={styles.sizeDisplay}>{size.toFixed(1)}"</Text>
+                </LinearGradient>
+                {profile.girth_inches ? (
+                  <Text style={styles.girthLabel}>{profile.girth_inches.toFixed(1)}" girth</Text>
+                ) : null}
+              </>
+            ) : (
+              <TouchableOpacity style={styles.sizeLockedWrap} onPress={() => setShowPaywall(true)} activeOpacity={0.85}>
+                <Text style={styles.sizeLockedEmoji}>{tier.emoji}</Text>
+                <Text style={styles.sizeLockedText}>Exact size hidden</Text>
+                <View style={styles.sizeLockedBtn}>
+                  <Ionicons name="lock-closed" size={12} color={COLORS.bg} />
+                  <Text style={styles.sizeLockedBtnText}>Unlock with Premium</Text>
+                </View>
+              </TouchableOpacity>
+            )}
           </LinearGradient>
         </LinearGradient>
 
@@ -302,6 +323,12 @@ export default function PublicProfileScreen() {
         </View>
 
       </ScrollView>
+
+      <PaywallModal
+        visible={showPaywall}
+        onClose={() => setShowPaywall(false)}
+        trigger="Unlock exact sizes with SIZE. Premium"
+      />
     </SafeAreaView>
   );
 }
@@ -353,6 +380,12 @@ const styles = StyleSheet.create({
   sizeCardLabel: { color: COLORS.gold, fontSize: 9, letterSpacing: 3, textTransform: 'uppercase', fontWeight: '800', alignSelf: 'flex-start' },
   sizeDisplayGrad: { paddingHorizontal: 28, paddingVertical: 14, borderRadius: RADIUS.full, alignItems: 'center', justifyContent: 'center' },
   sizeDisplay: { fontSize: 56, fontWeight: '900', lineHeight: 64, color: COLORS.white, textShadowColor: 'rgba(0,0,0,0.4)', textShadowOffset: { width: 0, height: 2 }, textShadowRadius: 6 },
+  girthLabel: { color: COLORS.muted, fontSize: SIZES.sm, letterSpacing: 1 },
+  sizeLockedWrap: { alignItems: 'center', gap: 10, paddingVertical: 8 },
+  sizeLockedEmoji: { fontSize: 48 },
+  sizeLockedText: { color: COLORS.muted, fontSize: SIZES.md, letterSpacing: 0.5 },
+  sizeLockedBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: COLORS.gold, borderRadius: RADIUS.full, paddingHorizontal: 16, paddingVertical: 8, marginTop: 4 },
+  sizeLockedBtnText: { color: COLORS.bg, fontSize: SIZES.sm, fontWeight: '800' },
 
   // Stats
   statsGrid: { flexDirection: 'row', flexWrap: 'wrap', marginHorizontal: 16, backgroundColor: COLORS.card, borderRadius: RADIUS.lg, borderWidth: 1, borderColor: COLORS.cardBorder, marginBottom: 16, overflow: 'hidden' },

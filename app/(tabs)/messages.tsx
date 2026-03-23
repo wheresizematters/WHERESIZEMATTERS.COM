@@ -60,15 +60,23 @@ function NewChatModal({ visible, onClose, myId }: {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<any[]>([]);
   const [searching, setSearching] = useState(false);
+  const [searchError, setSearchError] = useState(false);
   const [starting, setStarting] = useState(false);
 
   useEffect(() => {
-    if (query.length < 2) { setResults([]); return; }
+    if (query.length < 2) { setResults([]); setSearchError(false); return; }
     setSearching(true);
+    setSearchError(false);
     const t = setTimeout(async () => {
-      const data = await searchUsers(query);
-      setResults((data as any[]).filter((u: any) => u.id !== myId));
-      setSearching(false);
+      try {
+        const data = await searchUsers(query);
+        setResults((data as any[]).filter((u: any) => u.id !== myId));
+      } catch {
+        setSearchError(true);
+        setResults([]);
+      } finally {
+        setSearching(false);
+      }
     }, 300);
     return () => clearTimeout(t);
   }, [query, myId]);
@@ -140,7 +148,7 @@ function NewChatModal({ visible, onClose, myId }: {
             }}
             ListEmptyComponent={
               query.length >= 2 && !searching ? (
-                <Text style={styles.emptyText}>No users found</Text>
+                <Text style={styles.emptyText}>{searchError ? 'Search failed. Try again.' : 'No users found'}</Text>
               ) : null
             }
           />

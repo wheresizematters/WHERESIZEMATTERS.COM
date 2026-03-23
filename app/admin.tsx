@@ -41,13 +41,14 @@ export default function AdminScreen() {
 
   const loadRequests = useCallback(async () => {
     const data = await fetchPendingVerifications();
-    // Fetch signed URLs in parallel
-    const withUrls = await Promise.all(
-      data.map(async (req) => ({
-        ...req,
-        signedUrl: await getVerificationSignedUrl(req.image_path),
-      }))
+    // Fetch signed URLs in parallel — use allSettled so one failure doesn't crash the queue
+    const results = await Promise.allSettled(
+      data.map(req => getVerificationSignedUrl(req.image_path))
     );
+    const withUrls = data.map((req, i) => ({
+      ...req,
+      signedUrl: results[i].status === 'fulfilled' ? results[i].value : null,
+    }));
     setRequests(withUrls);
   }, []);
 

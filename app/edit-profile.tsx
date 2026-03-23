@@ -7,7 +7,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { COLORS, SIZES, RADIUS } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
+import { usePurchase } from '@/context/PurchaseContext';
 import { supabase } from '@/lib/supabase';
+import PaywallModal from '@/components/PaywallModal';
 
 const COUNTRIES = [
   'United States', 'United Kingdom', 'Canada', 'Australia', 'Germany', 'France',
@@ -20,6 +22,7 @@ const AGE_RANGES = ['18–24', '25–34', '35–44', '45+'];
 export default function EditProfileScreen() {
   const router = useRouter();
   const { profile, session, refreshProfile } = useAuth();
+  const { isPremium } = usePurchase();
 
   const [bio, setBio] = useState(profile?.bio ?? '');
   const [website, setWebsite] = useState(profile?.website ?? '');
@@ -27,6 +30,7 @@ export default function EditProfileScreen() {
   const [ageRange, setAgeRange] = useState(profile?.age_range ?? '');
   const [saving, setSaving] = useState(false);
   const [showCountryPicker, setShowCountryPicker] = useState(false);
+  const [showPaywall, setShowPaywall] = useState(false);
 
   async function handleSave() {
     if (!session?.user.id) return;
@@ -86,18 +90,28 @@ export default function EditProfileScreen() {
         {/* Website */}
         <View style={styles.fieldGroup}>
           <Text style={styles.fieldLabel}>WEBSITE</Text>
-          <View style={styles.inputRow}>
-            <Ionicons name="link-outline" size={16} color={COLORS.muted} style={styles.inputIcon} />
-            <TextInput
-              style={styles.inputFlex}
-              value={website}
-              onChangeText={setWebsite}
-              placeholder="yoursite.com"
-              placeholderTextColor={COLORS.muted}
-              autoCapitalize="none"
-              keyboardType="url"
-            />
-          </View>
+          {!isPremium ? (
+            <TouchableOpacity style={styles.lockedRow} onPress={() => setShowPaywall(true)} activeOpacity={0.8}>
+              <Ionicons name="lock-closed" size={16} color={COLORS.gold} />
+              <Text style={styles.lockedRowText}>Website Link</Text>
+              <View style={styles.premiumChip}>
+                <Text style={styles.premiumChipText}>Premium</Text>
+              </View>
+            </TouchableOpacity>
+          ) : (
+            <View style={styles.inputRow}>
+              <Ionicons name="link-outline" size={16} color={COLORS.muted} style={styles.inputIcon} />
+              <TextInput
+                style={styles.inputFlex}
+                value={website}
+                onChangeText={setWebsite}
+                placeholder="yoursite.com"
+                placeholderTextColor={COLORS.muted}
+                autoCapitalize="none"
+                keyboardType="url"
+              />
+            </View>
+          )}
         </View>
 
         {/* Country */}
@@ -146,6 +160,12 @@ export default function EditProfileScreen() {
         </Text>
 
       </ScrollView>
+
+      <PaywallModal
+        visible={showPaywall}
+        onClose={() => setShowPaywall(false)}
+        trigger="Add a website link to your profile"
+      />
     </SafeAreaView>
   );
 }
@@ -176,4 +196,8 @@ const styles = StyleSheet.create({
   chipText: { color: COLORS.muted, fontSize: SIZES.sm, fontWeight: '700' },
   chipTextActive: { color: COLORS.gold },
   note: { color: COLORS.muted, fontSize: SIZES.xs, textAlign: 'center', lineHeight: 18 },
+  lockedRow: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: COLORS.card, borderRadius: RADIUS.lg, borderWidth: 1, borderColor: `${COLORS.gold}40`, paddingHorizontal: 14, paddingVertical: 14 },
+  lockedRowText: { flex: 1, color: COLORS.muted, fontSize: SIZES.md, fontWeight: '600' },
+  premiumChip: { backgroundColor: `${COLORS.gold}20`, borderWidth: 1, borderColor: `${COLORS.gold}60`, borderRadius: RADIUS.full, paddingHorizontal: 10, paddingVertical: 3 },
+  premiumChipText: { color: COLORS.gold, fontSize: 10, fontWeight: '800', letterSpacing: 0.5 },
 });

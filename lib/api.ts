@@ -2,6 +2,44 @@ import { supabase, SUPABASE_READY } from './supabase';
 import { MOCK_POSTS, MOCK_LEADERBOARD } from './mockData';
 import { Post, LeaderboardEntry, Conversation, Message, VerificationRequest, Profile, Comment } from './types';
 
+// ── Coins ─────────────────────────────────────────────────────────────────────
+
+export async function awardCoins(userId: string, amount: number): Promise<void> {
+  if (!SUPABASE_READY) return;
+  await supabase.rpc('award_coins', { p_user_id: userId, p_amount: amount });
+}
+
+/** Awards daily login bonus (20 coins) once per calendar day. */
+export async function maybeAwardDailyLoginCoins(userId: string): Promise<boolean> {
+  if (!SUPABASE_READY) return false;
+  const { data } = await supabase
+    .from('profiles')
+    .select('last_daily_coin_at')
+    .eq('id', userId)
+    .single();
+  const last = data?.last_daily_coin_at;
+  const today = new Date().toDateString();
+  if (last && new Date(last).toDateString() === today) return false;
+  await supabase.from('profiles').update({ last_daily_coin_at: new Date().toISOString() }).eq('id', userId);
+  await awardCoins(userId, 20);
+  return true;
+}
+
+/** Awards post coins (10) once per calendar day. */
+export async function maybeAwardPostCoins(userId: string): Promise<void> {
+  if (!SUPABASE_READY) return;
+  const { data } = await supabase
+    .from('profiles')
+    .select('last_post_coin_at')
+    .eq('id', userId)
+    .single();
+  const last = data?.last_post_coin_at;
+  const today = new Date().toDateString();
+  if (last && new Date(last).toDateString() === today) return;
+  await supabase.from('profiles').update({ last_post_coin_at: new Date().toISOString() }).eq('id', userId);
+  await awardCoins(userId, 10);
+}
+
 // ── Feed ──────────────────────────────────────────────────────────────────────
 
 export async function fetchPosts(userId?: string): Promise<Post[]> {
@@ -87,6 +125,9 @@ export async function createPost(
     if (optErr) return { error: optErr.message };
   }
 
+  // Award daily post coins (fire-and-forget)
+  maybeAwardPostCoins(userId).catch(() => {});
+
   return { error: null };
 }
 
@@ -160,7 +201,7 @@ export async function fetchPublicProfile(userId: string): Promise<Profile | null
 
   const { data } = await supabase
     .from('profiles')
-    .select('id, username, size_inches, is_verified, has_set_size, country, age_range, bio, website, avatar_url, header_url, created_at')
+    .select('id, username, size_inches, girth_inches, is_verified, has_set_size, country, age_range, bio, website, avatar_url, header_url, created_at')
     .eq('id', userId)
     .single();
 
@@ -541,5 +582,9 @@ export async function getOrCreateConversation(
     .single();
 
   if (insertErr) return { id: null, error: insertErr.message };
+
+  // Award message coins to the initiator for starting a new conversation
+  awardCoins(myId, 5).catch(() => {});
+
   return { id: created?.id ?? null, error: null };
 }
