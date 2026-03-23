@@ -56,7 +56,7 @@ export async function fetchPosts(userId?: string): Promise<Post[]> {
     .order('created_at', { ascending: false })
     .limit(30);
 
-  if (error || !data) return MOCK_POSTS;
+  if (error || !data) { console.error('fetchPosts error:', error?.message); return []; }
 
   let posts = data as unknown as Post[];
 
