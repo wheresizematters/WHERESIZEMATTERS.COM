@@ -488,11 +488,12 @@ export async function submitVerificationPhoto(
 export async function runVerification(
   imagePath: string,
   reportedSize: number,
+  reportedGirth?: number | null,
 ): Promise<{ status: 'auto_verified' | 'pending'; reason?: string; error?: string }> {
   if (!SUPABASE_READY) return { status: 'pending', reason: 'demo_mode' };
 
   const { data, error } = await supabase.functions.invoke('verify-size', {
-    body: { imagePath, reportedSize },
+    body: { imagePath, reportedSize, reportedGirth: reportedGirth ?? null },
   });
 
   if (error) return { status: 'pending', error: error.message };

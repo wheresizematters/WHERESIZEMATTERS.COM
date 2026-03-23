@@ -124,7 +124,7 @@ export default function VerifyScreen() {
       return;
     }
 
-    const result = await runVerification(imagePath, profile.size_inches);
+    const result = await runVerification(imagePath, profile.size_inches, profile.girth_inches);
 
     if (result.status === 'auto_verified') {
       await updateProfile({ is_verified: true });
