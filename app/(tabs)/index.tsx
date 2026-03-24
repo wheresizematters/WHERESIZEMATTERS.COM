@@ -1,7 +1,7 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View, Text, FlatList, TouchableOpacity, StyleSheet,
-  SafeAreaView, ActivityIndicator, RefreshControl, Modal,
+  SafeAreaView, ActivityIndicator, Modal,
   TextInput, KeyboardAvoidingView, Platform, ScrollView, Image, Alert, Linking,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -10,6 +10,7 @@ import PageContainer from '@/components/PageContainer';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SIZES, RADIUS, getSizeTier } from '@/constants/theme';
 import { fetchPosts, createPost, voteOnPoll, voteOnPost } from '@/lib/api';
+import { supabase, SUPABASE_READY } from '@/lib/supabase';
 import { pickMedia, uploadMedia } from '@/lib/media';
 import { useAuth } from '@/context/AuthContext';
 import { usePurchase } from '@/context/PurchaseContext';
@@ -585,6 +586,8 @@ function PremiumNudgeBanner({ onDismiss, onUpgrade }: { onDismiss: () => void; o
   );
 }
 
+const PULL_THRESHOLD = 72;
+
 export default function FeedScreen() {
   const router = useRouter();
   const { session } = useAuth();
@@ -599,6 +602,9 @@ export default function FeedScreen() {
   const [showFilter, setShowFilter] = useState(false);
   const [dismissedNudge, setDismissedNudge] = useState(false);
   const [showPaywall, setShowPaywall] = useState(false);
+  const [pullY, setPullY] = useState(0);
+  const pullState = useRef({ startY: 0, active: false, triggered: false });
+  const feedAtTop = useRef(true);
   const activeFilterCount = (activeTag ? 1 : 0) + (verifiedOnly ? 1 : 0);
 
   const loadPosts = useCallback(async () => {
@@ -627,6 +633,60 @@ export default function FeedScreen() {
 
   useEffect(() => { loadPosts(); }, [loadPosts]);
 
+  // Realtime: reload feed when any new post is inserted
+  useEffect(() => {
+    if (!SUPABASE_READY) return;
+    const channel = supabase
+      .channel('posts-feed')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'posts' }, () => {
+        loadPosts();
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [loadPosts]);
+
+  // Pull-to-refresh via touch events
+  useEffect(() => {
+    const ps = pullState.current;
+
+    const onTouchStart = (e: TouchEvent) => {
+      if (!feedAtTop.current) return;
+      ps.startY = e.touches[0].clientY;
+      ps.active = true;
+      ps.triggered = false;
+    };
+
+    const onTouchMove = (e: TouchEvent) => {
+      if (!ps.active || ps.triggered) return;
+      const dy = e.touches[0].clientY - ps.startY;
+      if (dy > 0) {
+        setPullY(Math.min(dy * 0.45, PULL_THRESHOLD));
+        if (dy >= PULL_THRESHOLD * 2) {
+          ps.triggered = true;
+          setPullY(0);
+          setRefreshing(true);
+          loadPosts();
+        }
+      } else {
+        setPullY(0);
+      }
+    };
+
+    const onTouchEnd = () => {
+      ps.active = false;
+      setPullY(0);
+    };
+
+    window.addEventListener('touchstart', onTouchStart, { passive: true });
+    window.addEventListener('touchmove', onTouchMove, { passive: true });
+    window.addEventListener('touchend', onTouchEnd, { passive: true });
+    return () => {
+      window.removeEventListener('touchstart', onTouchStart);
+      window.removeEventListener('touchmove', onTouchMove);
+      window.removeEventListener('touchend', onTouchEnd);
+    };
+  }, [loadPosts]);
+
   const filteredPosts = posts.filter(p => {
     if (activeFilter === 'DISCUSSIONS') return p.type === 'discussion';
     if (activeFilter === 'MEDIA') return !!(p as any).media_url;
@@ -654,9 +714,14 @@ export default function FeedScreen() {
           <Text style={styles.logo}>SIZE.</Text>
           <Text style={styles.tabTitle}>FEED</Text>
         </View>
-        <TouchableOpacity onPress={() => router.push('/settings' as any)}>
-          <Ionicons name="notifications-outline" size={24} color={COLORS.muted} />
-        </TouchableOpacity>
+        <View style={{ flexDirection: 'row', gap: 16, alignItems: 'center' }}>
+          <TouchableOpacity onPress={() => { setRefreshing(true); loadPosts(); }}>
+            <Ionicons name="refresh-outline" size={24} color={refreshing ? COLORS.gold : COLORS.muted} />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => router.push('/settings' as any)}>
+            <Ionicons name="notifications-outline" size={24} color={COLORS.muted} />
+          </TouchableOpacity>
+        </View>
       </View>
       )}
 
@@ -752,18 +817,29 @@ export default function FeedScreen() {
       ) : activeFilter === 'DISCUSSIONS' ? (
         <DiscussionsList posts={posts} isPremium={isPremium} />
       ) : (
+        <>
+          {/* Pull-to-refresh indicator (web only) */}
+          {pullY > 0 && (
+            <View style={{ height: pullY, alignItems: 'center', justifyContent: 'flex-end', paddingBottom: 8 }}>
+              <Ionicons
+                name={pullY >= PULL_THRESHOLD ? 'refresh' : 'chevron-down-outline'}
+                size={20}
+                color={pullY >= PULL_THRESHOLD ? COLORS.gold : COLORS.muted}
+              />
+            </View>
+          )}
+          {refreshing && (
+            <View style={{ alignItems: 'center', paddingVertical: 10 }}>
+              <ActivityIndicator size="small" color={COLORS.gold} />
+            </View>
+          )}
         <FlatList
           data={filtered}
           keyExtractor={item => item.id}
           contentContainerStyle={styles.feedList}
           showsVerticalScrollIndicator={false}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={() => { setRefreshing(true); loadPosts(); }}
-              tintColor={COLORS.gold}
-            />
-          }
+          onScroll={(e) => { feedAtTop.current = e.nativeEvent.contentOffset.y <= 0; }}
+          scrollEventThrottle={16}
           renderItem={({ item }) => {
             if ((item as any)._nudge) {
               return (
@@ -790,6 +866,7 @@ export default function FeedScreen() {
             </View>
           }
         />
+        </>
       )}
 
       <TouchableOpacity style={styles.fab} onPress={() => setShowCreate(true)}>

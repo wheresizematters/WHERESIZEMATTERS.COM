@@ -52,9 +52,8 @@ export async function fetchPosts(userId?: string): Promise<Post[]> {
       author:profiles(id, username, size_inches, is_verified),
       poll_options(id, text, vote_count)
     `)
-    .order('score', { ascending: false })
     .order('created_at', { ascending: false })
-    .limit(30);
+    .limit(50);
 
   if (error || !data) { console.error('fetchPosts error:', error?.message); return []; }
 
