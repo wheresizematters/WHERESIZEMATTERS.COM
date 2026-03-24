@@ -11,6 +11,7 @@ import { usePurchase } from '@/context/PurchaseContext';
 import { supabase } from '@/lib/supabase';
 import PageContainer from '@/components/PageContainer';
 import PaywallModal from '@/components/PaywallModal';
+import { switchToBase } from '@/lib/web3';
 
 const EARN_ACTIONS = [
   { icon: 'shield-checkmark', label: 'Get Verified',       coins: 50000,  desc: 'Verify your size to earn coins',              key: 'is_verified' },
@@ -67,6 +68,8 @@ export default function EarnScreen() {
       if (address) {
         setWalletAddress(address);
         await updateProfile({ wallet_address: address } as any);
+        // Switch to Base mainnet automatically
+        await switchToBase();
       }
     } catch (err: any) {
       if (err?.code !== 4001) {
