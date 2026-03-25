@@ -37,7 +37,12 @@ export async function getItem<T>(table: string, key: Record<string, any>): Promi
 }
 
 export async function putItem(table: string, item: Record<string, any>): Promise<void> {
-  await ddb.send(new PutCommand({ TableName: table, Item: item }));
+  // DynamoDB does not accept null or undefined values — strip them
+  const clean: Record<string, any> = {};
+  for (const [k, v] of Object.entries(item)) {
+    if (v !== null && v !== undefined && v !== '') clean[k] = v;
+  }
+  await ddb.send(new PutCommand({ TableName: table, Item: clean }));
 }
 
 export async function updateItem(
