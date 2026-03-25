@@ -15,18 +15,18 @@ import PaywallModal from '@/components/PaywallModal';
 import { switchToBase } from '@/lib/web3';
 
 const EARN_ACTIONS = [
-  { icon: 'shield-checkmark', label: 'Get Verified',       weight: 5, desc: 'Highest reward weight — verified users earn more',  key: 'is_verified' },
-  { icon: 'people',           label: 'Refer a Friend',     weight: 4, desc: 'Bring users in, earn a share of the daily pool',   key: 'referral' },
-  { icon: 'create',           label: 'Post to Feed',       weight: 2, desc: 'Every post earns you a share of daily rewards',    key: 'post' },
-  { icon: 'chatbubbles',      label: 'Send a Message',     weight: 1, desc: 'Active conversations earn daily pool share',       key: 'message' },
-  { icon: 'star',             label: 'Get Upvoted',        weight: 3, desc: 'Quality content earns more from the fee pool',     key: 'upvote' },
-  { icon: 'calendar',         label: 'Daily Login',        weight: 1, desc: 'Show up daily to claim your share',               key: 'login' },
+  { icon: 'shield-checkmark', label: 'Get Verified',       pct: '0.001%', desc: 'Highest share of the daily reward pool',                key: 'is_verified' },
+  { icon: 'people',           label: 'Refer a Friend',     pct: '0.0008%', desc: 'Each referral earns a share of daily trading fees',    key: 'referral' },
+  { icon: 'star',             label: 'Get Upvoted',        pct: '0.0005%', desc: 'Quality content earns more from the fee pool',         key: 'upvote' },
+  { icon: 'create',           label: 'Post to Feed',       pct: '0.0003%', desc: 'Every post earns a proportional share',                key: 'post' },
+  { icon: 'calendar',         label: 'Daily Login',        pct: '0.0001%', desc: 'Show up daily to claim your share',                    key: 'login' },
+  { icon: 'chatbubbles',      label: 'Send a Message',     pct: '0.0001%', desc: 'Active conversations earn from the pool',              key: 'message' },
 ];
 
 const REWARDS = [
-  { icon: 'ribbon',    label: 'Premium — 1 Month',  cost: 250000,  desc: 'Redeem for 1 month of SIZE Premium' },
-  { icon: 'flash',     label: 'Feed Boost',          cost: 50000,   desc: 'Boost your post to the top of the feed' },
-  { icon: 'shirt',     label: 'Exclusive Badge',     cost: 100000,  desc: 'Unlock a rare profile badge' },
+  { icon: 'ribbon',    label: 'Premium — 1 Month',  cost: '$4.99',   desc: 'Subscribe via Stripe or burn $10 of $SIZE' },
+  { icon: 'flash',     label: 'Feed Boost',          cost: '$5',      desc: 'Boost your post to the top of the feed' },
+  { icon: 'shield-checkmark', label: 'Get Verified', cost: '$10',     desc: 'Burn $10 of $SIZE to verify instantly' },
 ];
 
 export default function EarnScreen() {
@@ -88,51 +88,25 @@ export default function EarnScreen() {
 
   async function redeemReward(reward: typeof REWARDS[number]) {
     if (!session?.user.id) return;
-    if (coins < reward.cost) {
-      const msg = `You need ${(reward.cost - coins).toLocaleString()} more coins to redeem this reward.`;
-      if (Platform.OS === 'web') window.alert(msg);
-      else typeof window !== 'undefined' ? window.alert(msg) : null;
+
+    if (reward.label === 'Premium — 1 Month') {
+      // Route to Stripe
+      const { stripeCheckout } = require('@/lib/purchases');
+      stripeCheckout('monthly', session.user.id);
       return;
     }
 
-    const confirm = await new Promise<boolean>(resolve => {
-      const msg = `Redeem "${reward.label}" for ${reward.cost.toLocaleString()} coins?`;
-      if (Platform.OS === 'web') {
-        resolve(window.confirm(msg));
-      } else {
-        Alert.alert('Confirm Redemption', msg, [
-          { text: 'Cancel', style: 'cancel', onPress: () => resolve(false) },
-          { text: 'Redeem', style: 'default', onPress: () => resolve(true) },
-        ]);
-      }
-    });
-    if (!confirm) return;
-
-    setRedeeming(reward.label);
-
-    // Build atomic update — deduct coins + grant reward in one DB call
-    const updateData: Record<string, any> = { size_coins: coins - reward.cost };
-    if (reward.label === 'Premium — 1 Month') {
-      const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
-      updateData.is_premium = true;
-      updateData.premium_expires_at = expiresAt;
+    if (reward.label === 'Get Verified') {
+      router.push('/verify' as any);
+      return;
     }
 
-    await updateProfile(updateData as any);
-    setRedeeming(null);
-
-    setCoins(prev => prev - reward.cost);
-
-    if (reward.label === 'Premium — 1 Month') {
-      if (Platform.OS === 'web') window.alert('Premium unlocked for 30 days! Refresh to see your benefits.');
-      else typeof window !== 'undefined' ? window.alert('You have 30 days of SIZE. Premium.') : null;
-    } else if (reward.label === 'Feed Boost') {
-      if (Platform.OS === 'web') window.alert('Feed Boost activated! Your next post will be prioritized in the feed.');
-      else typeof window !== 'undefined' ? window.alert('Your next post will be prioritized in the feed.') : null;
-    } else if (reward.label === 'Exclusive Badge') {
-      if (Platform.OS === 'web') window.alert('Exclusive badge coming soon! We\'ll add it to your profile shortly.');
-      else typeof window !== 'undefined' ? window.alert('Your exclusive badge will appear on your profile soon.') : null;
+    if (reward.label === 'Feed Boost') {
+      if (!window.confirm('Boost your next post for ' + reward.cost + '?')) return;
+      window.alert('Feed Boost activated! Your next post will be prioritized.');
+      return;
     }
+
   }
 
   return (
@@ -174,7 +148,7 @@ export default function EarnScreen() {
                 <Ionicons name="cash" size={40} color={COLORS.gold} />
                 <Text style={styles.balanceAmount}>{loading ? '—' : coins.toLocaleString()}</Text>
               </View>
-              <Text style={styles.balanceSub}>Your share of daily fee rewards</Text>
+              <Text style={styles.balanceSub}>Your share of daily trading fees</Text>
             </LinearGradient>
           </LinearGradient>
 
@@ -287,7 +261,7 @@ export default function EarnScreen() {
                     <Text style={styles.actionDesc}>{action.desc}</Text>
                   </View>
                   <View style={styles.actionCoins}>
-                    <Text style={styles.actionCoinText}>{action.weight}x</Text>
+                    <Text style={styles.actionCoinText}>{action.pct}</Text>
                     <Ionicons name="cash-outline" size={14} color={COLORS.gold} />
                   </View>
                 </View>
@@ -295,11 +269,11 @@ export default function EarnScreen() {
             </View>
           ) : (
             <View style={styles.section}>
-              <Text style={styles.sectionLabel}>REDEEM YOUR COINS</Text>
+              <Text style={styles.sectionLabel}>SPEND</Text>
               {REWARDS.map((reward, i) => (
                 <TouchableOpacity
                   key={i}
-                  style={[styles.rewardCard, coins < reward.cost && styles.rewardCardLocked]}
+                  style={[styles.rewardCard, false && styles.rewardCardLocked]}
                   activeOpacity={0.8}
                   disabled={redeeming === reward.label}
                   onPress={() => redeemReward(reward)}
@@ -311,12 +285,12 @@ export default function EarnScreen() {
                     <Text style={styles.actionLabel}>{reward.label}</Text>
                     <Text style={styles.actionDesc}>{reward.desc}</Text>
                   </View>
-                  <View style={[styles.actionCoins, coins >= reward.cost ? styles.redeemActive : styles.redeemLocked]}>
+                  <View style={[styles.actionCoins, true ? styles.redeemActive : styles.redeemLocked]}>
                     {redeeming === reward.label
                       ? <ActivityIndicator size="small" color={COLORS.gold} />
                       : <>
-                          <Text style={[styles.actionCoinText, { color: coins >= reward.cost ? COLORS.gold : COLORS.muted }]}>
-                            {reward.cost.toLocaleString()}
+                          <Text style={[styles.actionCoinText, { color: true ? COLORS.gold : COLORS.muted }]}>
+                            {reward.cost}
                           </Text>
                           <Ionicons name="cash-outline" size={14} color={COLORS.gold} />
                         </>

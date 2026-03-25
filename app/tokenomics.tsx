@@ -26,12 +26,12 @@ const STAKING_TIERS = [
 ];
 
 const EARN_ACTIONS = [
-  { action: 'Get Verified',    weight: '5x', icon: 'shield-checkmark', note: 'Highest reward weight' },
-  { action: 'Refer a Friend',  weight: '4x', icon: 'people',           note: 'High weight per referral' },
-  { action: 'Get Upvoted',     weight: '3x', icon: 'star',             note: 'Quality content rewarded' },
-  { action: 'Post to Feed',    weight: '2x', icon: 'create',           note: 'Daily activity share' },
-  { action: 'Daily Login',     weight: '1x', icon: 'calendar',         note: 'Base daily share' },
-  { action: 'Send a Message',  weight: '1x', icon: 'chatbubbles',      note: 'Conversation share' },
+  { action: 'Get Verified',    weight: '0.001%',  icon: 'shield-checkmark', note: 'Largest share of daily pool' },
+  { action: 'Refer a Friend',  weight: '0.0008%', icon: 'people',           note: 'Per confirmed referral' },
+  { action: 'Get Upvoted',     weight: '0.0005%', icon: 'star',             note: 'Quality content rewarded' },
+  { action: 'Post to Feed',    weight: '0.0003%', icon: 'create',           note: 'Per post, daily cap' },
+  { action: 'Daily Login',     weight: '0.0001%', icon: 'calendar',         note: 'Base daily share' },
+  { action: 'Send a Message',  weight: '0.0001%', icon: 'chatbubbles',      note: 'Per new conversation' },
 ];
 
 function SectionHeader({ title }: { title: string }) {

@@ -130,7 +130,7 @@ export default function VerifyScreen() {
     if (result.status === 'auto_verified') {
       await updateProfile({ is_verified: true });
       // Award verification coins
-      if (session?.user.id) awardCoins(session.user.id, 500).catch(() => {});
+      // Rewards come from daily fee pool proportionally
       setStep('result_verified');
     } else {
       setStep('result_pending');
