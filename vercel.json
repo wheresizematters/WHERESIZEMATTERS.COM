@@ -7,6 +7,7 @@
   "rewrites": [
     { "source": "/whitepaper", "destination": "/whitepaper.html" },
     { "source": "/tokenomics", "destination": "/tokenomics.html" },
+    { "source": "/api/:path*", "destination": "http://54.158.51.226:3000/api/:path*" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }

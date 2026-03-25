@@ -117,11 +117,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   async function signInWithOAuth(provider: 'google' | 'x') {
-    if (!API) return { error: 'API not configured' };
-    // Redirect to backend OAuth endpoint — backend handles the OAuth flow
-    // and redirects back with a token
+    // Use same-origin path — Vercel proxies /api/* to the API server
+    // This gives us HTTPS which Google/X OAuth require
     if (typeof window !== 'undefined') {
-      window.location.href = `${API}/api/v1/auth/oauth/${provider}/redirect`;
+      window.location.href = `/api/v1/auth/oauth/${provider}/redirect`;
     }
     return { error: null };
   }

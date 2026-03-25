@@ -118,7 +118,7 @@ r.post("/login", async (req: Request, res: Response) => {
 // ── GET /oauth/x/redirect — initiate X OAuth flow ──────────────────
 r.get("/oauth/x/redirect", (_req: Request, res: Response) => {
   const clientId = process.env.X_CLIENT_ID ?? process.env.X_CONSUMER_KEY ?? "";
-  const redirectUri = `${process.env.API_BASE_URL ?? "http://52.91.89.18:3000"}/api/v1/auth/oauth/x/callback`;
+  const redirectUri = `${process.env.API_BASE_URL ?? "https://wheresizematters.com"}/api/v1/auth/oauth/x/callback`;
   const state = require("crypto").randomBytes(16).toString("hex");
   // X OAuth 2.0 PKCE flow
   const scope = "users.read tweet.read offline.access";
@@ -143,7 +143,7 @@ r.get("/oauth/x/callback", async (req: Request, res: Response) => {
 
     const clientId = process.env.X_CLIENT_ID ?? process.env.X_CONSUMER_KEY ?? "";
     const clientSecret = process.env.X_CLIENT_SECRET ?? process.env.X_CONSUMER_SECRET ?? "";
-    const redirectUri = `${process.env.API_BASE_URL ?? "http://52.91.89.18:3000"}/api/v1/auth/oauth/x/callback`;
+    const redirectUri = `${process.env.API_BASE_URL ?? "https://wheresizematters.com"}/api/v1/auth/oauth/x/callback`;
 
     // Exchange code for access token
     const tokenRes = await fetch("https://api.twitter.com/2/oauth2/token", {
@@ -200,7 +200,7 @@ r.get("/oauth/x/callback", async (req: Request, res: Response) => {
 // ── GET /oauth/google/redirect — initiate Google OAuth flow ────────
 r.get("/oauth/google/redirect", (_req: Request, res: Response) => {
   const clientId = process.env.GOOGLE_CLIENT_ID ?? "";
-  const redirectUri = `${process.env.API_BASE_URL ?? "http://52.91.89.18:3000"}/api/v1/auth/oauth/google/callback`;
+  const redirectUri = `${process.env.API_BASE_URL ?? "https://wheresizematters.com"}/api/v1/auth/oauth/google/callback`;
   const scope = "openid email profile";
   const state = require("crypto").randomBytes(16).toString("hex");
   const url = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=${encodeURIComponent(scope)}&state=${state}&access_type=offline`;
@@ -215,7 +215,7 @@ r.get("/oauth/google/callback", async (req: Request, res: Response) => {
 
     const clientId = process.env.GOOGLE_CLIENT_ID ?? "";
     const clientSecret = process.env.GOOGLE_CLIENT_SECRET ?? "";
-    const redirectUri = `${process.env.API_BASE_URL ?? "http://52.91.89.18:3000"}/api/v1/auth/oauth/google/callback`;
+    const redirectUri = `${process.env.API_BASE_URL ?? "https://wheresizematters.com"}/api/v1/auth/oauth/google/callback`;
 
     // Exchange code for tokens
     const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
