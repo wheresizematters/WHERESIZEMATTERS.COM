@@ -21,7 +21,7 @@ const AGE_RANGES = ['18–24', '25–34', '35–44', '45+'];
 
 export default function EditProfileScreen() {
   const router = useRouter();
-  const { profile, session, refreshProfile } = useAuth();
+  const { profile, session, refreshProfile, updateProfile } = useAuth();
   const { isPremium } = usePurchase();
 
   const [bio, setBio] = useState(profile?.bio ?? '');
@@ -35,19 +35,13 @@ export default function EditProfileScreen() {
   async function handleSave() {
     if (!session?.user.id) return;
     setSaving(true);
-    const { error } = await supabase.from('profiles').update({
-      bio: bio.trim() || null,
-      website: website.trim() || null,
-      country: country || null,
-      age_range: ageRange || null,
-    }).eq('id', session.user.id);
+    await updateProfile({
+      bio: bio.trim() || undefined,
+      website: website.trim() || undefined,
+      country: country || undefined,
+      age_range: ageRange || undefined,
+    } as any);
     setSaving(false);
-
-    if (error) {
-      if (Platform.OS === 'web') window.alert('Failed to save profile.');
-      else Alert.alert('Error', 'Failed to save profile.');
-      return;
-    }
 
     refreshProfile?.();
     router.back();

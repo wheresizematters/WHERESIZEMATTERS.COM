@@ -641,13 +641,6 @@ export default function FeedScreen() {
   // Realtime: reload feed when any new post is inserted
   useEffect(() => {
     if (!SUPABASE_READY) return;
-    const channel = supabase
-      .channel('posts-feed')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'posts' }, () => {
-        loadPosts();
-      })
-      .subscribe();
-    // Realtime replaced by polling
   }, [loadPosts]);
 
   // Pull-to-refresh via touch events

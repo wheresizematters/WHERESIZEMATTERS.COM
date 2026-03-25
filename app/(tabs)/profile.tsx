@@ -83,49 +83,44 @@ function SizeBar({ size, maxSize, label, color, isYou }: { size: number; maxSize
 }
 
 async function pickAndUploadImage(bucket: 'avatars' | 'headers', userId: string): Promise<string | null> {
-  if (Platform.OS === 'web') {
-    return new Promise(resolve => {
-      const input = document.createElement('input');
-      input.type = 'file';
-      input.accept = 'image/*';
-      input.onchange = async () => {
-        const file = input.files?.[0];
-        if (!file) { resolve(null); return; }
-        const ext = file.name.split('.').pop() ?? 'jpg';
-        const path = `${userId}/photo.${ext}`;
-        const { error } = await supabase.storage.from(bucket).upload(path, file, { upsert: true });
-        if (error) { console.error(error); resolve(null); return; }
-        const { data } = supabase.storage.from(bucket).getPublicUrl(path);
-        resolve(data.publicUrl + `?t=${Date.now()}`);
-      };
-      input.click();
+  const API = getApiUrl();
+  const token = getToken();
+  if (!API || !token) return null;
+
+  async function uploadToS3(blob: Blob, ext: string): Promise<string | null> {
+    const path = `${bucket}/${userId}/photo.${ext}`;
+    const contentType = `image/${ext}`;
+    const urlRes = await fetch(`${API}/api/v1/storage/upload-url`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ bucket, path, contentType }),
     });
+    if (!urlRes.ok) return null;
+    const { uploadUrl, publicUrl } = await urlRes.json();
+    const uploadRes = await fetch(uploadUrl, { method: 'PUT', body: blob, headers: { 'Content-Type': contentType } });
+    if (!uploadRes.ok) return null;
+    return publicUrl + `?t=${Date.now()}`;
   }
 
-  // Native
-  try {
-    const ImagePicker = require('expo-image-picker');
-    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!perm.granted) return null;
-    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.8, allowsEditing: true, aspect: bucket === 'avatars' ? [1, 1] : [3, 1] });
-    if (result.canceled) return null;
-    const uri = result.assets[0].uri;
-    const ext = uri.split('.').pop() ?? 'jpg';
-    const path = `${userId}/photo.${ext}`;
-    const response = await fetch(uri);
-    const blob = await response.blob();
-    const { error } = await supabase.storage.from(bucket).upload(path, blob, { upsert: true, contentType: `image/${ext}` });
-    if (error) { console.error(error); return null; }
-    const { data } = supabase.storage.from(bucket).getPublicUrl(path);
-    return data.publicUrl + `?t=${Date.now()}`;
-  } catch {
-    return null;
-  }
+  // Web file picker
+  return new Promise(resolve => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.onchange = async () => {
+      const file = input.files?.[0];
+      if (!file) { resolve(null); return; }
+      const ext = file.name.split('.').pop() ?? 'jpg';
+      const url = await uploadToS3(file, ext);
+      resolve(url);
+    };
+    input.click();
+  });
 }
 
 export default function ProfileScreen() {
   const router = useRouter();
-  const { profile, session, signOut, demoMode, refreshProfile } = useAuth();
+  const { profile, session, signOut, demoMode, refreshProfile, updateProfile } = useAuth();
   const [rank, setRank] = useState<number | null>(null);
   const [postCount, setPostCount] = useState(0);
   const [totalUsers, setTotalUsers] = useState(0);
@@ -201,7 +196,7 @@ export default function ProfileScreen() {
     setUploadingAvatar(true);
     const url = await pickAndUploadImage('avatars', session.user.id);
     if (url) {
-      await supabase.from('profiles').update({ avatar_url: url }).eq('id', session.user.id);
+      await updateProfile({ avatar_url: url } as any);
       refreshProfile?.();
     }
     setUploadingAvatar(false);
@@ -212,7 +207,7 @@ export default function ProfileScreen() {
     setUploadingHeader(true);
     const url = await pickAndUploadImage('headers', session.user.id);
     if (url) {
-      await supabase.from('profiles').update({ header_url: url }).eq('id', session.user.id);
+      await updateProfile({ header_url: url } as any);
       refreshProfile?.();
     }
     setUploadingHeader(false);

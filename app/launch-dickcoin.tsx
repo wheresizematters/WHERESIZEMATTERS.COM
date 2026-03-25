@@ -58,24 +58,29 @@ export default function LaunchDickCoinScreen() {
     setError('');
 
     try {
-      // Upload image to Supabase Storage
+      // Upload image via S3 presigned URL
       let imageUrl = '';
-      if (SUPABASE_READY && imageUri) {
+      const API = getApiUrl();
+      const authToken = getToken() ?? '';
+      if (SUPABASE_READY && imageUri && API) {
         const ext = imageUri.split('.').pop() ?? 'jpg';
-        const path = `dickcoins/${session.user.id}/${Date.now()}.${ext}`;
+        const path = `dickcoin-images/${session.user.id}/${Date.now()}.${ext}`;
+        const contentType = 'image/jpeg';
+        const urlRes = await fetch(`${API}/api/v1/storage/upload-url`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken}` },
+          body: JSON.stringify({ bucket: 'dickcoin-images', path, contentType }),
+        });
+        if (!urlRes.ok) { setError('Image upload failed'); setStep('form'); return; }
+        const { uploadUrl, publicUrl } = await urlRes.json();
         const response = await fetch(imageUri);
         const blob = await response.blob();
-        const { error: uploadErr } = await supabase.storage
-          .from('media')
-          .upload(path, blob, { contentType: blob.type || 'image/jpeg' });
-        if (uploadErr) { setError('Image upload failed: ' + uploadErr.message); setStep('form'); return; }
-        const { data: urlData } = supabase.storage.from('media').getPublicUrl(path);
-        imageUrl = urlData.publicUrl;
+        const uploadRes = await fetch(uploadUrl, { method: 'PUT', body: blob, headers: { 'Content-Type': contentType } });
+        if (!uploadRes.ok) { setError('Image upload failed'); setStep('form'); return; }
+        imageUrl = publicUrl;
       }
 
-      // Get auth token
-      const { data: { session: authSession } } = await supabase.auth.getSession();
-      const token = authSession?.access_token ?? '';
+      const token = authToken;
 
       // Launch via backend → Clanker
       const result = await launchDickCoin({

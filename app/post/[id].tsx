@@ -272,19 +272,6 @@ export default function PostScreen() {
   // Realtime for new comments
   useEffect(() => {
     if (!SUPABASE_READY) return;
-    const channel = supabase
-      .channel(`comments:${postId}`)
-      .on('postgres_changes', {
-        event: 'INSERT', schema: 'public', table: 'comments',
-        filter: `post_id=eq.${postId}`,
-      }, payload => {
-        const c = payload.new as Comment;
-        setComments(prev => prev.some(x => x.id === c.id) ? prev : [...prev, c]);
-        // Refetch to get author data joined
-        fetchComments(postId).then(setComments);
-      })
-      .subscribe();
-    // Realtime replaced by polling
   }, [postId]);
 
   async function handleSubmit() {

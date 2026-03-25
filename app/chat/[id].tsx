@@ -191,29 +191,6 @@ export default function ChatScreen() {
   // Realtime subscription
   useEffect(() => {
     if (!SUPABASE_READY) return;
-    const channel = supabase
-      .channel(`messages:${conversationId}`)
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'messages', filter: `conversation_id=eq.${conversationId}` },
-        (payload) => {
-          const newMsg = payload.new as Message;
-          setMessages(prev => {
-            if (prev.some(m => m.id === newMsg.id)) return prev;
-            return [newMsg, ...prev];
-          });
-        },
-      )
-      .on(
-        'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'messages', filter: `conversation_id=eq.${conversationId}` },
-        (payload) => {
-          const updated = payload.new as Message;
-          setMessages(prev => prev.map(m => m.id === updated.id ? updated : m));
-        },
-      )
-      .subscribe();
-    // Realtime replaced by polling
   }, [conversationId]);
 
   async function handlePickMedia() {

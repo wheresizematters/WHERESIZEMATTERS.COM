@@ -44,15 +44,10 @@ export default function EarnScreen() {
 
   const loadCoins = useCallback(async () => {
     if (!session?.user.id) { setLoading(false); return; }
-    const { data } = await supabase
-      .from('profiles')
-      .select('size_coins')
-      .eq('id', session.user.id)
-      .single();
-    setCoins(data?.size_coins ?? 0);
+    setCoins(profile?.size_coins ?? 0);
     setLoading(false);
     setRefreshing(false);
-  }, [session?.user.id]);
+  }, [session?.user.id, profile?.size_coins]);
 
   useEffect(() => { loadCoins(); }, [loadCoins]);
 
@@ -123,18 +118,8 @@ export default function EarnScreen() {
       updateData.premium_expires_at = expiresAt;
     }
 
-    const { error } = await supabase
-      .from('profiles')
-      .update(updateData)
-      .eq('id', session.user.id);
-
+    await updateProfile(updateData as any);
     setRedeeming(null);
-
-    if (error) {
-      if (Platform.OS === 'web') window.alert('Redemption failed. Please try again.');
-      else Alert.alert('Error', 'Redemption failed. Please try again.');
-      return;
-    }
 
     setCoins(prev => prev - reward.cost);
 
