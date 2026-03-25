@@ -107,6 +107,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!data) return { error: 'API unavailable' };
     if (data.error) return { error: data.error };
     setToken(data.token);
+    // Hard redirect to force full reload with token in localStorage
+    if (typeof window !== 'undefined') {
+      window.location.href = '/earn';
+      return { error: null };
+    }
     setProfile(data.profile);
     setSession({ user: { id: data.profile.id } });
     return { error: null };
@@ -123,6 +128,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!data) return { error: 'API unavailable' };
     if (data.error) return { error: data.error };
     setToken(data.token);
+    if (typeof window !== 'undefined') {
+      window.location.href = '/earn';
+      return { error: null };
+    }
     setProfile(data.profile);
     setSession({ user: { id: data.profile.id } });
     return { error: null };
