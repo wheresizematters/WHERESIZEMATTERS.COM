@@ -5,27 +5,41 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { COLORS, SIZES, RADIUS } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
 import PageContainer from '@/components/PageContainer';
-import { getToken, getApiUrl, SUPABASE_READY } from '@/lib/supabase';
+import { getToken, getApiUrl } from '@/lib/supabase';
 import { launchDickCoin } from '@/lib/dickcoin';
 import * as ImagePicker from 'expo-image-picker';
 
-type Step = 'form' | 'launching' | 'success' | 'error';
+type Step = 'info' | 'form' | 'launching' | 'success' | 'error';
+
+const FEATURES = [
+  { icon: 'flash', title: '90% of Fees', desc: 'You earn 90% of every trade fee on your coin. Forever. On-chain.' },
+  { icon: 'people', title: 'Circle Jerk', desc: 'Your coin auto-spawns a token-gated community. Holders get roles based on how much they hold.' },
+  { icon: 'trending-up', title: 'Autostaking', desc: 'At 0.5 ETH in fees, staking auto-deploys for your coin. Holders earn yield.' },
+  { icon: 'shield-checkmark', title: 'Clanker Infra', desc: 'Deployed via Clanker on Base. Audited contracts. Uniswap V4 pool. Instant liquidity.' },
+];
+
+const STEPS_INFO = [
+  { n: 1, text: 'Choose a name, ticker, and image for your coin' },
+  { n: 2, text: 'Your ERC-20 token deploys on Base via Clanker' },
+  { n: 3, text: 'A Uniswap V4 liquidity pool opens immediately' },
+  { n: 4, text: 'A Circle Jerk community spawns for your holders' },
+  { n: 5, text: 'You earn 90% of every trade fee — forever' },
+];
 
 export default function LaunchDickCoinScreen() {
   const router = useRouter();
   const { session, profile } = useAuth();
 
-  const [step, setStep] = useState<Step>('form');
+  const [step, setStep] = useState<Step>('info');
   const [name, setName] = useState(profile?.username ? `${profile.username}Coin` : '');
   const [ticker, setTicker] = useState(profile?.username ? `$${profile.username.toUpperCase().slice(0, 7)}` : '');
   const [description, setDescription] = useState('');
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [error, setError] = useState('');
-
-  // Success data
   const [contractAddress, setContractAddress] = useState('');
   const [txHash, setTxHash] = useState('');
 
@@ -43,7 +57,7 @@ export default function LaunchDickCoinScreen() {
 
   async function handleLaunch() {
     if (!session?.user.id || !profile?.wallet_address) {
-      setError('Connect your wallet first (go to Earn tab)');
+      setError('Connect your wallet first (go to Grow tab)');
       return;
     }
     if (!profile?.is_verified) {
@@ -52,44 +66,39 @@ export default function LaunchDickCoinScreen() {
     }
     if (!name.trim()) { setError('Enter a name'); return; }
     if (!ticker.trim() || ticker.length > 9) { setError('Ticker must be 1-8 characters'); return; }
-    if (!imageUri) { setError('Upload an image for your coin'); return; }
 
     setStep('launching');
     setError('');
 
     try {
-      // Upload image via S3 presigned URL
       let imageUrl = '';
       const API = getApiUrl();
       const authToken = getToken() ?? '';
-      if (SUPABASE_READY && imageUri && API) {
+
+      if (imageUri && API !== undefined) {
         const ext = imageUri.split('.').pop() ?? 'jpg';
         const path = `dickcoin-images/${session.user.id}/${Date.now()}.${ext}`;
-        const contentType = 'image/jpeg';
         const urlRes = await fetch(`${API}/api/v1/storage/upload-url`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken}` },
-          body: JSON.stringify({ bucket: 'dickcoin-images', path, contentType }),
+          body: JSON.stringify({ bucket: 'dickcoin-images', path, contentType: 'image/jpeg' }),
         });
-        if (!urlRes.ok) { setError('Image upload failed'); setStep('form'); return; }
-        const { uploadUrl, publicUrl } = await urlRes.json();
-        const response = await fetch(imageUri);
-        const blob = await response.blob();
-        const uploadRes = await fetch(uploadUrl, { method: 'PUT', body: blob, headers: { 'Content-Type': contentType } });
-        if (!uploadRes.ok) { setError('Image upload failed'); setStep('form'); return; }
-        imageUrl = publicUrl;
+        if (urlRes.ok) {
+          const { uploadUrl, publicUrl } = await urlRes.json();
+          const response = await fetch(imageUri);
+          const blob = await response.blob();
+          await fetch(uploadUrl, { method: 'PUT', body: blob, headers: { 'Content-Type': 'image/jpeg' } });
+          imageUrl = publicUrl;
+        }
       }
 
-      const token = authToken;
-
-      // Launch via backend → Clanker
       const result = await launchDickCoin({
         name: name.trim(),
         ticker: ticker.trim().replace('$', '').toUpperCase(),
         description: description.trim() || undefined,
         imageUrl,
         creatorAddress: profile.wallet_address!,
-      }, token);
+      }, authToken);
 
       if (result.error) {
         setError(result.error);
@@ -107,259 +116,294 @@ export default function LaunchDickCoinScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={s.container}>
       <PageContainer>
-        {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.push("/(tabs)" as any)} style={styles.backBtn}>
+        <View style={s.header}>
+          <TouchableOpacity onPress={() => { if (typeof window !== 'undefined' && window.history.length > 1) { router.back(); } else { router.push('/(tabs)' as any); } }} style={s.backBtn}>
             <Ionicons name="arrow-back" size={22} color={COLORS.white} />
           </TouchableOpacity>
-          <Text style={styles.headerText}>Launch DickCoin</Text>
+          <Text style={s.headerText}>Launch DickCoin</Text>
           <View style={{ width: 36 }} />
         </View>
 
-        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
-          {step === 'form' && (
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.scroll}>
+
+          {/* ── INFO STEP ── */}
+          {step === 'info' && (
             <>
-              {/* Explainer */}
-              <View style={styles.explainer}>
-                <Ionicons name="rocket-outline" size={32} color={COLORS.gold} />
-                <Text style={styles.explainerTitle}>Launch your personal memecoin</Text>
-                <Text style={styles.explainerDesc}>
-                  Deploy an ERC-20 token on Base via Clanker. Your coin gets a Uniswap V4 pool and a Circle Jerk community instantly. You earn 90% of all trading fees forever.
-                </Text>
+              {/* Hero */}
+              <LinearGradient
+                colors={['#2A1200', '#1A0800', '#0A0A0A']}
+                start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+                style={s.heroCard}
+              >
+                <LinearGradient
+                  colors={['rgba(232,80,10,0.2)', 'rgba(255,107,43,0.08)', 'transparent']}
+                  start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+                  style={s.heroInner}
+                >
+                  <Ionicons name="rocket" size={40} color={COLORS.gold} />
+                  <Text style={s.heroTitle}>Launch Your Personal Memecoin</Text>
+                  <Text style={s.heroSub}>Deploy an ERC-20 token on Base in one tap. Your coin gets instant liquidity on Uniswap V4 and a token-gated Circle Jerk community.</Text>
+                </LinearGradient>
+              </LinearGradient>
+
+              {/* Fee split */}
+              <View style={s.section}>
+                <Text style={s.sectionLabel}>FEE SPLIT</Text>
+                <View style={s.feeBar}>
+                  <View style={[s.feeSegment, { flex: 90, backgroundColor: COLORS.gold }]}>
+                    <Text style={s.feeSegText}>90% YOU</Text>
+                  </View>
+                  <View style={[s.feeSegment, { flex: 8, backgroundColor: COLORS.card, borderWidth: 1, borderColor: COLORS.cardBorder }]}>
+                    <Text style={[s.feeSegText, { color: COLORS.muted, fontSize: 8 }]}>8%</Text>
+                  </View>
+                  <View style={[s.feeSegment, { flex: 2, backgroundColor: COLORS.green }]}>
+                  </View>
+                </View>
+                <View style={s.feeLabels}>
+                  <Text style={s.feeLabel}><Text style={{ color: COLORS.gold, fontWeight: '900' }}>90%</Text> to you (creator)</Text>
+                  <Text style={s.feeLabel}><Text style={{ color: COLORS.muted, fontWeight: '900' }}>8%</Text> protocol</Text>
+                  <Text style={s.feeLabel}><Text style={{ color: COLORS.green, fontWeight: '900' }}>2%</Text> gas</Text>
+                </View>
               </View>
 
-              {/* Form */}
-              <View style={styles.formSection}>
-                <Text style={styles.label}>TOKEN NAME</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="e.g. JackCoin"
-                  placeholderTextColor={COLORS.mutedDark}
-                  value={name}
-                  onChangeText={setName}
-                  maxLength={32}
-                />
+              {/* Features */}
+              <View style={s.section}>
+                <Text style={s.sectionLabel}>WHAT YOU GET</Text>
+                {FEATURES.map((f, i) => (
+                  <View key={i} style={s.featureCard}>
+                    <View style={s.featureIcon}>
+                      <Ionicons name={f.icon as any} size={20} color={COLORS.gold} />
+                    </View>
+                    <View style={s.featureInfo}>
+                      <Text style={s.featureTitle}>{f.title}</Text>
+                      <Text style={s.featureDesc}>{f.desc}</Text>
+                    </View>
+                  </View>
+                ))}
+              </View>
 
-                <Text style={styles.label}>TICKER</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="e.g. $JACK"
-                  placeholderTextColor={COLORS.mutedDark}
-                  value={ticker}
-                  onChangeText={(t) => setTicker(t.toUpperCase().slice(0, 9))}
-                  autoCapitalize="characters"
-                  maxLength={9}
-                />
+              {/* How it works */}
+              <View style={s.section}>
+                <Text style={s.sectionLabel}>HOW IT WORKS</Text>
+                {STEPS_INFO.map((st, i) => (
+                  <View key={i} style={s.stepRow}>
+                    <View style={s.stepCircle}><Text style={s.stepNum}>{st.n}</Text></View>
+                    {i < STEPS_INFO.length - 1 && <View style={s.stepLine} />}
+                    <Text style={s.stepText}>{st.text}</Text>
+                  </View>
+                ))}
+              </View>
 
-                <Text style={styles.label}>DESCRIPTION (OPTIONAL)</Text>
-                <TextInput
-                  style={[styles.input, styles.textarea]}
-                  placeholder="What's your coin about? Max 280 characters."
-                  placeholderTextColor={COLORS.mutedDark}
-                  value={description}
-                  onChangeText={setDescription}
-                  multiline
-                  maxLength={280}
-                />
-                <Text style={styles.charCount}>{description.length}/280</Text>
+              {/* Requirements */}
+              <View style={s.section}>
+                <Text style={s.sectionLabel}>REQUIREMENTS</Text>
+                <View style={s.reqCard}>
+                  <View style={s.reqRow}>
+                    <Ionicons name={profile?.is_verified ? 'checkmark-circle' : 'close-circle'} size={18} color={profile?.is_verified ? COLORS.green : COLORS.red} />
+                    <Text style={s.reqText}>Verified account</Text>
+                    {!profile?.is_verified && (
+                      <TouchableOpacity onPress={() => router.push('/verify' as any)}>
+                        <Text style={s.reqLink}>Get Verified</Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                  <View style={s.reqRow}>
+                    <Ionicons name={profile?.wallet_address ? 'checkmark-circle' : 'close-circle'} size={18} color={profile?.wallet_address ? COLORS.green : COLORS.red} />
+                    <Text style={s.reqText}>Wallet connected</Text>
+                    {!profile?.wallet_address && (
+                      <TouchableOpacity onPress={() => router.push('/(tabs)/earn' as any)}>
+                        <Text style={s.reqLink}>Connect</Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                </View>
+              </View>
 
-                <Text style={styles.label}>COIN IMAGE</Text>
-                <TouchableOpacity style={styles.imagePicker} onPress={pickImage}>
+              {/* CTA */}
+              <TouchableOpacity
+                style={[s.ctaBtn, (!profile?.is_verified || !profile?.wallet_address) && s.ctaBtnDisabled]}
+                onPress={() => setStep('form')}
+                disabled={!profile?.is_verified || !profile?.wallet_address}
+              >
+                <Ionicons name="rocket" size={18} color={COLORS.bg} />
+                <Text style={s.ctaBtnText}>Create Your DickCoin</Text>
+              </TouchableOpacity>
+
+              <Text style={s.ctaSub}>Free to launch. No upfront cost. You earn from day one.</Text>
+            </>
+          )}
+
+          {/* ── FORM STEP ── */}
+          {step === 'form' && (
+            <>
+              <View style={s.section}>
+                <Text style={s.sectionLabel}>TOKEN NAME</Text>
+                <TextInput style={s.input} placeholder="e.g. JackCoin" placeholderTextColor={COLORS.mutedDark} value={name} onChangeText={setName} maxLength={32} />
+              </View>
+
+              <View style={s.section}>
+                <Text style={s.sectionLabel}>TICKER</Text>
+                <TextInput style={s.input} placeholder="e.g. $JACK" placeholderTextColor={COLORS.mutedDark} value={ticker} onChangeText={t => setTicker(t.toUpperCase().slice(0, 9))} autoCapitalize="characters" maxLength={9} />
+              </View>
+
+              <View style={s.section}>
+                <Text style={s.sectionLabel}>DESCRIPTION (OPTIONAL)</Text>
+                <TextInput style={[s.input, { minHeight: 80, textAlignVertical: 'top' }]} placeholder="What's your coin about? Max 280 chars." placeholderTextColor={COLORS.mutedDark} value={description} onChangeText={setDescription} multiline maxLength={280} />
+                <Text style={s.charCount}>{description.length}/280</Text>
+              </View>
+
+              <View style={s.section}>
+                <Text style={s.sectionLabel}>COIN IMAGE</Text>
+                <TouchableOpacity style={s.imagePicker} onPress={pickImage}>
                   {imageUri ? (
-                    <View style={styles.imagePreview}>
+                    <View style={s.imagePreview}>
                       <Ionicons name="checkmark-circle" size={24} color={COLORS.green} />
-                      <Text style={styles.imagePickerText}>Image selected</Text>
+                      <Text style={s.imagePickerText}>Image selected</Text>
                     </View>
                   ) : (
-                    <View style={styles.imagePreview}>
+                    <View style={s.imagePreview}>
                       <Ionicons name="image-outline" size={24} color={COLORS.muted} />
-                      <Text style={styles.imagePickerText}>Tap to upload (1:1 square)</Text>
+                      <Text style={s.imagePickerText}>Tap to upload (1:1 square)</Text>
                     </View>
                   )}
                 </TouchableOpacity>
               </View>
 
-              {/* Fee info */}
-              <View style={styles.feeInfo}>
-                <Text style={styles.feeTitle}>Fee Split on Every Trade</Text>
-                <View style={styles.feeRow}>
-                  <View style={styles.feeDot} />
-                  <Text style={styles.feeText}><Text style={{ color: COLORS.gold, fontWeight: '900' }}>90%</Text> of ETH fees go to you (the creator)</Text>
-                </View>
-                <View style={styles.feeRow}>
-                  <View style={[styles.feeDot, { backgroundColor: COLORS.blue }]} />
-                  <Text style={styles.feeText}><Text style={{ color: COLORS.blue, fontWeight: '900' }}>10%</Text> goes to SIZE. protocol</Text>
-                </View>
-              </View>
+              {error ? <Text style={s.error}>{error}</Text> : null}
 
-              {/* What happens */}
-              <View style={styles.stepsCard}>
-                <Text style={styles.stepsTitle}>What happens when you launch</Text>
-                <StepItem n={1} text="Your ERC-20 token deploys on Base via Clanker" />
-                <StepItem n={2} text="A Uniswap V4 liquidity pool opens immediately" />
-                <StepItem n={3} text="A Circle Jerk (token-gated group chat) spawns for holders" />
-                <StepItem n={4} text="You earn 90% of every trade fee — forever, on-chain" />
-                <StepItem n={5} text="At 0.5 ETH in fees, staking auto-deploys for your coin" />
-              </View>
-
-              {error ? <Text style={styles.error}>{error}</Text> : null}
-
-              {/* Requirements */}
-              {!profile?.is_verified && (
-                <View style={styles.reqCard}>
-                  <Ionicons name="alert-circle" size={18} color={COLORS.gold} />
-                  <Text style={styles.reqText}>You need to be verified to launch a DickCoin</Text>
-                  <TouchableOpacity onPress={() => router.push('/verify' as any)}>
-                    <Text style={styles.reqLink}>Get Verified</Text>
-                  </TouchableOpacity>
-                </View>
-              )}
-              {!profile?.wallet_address && (
-                <View style={styles.reqCard}>
-                  <Ionicons name="wallet-outline" size={18} color={COLORS.gold} />
-                  <Text style={styles.reqText}>Connect your wallet first</Text>
-                  <TouchableOpacity onPress={() => router.push('/(tabs)/earn' as any)}>
-                    <Text style={styles.reqLink}>Go to Earn</Text>
-                  </TouchableOpacity>
-                </View>
-              )}
-
-              <TouchableOpacity
-                style={[styles.launchBtn, (!profile?.is_verified || !profile?.wallet_address) && styles.launchBtnDisabled]}
-                onPress={handleLaunch}
-                disabled={!profile?.is_verified || !profile?.wallet_address}
-              >
+              <TouchableOpacity style={s.ctaBtn} onPress={handleLaunch}>
                 <Ionicons name="rocket" size={18} color={COLORS.bg} />
-                <Text style={styles.launchBtnText}>Launch DickCoin</Text>
+                <Text style={s.ctaBtnText}>Launch DickCoin</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity style={s.backLink} onPress={() => setStep('info')}>
+                <Text style={s.backLinkText}>Back to info</Text>
               </TouchableOpacity>
             </>
           )}
 
+          {/* ── LAUNCHING ── */}
           {step === 'launching' && (
-            <View style={styles.center}>
+            <View style={s.center}>
               <ActivityIndicator size="large" color={COLORS.gold} />
-              <Text style={styles.launchingTitle}>Deploying on Base...</Text>
-              <Text style={styles.launchingDesc}>This takes about 30 seconds. Your token is being deployed via Clanker into a Uniswap V4 pool.</Text>
+              <Text style={s.launchingTitle}>Deploying on Base...</Text>
+              <Text style={s.launchingSub}>Your token is being deployed via Clanker into a Uniswap V4 pool. This takes about 30 seconds.</Text>
             </View>
           )}
 
+          {/* ── SUCCESS ── */}
           {step === 'success' && (
-            <View style={styles.center}>
+            <View style={s.center}>
               <Ionicons name="checkmark-circle" size={64} color={COLORS.green} />
-              <Text style={styles.successTitle}>{name} is live</Text>
-              <Text style={styles.successTicker}>{ticker}</Text>
-              <Text style={styles.successDesc}>Your DickCoin is deployed on Base and tradeable now.</Text>
+              <Text style={s.successTitle}>{name} is live</Text>
+              <Text style={s.successTicker}>{ticker}</Text>
+              <Text style={s.successDesc}>Your DickCoin is deployed on Base and tradeable now.</Text>
 
-              <View style={styles.addressCard}>
-                <Text style={styles.addressLabel}>CONTRACT ADDRESS</Text>
-                <Text style={styles.addressValue} selectable>{contractAddress}</Text>
+              <View style={s.addressCard}>
+                <Text style={s.addressLabel}>CONTRACT</Text>
+                <Text style={s.addressValue} selectable>{contractAddress}</Text>
               </View>
 
-              <TouchableOpacity
-                style={styles.actionBtn}
-                onPress={() => { if (typeof window !== 'undefined') window.open(`https://basescan.org/token/${contractAddress}`, '_blank'); }}
-              >
+              <TouchableOpacity style={s.actionBtn} onPress={() => { if (typeof window !== 'undefined') window.open(`https://basescan.org/token/${contractAddress}`, '_blank'); }}>
                 <Ionicons name="open-outline" size={16} color={COLORS.gold} />
-                <Text style={styles.actionBtnText}>View on Basescan</Text>
+                <Text style={s.actionBtnText}>View on Basescan</Text>
               </TouchableOpacity>
 
-              <TouchableOpacity
-                style={styles.actionBtn}
-                onPress={() => router.push(`/circle-jerk/${contractAddress}` as any)}
-              >
+              <TouchableOpacity style={s.actionBtn} onPress={() => router.push(`/circle-jerk/${contractAddress}` as any)}>
                 <Ionicons name="chatbubbles-outline" size={16} color={COLORS.gold} />
-                <Text style={styles.actionBtnText}>Enter your Circle Jerk</Text>
+                <Text style={s.actionBtnText}>Enter your Circle Jerk</Text>
               </TouchableOpacity>
 
-              <TouchableOpacity
-                style={[styles.launchBtn, { marginTop: 20 }]}
-                onPress={() => router.push("/(tabs)" as any)}
-              >
-                <Text style={styles.launchBtnText}>Back to Feed</Text>
+              <TouchableOpacity style={s.ctaBtn} onPress={() => router.push('/(tabs)' as any)}>
+                <Text style={s.ctaBtnText}>Back to Feed</Text>
               </TouchableOpacity>
             </View>
           )}
 
+          {/* ── ERROR ── */}
           {step === 'error' && (
-            <View style={styles.center}>
+            <View style={s.center}>
               <Ionicons name="close-circle" size={64} color={COLORS.red} />
-              <Text style={styles.errorTitle}>Launch Failed</Text>
-              <Text style={styles.errorDesc}>{error}</Text>
-              <TouchableOpacity style={styles.launchBtn} onPress={() => { setStep('form'); setError(''); }}>
-                <Text style={styles.launchBtnText}>Try Again</Text>
+              <Text style={s.errorTitle}>Launch Failed</Text>
+              <Text style={s.errorDesc}>{error}</Text>
+              <TouchableOpacity style={s.ctaBtn} onPress={() => { setStep('form'); setError(''); }}>
+                <Text style={s.ctaBtnText}>Try Again</Text>
               </TouchableOpacity>
             </View>
           )}
+
         </ScrollView>
       </PageContainer>
     </SafeAreaView>
   );
 }
 
-function StepItem({ n, text }: { n: number; text: string }) {
-  return (
-    <View style={styles.stepRow}>
-      <View style={styles.stepCircle}><Text style={styles.stepNum}>{n}</Text></View>
-      <Text style={styles.stepText}>{text}</Text>
-    </View>
-  );
-}
-
-const styles = StyleSheet.create({
+const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.bg },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12 },
   backBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: COLORS.card, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: COLORS.cardBorder },
   headerText: { fontSize: SIZES.lg, fontWeight: '900', color: COLORS.white, letterSpacing: 1 },
   scroll: { paddingHorizontal: 16, paddingBottom: 100 },
 
-  // Explainer
-  explainer: { alignItems: 'center', paddingVertical: 24, gap: 10 },
-  explainerTitle: { fontSize: SIZES.xl, fontWeight: '900', color: COLORS.white, textAlign: 'center' },
-  explainerDesc: { fontSize: SIZES.md, color: COLORS.muted, textAlign: 'center', lineHeight: 22, paddingHorizontal: 16 },
+  // Hero
+  heroCard: { borderRadius: RADIUS.xl, borderWidth: 1, borderColor: `${COLORS.gold}35`, overflow: 'hidden', marginBottom: 20 },
+  heroInner: { padding: 28, alignItems: 'center', gap: 12 },
+  heroTitle: { fontSize: SIZES.xxl, fontWeight: '900', color: COLORS.white, textAlign: 'center', letterSpacing: 0.5 },
+  heroSub: { fontSize: SIZES.md, color: COLORS.muted, textAlign: 'center', lineHeight: 22 },
 
-  // Form
-  formSection: { gap: 6, marginBottom: 20 },
-  label: { color: COLORS.muted, fontSize: 10, fontWeight: '800', letterSpacing: 2, marginTop: 12 },
-  input: { backgroundColor: COLORS.card, borderWidth: 1, borderColor: COLORS.cardBorder, borderRadius: RADIUS.md, paddingHorizontal: 16, paddingVertical: 14, color: COLORS.white, fontSize: SIZES.base },
-  textarea: { minHeight: 80, textAlignVertical: 'top' },
-  charCount: { color: COLORS.mutedDark, fontSize: SIZES.xs, textAlign: 'right' },
-  imagePicker: { backgroundColor: COLORS.card, borderWidth: 1, borderColor: COLORS.cardBorder, borderRadius: RADIUS.md, padding: 20, alignItems: 'center' },
-  imagePreview: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  imagePickerText: { color: COLORS.muted, fontSize: SIZES.sm },
+  // Sections
+  section: { marginBottom: 20 },
+  sectionLabel: { color: COLORS.muted, fontSize: 10, fontWeight: '800', letterSpacing: 2.5, marginBottom: 10 },
 
-  // Fee info
-  feeInfo: { backgroundColor: COLORS.card, borderRadius: RADIUS.lg, borderWidth: 1, borderColor: COLORS.cardBorder, padding: 16, marginBottom: 16, gap: 10 },
-  feeTitle: { color: COLORS.white, fontWeight: '700', fontSize: SIZES.md, marginBottom: 4 },
-  feeRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  feeDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: COLORS.gold },
-  feeText: { color: COLORS.offWhite, fontSize: SIZES.sm, flex: 1 },
+  // Fee bar
+  feeBar: { flexDirection: 'row', height: 40, borderRadius: RADIUS.md, overflow: 'hidden', gap: 2 },
+  feeSegment: { borderRadius: RADIUS.sm, alignItems: 'center', justifyContent: 'center' },
+  feeSegText: { color: COLORS.bg, fontWeight: '900', fontSize: SIZES.sm },
+  feeLabels: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 8 },
+  feeLabel: { color: COLORS.muted, fontSize: SIZES.xs },
+
+  // Features
+  featureCard: { flexDirection: 'row', alignItems: 'flex-start', gap: 14, backgroundColor: COLORS.card, borderRadius: RADIUS.lg, borderWidth: 1, borderColor: COLORS.cardBorder, padding: 14, marginBottom: 8 },
+  featureIcon: { width: 42, height: 42, borderRadius: 12, backgroundColor: `${COLORS.gold}15`, borderWidth: 1, borderColor: `${COLORS.gold}25`, alignItems: 'center', justifyContent: 'center' },
+  featureInfo: { flex: 1 },
+  featureTitle: { color: COLORS.white, fontWeight: '700', fontSize: SIZES.md },
+  featureDesc: { color: COLORS.muted, fontSize: SIZES.xs, marginTop: 2, lineHeight: 16 },
 
   // Steps
-  stepsCard: { backgroundColor: COLORS.card, borderRadius: RADIUS.lg, borderWidth: 1, borderColor: COLORS.cardBorder, padding: 16, marginBottom: 16, gap: 8 },
-  stepsTitle: { color: COLORS.white, fontWeight: '700', fontSize: SIZES.md, marginBottom: 4 },
-  stepRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  stepCircle: { width: 24, height: 24, borderRadius: 12, backgroundColor: `${COLORS.gold}20`, borderWidth: 1, borderColor: `${COLORS.gold}40`, alignItems: 'center', justifyContent: 'center' },
-  stepNum: { color: COLORS.gold, fontWeight: '900', fontSize: 11 },
-  stepText: { flex: 1, color: COLORS.offWhite, fontSize: SIZES.sm, lineHeight: 20 },
+  stepRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, marginBottom: 14, position: 'relative' as any },
+  stepCircle: { width: 28, height: 28, borderRadius: 14, backgroundColor: `${COLORS.gold}20`, borderWidth: 1, borderColor: `${COLORS.gold}40`, alignItems: 'center', justifyContent: 'center' },
+  stepNum: { color: COLORS.gold, fontWeight: '900', fontSize: SIZES.xs },
+  stepLine: { position: 'absolute' as any, left: 13, top: 28, width: 1, height: 14, backgroundColor: COLORS.cardBorder },
+  stepText: { flex: 1, color: COLORS.offWhite, fontSize: SIZES.sm, lineHeight: 20, paddingTop: 4 },
 
   // Requirements
-  reqCard: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: `${COLORS.gold}10`, borderRadius: RADIUS.md, borderWidth: 1, borderColor: `${COLORS.gold}30`, padding: 12, marginBottom: 10 },
+  reqCard: { backgroundColor: COLORS.card, borderRadius: RADIUS.lg, borderWidth: 1, borderColor: COLORS.cardBorder, padding: 14, gap: 10 },
+  reqRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   reqText: { flex: 1, color: COLORS.offWhite, fontSize: SIZES.sm },
   reqLink: { color: COLORS.gold, fontWeight: '700', fontSize: SIZES.sm },
 
-  // Launch button
-  launchBtn: { backgroundColor: COLORS.gold, borderRadius: RADIUS.md, paddingVertical: 16, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 8, marginTop: 8 },
-  launchBtnDisabled: { opacity: 0.3 },
-  launchBtnText: { color: COLORS.bg, fontWeight: '900', fontSize: SIZES.base },
+  // CTA
+  ctaBtn: { backgroundColor: COLORS.gold, borderRadius: RADIUS.md, paddingVertical: 16, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 8, marginTop: 8 },
+  ctaBtnDisabled: { opacity: 0.3 },
+  ctaBtnText: { color: COLORS.bg, fontWeight: '900', fontSize: SIZES.base },
+  ctaSub: { color: COLORS.muted, fontSize: SIZES.xs, textAlign: 'center', marginTop: 8 },
 
+  // Form
+  input: { backgroundColor: COLORS.card, borderWidth: 1, borderColor: COLORS.cardBorder, borderRadius: RADIUS.md, paddingHorizontal: 16, paddingVertical: 14, color: COLORS.white, fontSize: SIZES.base },
+  charCount: { color: COLORS.mutedDark, fontSize: SIZES.xs, textAlign: 'right', marginTop: 4 },
+  imagePicker: { backgroundColor: COLORS.card, borderWidth: 1, borderColor: COLORS.cardBorder, borderRadius: RADIUS.md, padding: 20, alignItems: 'center' },
+  imagePreview: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  imagePickerText: { color: COLORS.muted, fontSize: SIZES.sm },
   error: { color: COLORS.red, fontSize: SIZES.sm, textAlign: 'center', marginVertical: 8 },
+  backLink: { alignItems: 'center', marginTop: 12 },
+  backLinkText: { color: COLORS.muted, fontSize: SIZES.sm },
 
   // States
-  center: { alignItems: 'center', paddingTop: 60, gap: 12 },
+  center: { alignItems: 'center', paddingTop: 40, gap: 12 },
   launchingTitle: { fontSize: SIZES.xl, fontWeight: '900', color: COLORS.white },
-  launchingDesc: { fontSize: SIZES.sm, color: COLORS.muted, textAlign: 'center', paddingHorizontal: 24 },
+  launchingSub: { fontSize: SIZES.sm, color: COLORS.muted, textAlign: 'center', paddingHorizontal: 24 },
   successTitle: { fontSize: SIZES.xxl, fontWeight: '900', color: COLORS.white },
   successTicker: { fontSize: SIZES.lg, fontWeight: '700', color: COLORS.gold },
   successDesc: { fontSize: SIZES.sm, color: COLORS.muted, textAlign: 'center' },
