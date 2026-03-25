@@ -6,6 +6,7 @@
   ],
   "rewrites": [
     { "source": "/whitepaper", "destination": "/whitepaper.html" },
+    { "source": "/tokenomics", "destination": "/tokenomics.html" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }

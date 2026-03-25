@@ -7,7 +7,7 @@ const TABS = [
   { label: 'Feed',        href: '/(tabs)',              icon: 'home-outline' as const,           iconActive: 'home' as const,        match: '/' },
   { label: 'Leaderboard', href: '/(tabs)/leaderboard',  icon: 'trophy-outline' as const,         iconActive: 'trophy' as const,      match: '/leaderboard' },
   { label: 'Earn',        href: '/(tabs)/earn',          icon: 'flash-outline' as const,          iconActive: 'flash' as const,       match: '/earn' },
-  { label: '$SIZE',       href: '/tokenomics',            icon: 'logo-usd' as const,              iconActive: 'logo-usd' as const,    match: '/tokenomics' },
+  { label: '$SIZE',       href: '/tokenomics',            icon: 'logo-usd' as const,              iconActive: 'logo-usd' as const,    match: '/tokenomics', external: true },
   { label: 'Stake',      href: '/staking',               icon: 'trending-up-outline' as const,   iconActive: 'trending-up' as const, match: '/staking' },
   { label: 'Whitepaper', href: '/whitepaper',             icon: 'document-text-outline' as const, iconActive: 'document-text' as const, match: '/whitepaper', external: true },
   { label: 'Circles',     href: '/(tabs)/communities',    icon: 'people-outline' as const,         iconActive: 'people' as const,      match: '/communities' },
