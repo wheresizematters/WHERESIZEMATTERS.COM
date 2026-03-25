@@ -8,6 +8,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { COLORS, SIZES, RADIUS } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
+import { getToken } from '@/lib/supabase';
 import { usePurchase } from '@/context/PurchaseContext';
 import PaywallModal from '@/components/PaywallModal';
 import {
@@ -257,6 +258,50 @@ export default function VerifyScreen() {
                   <Ionicons name="images-outline" size={18} color={COLORS.gold} />
                   <Text style={s.secondaryBtnText}>Choose from Library</Text>
                 </TouchableOpacity>
+
+                {/* Token verification option */}
+                <View style={s.dividerRow}>
+                  <View style={s.dividerLine} />
+                  <Text style={s.dividerLabel}>or verify with $SIZE</Text>
+                  <View style={s.dividerLine} />
+                </View>
+
+                <View style={s.tokenVerifyCard}>
+                  <Text style={s.tokenVerifyTitle}>Burn $10 of $SIZE to Verify</Text>
+                  <Text style={s.tokenVerifyDesc}>
+                    Skip the photo — burn $10 worth of $SIZE tokens to get instantly verified. The tokens are sent to the protocol treasury.
+                  </Text>
+                  <TouchableOpacity
+                    style={s.tokenVerifyBtn}
+                    onPress={async () => {
+                      if (!profile?.wallet_address) {
+                        window.alert('Connect your wallet first (go to Grow tab)');
+                        return;
+                      }
+                      try {
+                        const res = await fetch('/api/v1/verifications/token-verify', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
+                          body: JSON.stringify({ walletAddress: profile.wallet_address }),
+                        });
+                        const data = await res.json();
+                        if (data.error) {
+                          window.alert(data.error);
+                        } else if (data.status === 'verified') {
+                          await updateProfile({ is_verified: true });
+                          setStep('result_verified');
+                        } else {
+                          window.alert(data.message ?? 'Verification pending');
+                        }
+                      } catch {
+                        window.alert('Failed to verify with tokens');
+                      }
+                    }}
+                  >
+                    <Ionicons name="flash" size={16} color={COLORS.bg} />
+                    <Text style={s.tokenVerifyBtnText}>Verify with $SIZE</Text>
+                  </TouchableOpacity>
+                </View>
               </>
             )}
           </>
@@ -378,6 +423,16 @@ export default function VerifyScreen() {
 }
 
 const s = StyleSheet.create({
+  // Token verify
+  dividerRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginVertical: 20 },
+  dividerLine: { flex: 1, height: 1, backgroundColor: COLORS.cardBorder },
+  dividerLabel: { color: COLORS.muted, fontSize: SIZES.xs, fontWeight: '600' },
+  tokenVerifyCard: { backgroundColor: COLORS.card, borderRadius: RADIUS.lg, borderWidth: 1, borderColor: `${COLORS.gold}30`, padding: 16, gap: 10 },
+  tokenVerifyTitle: { color: COLORS.white, fontWeight: '800', fontSize: SIZES.md },
+  tokenVerifyDesc: { color: COLORS.muted, fontSize: SIZES.xs, lineHeight: 18 },
+  tokenVerifyBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: COLORS.gold, borderRadius: RADIUS.md, paddingVertical: 14 },
+  tokenVerifyBtnText: { color: COLORS.bg, fontWeight: '900', fontSize: SIZES.sm },
+
   container: { flex: 1, backgroundColor: COLORS.bg },
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
