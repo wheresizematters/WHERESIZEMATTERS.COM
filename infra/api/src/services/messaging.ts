@@ -1,5 +1,5 @@
 import { v4 as uuid } from "uuid";
-import { T, getItem, putItem, updateItem, queryItems } from "../db";
+import { T, getItem, putItem, updateItem, deleteItem, queryItems } from "../db";
 import { getProfile, awardCoins } from "./profiles";
 
 // ── DM Conversations (existing) ────────────────────────────────────
