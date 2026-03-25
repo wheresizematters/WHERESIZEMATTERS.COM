@@ -59,6 +59,10 @@ export default function TabLayout() {
           options={{ tabBarIcon: ({ focused }) => <EarnTabIcon focused={focused} /> }}
         />
         <Tabs.Screen
+          name="communities"
+          options={{ tabBarIcon: ({ focused }) => <TabIcon name="people" focused={focused} label="Circles" /> }}
+        />
+        <Tabs.Screen
           name="messages"
           options={{ tabBarIcon: ({ focused }) => <TabIcon name="chatbubbles" focused={focused} label="DMs" badge={hasUnread} /> }}
         />
@@ -68,7 +72,6 @@ export default function TabLayout() {
         />
         {/* Hidden from tab bar but still routable */}
         <Tabs.Screen name="compare" options={{ href: null }} />
-        <Tabs.Screen name="explore" options={{ href: null }} />
       </Tabs>
     </>
   );

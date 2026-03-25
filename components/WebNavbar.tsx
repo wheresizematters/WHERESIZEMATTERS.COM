@@ -10,6 +10,7 @@ const TABS = [
   { label: '$SIZE',       href: '/tokenomics',            icon: 'logo-usd' as const,              iconActive: 'logo-usd' as const,    match: '/tokenomics' },
   { label: 'Stake',      href: '/staking',               icon: 'trending-up-outline' as const,   iconActive: 'trending-up' as const, match: '/staking' },
   { label: 'Whitepaper', href: '/whitepaper',             icon: 'document-text-outline' as const, iconActive: 'document-text' as const, match: '/whitepaper', external: true },
+  { label: 'Circles',     href: '/(tabs)/communities',    icon: 'people-outline' as const,         iconActive: 'people' as const,      match: '/communities' },
   { label: 'Messages',    href: '/(tabs)/messages',      icon: 'chatbubbles-outline' as const,    iconActive: 'chatbubbles' as const, match: '/messages' },
   { label: 'Profile',     href: '/(tabs)/profile',       icon: 'person-outline' as const,         iconActive: 'person' as const,      match: '/profile' },
 ];
