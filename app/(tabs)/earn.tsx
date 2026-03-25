@@ -15,12 +15,12 @@ import PaywallModal from '@/components/PaywallModal';
 import { switchToBase } from '@/lib/web3';
 
 const EARN_ACTIONS = [
-  { icon: 'shield-checkmark', label: 'Get Verified',       coins: 50000,  desc: 'Verify your size to earn coins',              key: 'is_verified' },
-  { icon: 'people',           label: 'Refer a Friend',     coins: 25000,  desc: 'Earn 25,000 coins per friend who joins',      key: 'referral' },
-  { icon: 'create',           label: 'Post to Feed',       coins: 1000,   desc: 'Earn 1,000 coins per post (daily max)',       key: 'post' },
-  { icon: 'chatbubbles',      label: 'Send a Message',     coins: 500,    desc: 'Earn 500 coins per conversation started',     key: 'message' },
-  { icon: 'star',             label: 'Get Upvoted',        coins: 1500,   desc: 'Earn 1,500 coins when your post is upvoted', key: 'upvote' },
-  { icon: 'calendar',         label: 'Daily Login',        coins: 2000,   desc: 'Earn 2,000 coins just for showing up',       key: 'login' },
+  { icon: 'shield-checkmark', label: 'Get Verified',       weight: 5, desc: 'Highest reward weight — verified users earn more',  key: 'is_verified' },
+  { icon: 'people',           label: 'Refer a Friend',     weight: 4, desc: 'Bring users in, earn a share of the daily pool',   key: 'referral' },
+  { icon: 'create',           label: 'Post to Feed',       weight: 2, desc: 'Every post earns you a share of daily rewards',    key: 'post' },
+  { icon: 'chatbubbles',      label: 'Send a Message',     weight: 1, desc: 'Active conversations earn daily pool share',       key: 'message' },
+  { icon: 'star',             label: 'Get Upvoted',        weight: 3, desc: 'Quality content earns more from the fee pool',     key: 'upvote' },
+  { icon: 'calendar',         label: 'Daily Login',        weight: 1, desc: 'Show up daily to claim your share',               key: 'login' },
 ];
 
 const REWARDS = [
@@ -189,7 +189,7 @@ export default function EarnScreen() {
                 <Ionicons name="cash" size={40} color={COLORS.gold} />
                 <Text style={styles.balanceAmount}>{loading ? '—' : coins.toLocaleString()}</Text>
               </View>
-              <Text style={styles.balanceSub}>$SIZE Coins · Earn more below</Text>
+              <Text style={styles.balanceSub}>Your share of daily fee rewards</Text>
             </LinearGradient>
           </LinearGradient>
 
@@ -279,7 +279,7 @@ export default function EarnScreen() {
 
           {tab === 'earn' ? (
             <View style={styles.section}>
-              <Text style={styles.sectionLabel}>WAYS TO EARN $SIZE COINS</Text>
+              <Text style={styles.sectionLabel}>HOW REWARDS WORK</Text>
               {EARN_ACTIONS.map((action, i) => (
                 <View key={i} style={styles.actionCard}>
                   <View style={styles.actionIcon}>
@@ -290,7 +290,7 @@ export default function EarnScreen() {
                     <Text style={styles.actionDesc}>{action.desc}</Text>
                   </View>
                   <View style={styles.actionCoins}>
-                    <Text style={styles.actionCoinText}>+{action.coins}</Text>
+                    <Text style={styles.actionCoinText}>{action.weight}x</Text>
                     <Ionicons name="cash-outline" size={14} color={COLORS.gold} />
                   </View>
                 </View>

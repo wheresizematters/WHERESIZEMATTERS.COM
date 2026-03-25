@@ -25,13 +25,13 @@ const STAKING_TIERS = [
   { label: 'Whale',     min: '100M',   max: '1B+',   boost: '12x',  apy: '80%',  color: COLORS.gold },
 ];
 
-const EARN_RATES = [
-  { action: 'Get Verified',    tokens: '50,000',  icon: 'shield-checkmark', note: 'One-time bonus' },
-  { action: 'Daily Login',     tokens: '2,000',    icon: 'calendar',         note: 'Per day' },
-  { action: 'Post to Feed',    tokens: '1,000',    icon: 'create',           note: 'Daily cap applies' },
-  { action: 'Get Upvoted',     tokens: '1,500',    icon: 'star',             note: 'Per upvote received' },
-  { action: 'Send a Message',  tokens: '500',      icon: 'chatbubbles',      note: 'Per new conversation' },
-  { action: 'Refer a Friend',  tokens: '25,000',   icon: 'people',           note: 'Per signup' },
+const EARN_ACTIONS = [
+  { action: 'Get Verified',    weight: '5x', icon: 'shield-checkmark', note: 'Highest reward weight' },
+  { action: 'Refer a Friend',  weight: '4x', icon: 'people',           note: 'High weight per referral' },
+  { action: 'Get Upvoted',     weight: '3x', icon: 'star',             note: 'Quality content rewarded' },
+  { action: 'Post to Feed',    weight: '2x', icon: 'create',           note: 'Daily activity share' },
+  { action: 'Daily Login',     weight: '1x', icon: 'calendar',         note: 'Base daily share' },
+  { action: 'Send a Message',  weight: '1x', icon: 'chatbubbles',      note: 'Conversation share' },
 ];
 
 function SectionHeader({ title }: { title: string }) {
@@ -173,8 +173,8 @@ export default function TokenomicsScreen() {
 
           {/* Earn rates */}
           <View style={styles.section}>
-            <SectionHeader title="HOW TO EARN" />
-            {EARN_RATES.map((e, i) => (
+            <SectionHeader title="EARN YOUR SHARE" />
+            {EARN_ACTIONS.map((e, i) => (
               <View key={i} style={styles.earnCard}>
                 <View style={styles.earnIcon}>
                   <Ionicons name={e.icon as any} size={18} color={COLORS.gold} />
@@ -184,8 +184,8 @@ export default function TokenomicsScreen() {
                   <Text style={styles.earnNote}>{e.note}</Text>
                 </View>
                 <View style={styles.earnReward}>
-                  <Text style={styles.earnTokens}>+{e.tokens}</Text>
-                  <Text style={styles.earnUnit}>$SIZE</Text>
+                  <Text style={styles.earnTokens}>{e.weight}</Text>
+                  <Text style={styles.earnUnit}>weight</Text>
                 </View>
               </View>
             ))}

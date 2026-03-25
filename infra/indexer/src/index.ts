@@ -9,7 +9,7 @@ import { getAllPositions, getTierCounts, putSnapshot } from "./db";
 const PORT = parseInt(process.env.PORT ?? "3001", 10);
 const ACTIVITY_SYNC_INTERVAL = 15 * 60_000;   // 15 minutes
 const SNAPSHOT_INTERVAL = 60 * 60_000;          // 1 hour
-const FEE_COLLECTION_INTERVAL = 6 * 60 * 60_000; // 6 hours
+const FEE_COLLECTION_INTERVAL = 24 * 60 * 60_000; // 24 hours (daily)
 
 async function main() {
   console.log("=== SIZE Staking Indexer ===");
@@ -59,12 +59,12 @@ async function main() {
     }
   }, SNAPSHOT_INTERVAL);
 
-  // Fee collection (every 6 hours)
+  // Fee collection (once daily)
   if (process.env.FEE_COLLECTOR_PRIVATE_KEY) {
     setInterval(() => {
       collectAndDistributeFees().catch(console.error);
     }, FEE_COLLECTION_INTERVAL);
-    console.log("[fee-collector] Scheduled every 6 hours");
+    console.log("[fee-collector] Scheduled once daily");
   } else {
     console.log("[fee-collector] No FEE_COLLECTOR_PRIVATE_KEY, fee collection disabled");
   }

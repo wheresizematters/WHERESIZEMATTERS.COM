@@ -3,7 +3,7 @@ import { STAKING_ABI, ERC20_ABI } from "./types";
 import { writeAdminLog } from "./s3";
 
 /**
- * Fee collector — runs on a cron schedule (every 6 hours).
+ * Fee collector — runs on a daily cron schedule.
  *
  * 1. Checks $SIZE token balance held by the fee collector wallet
  * 2. Approves the staking contract to spend the tokens

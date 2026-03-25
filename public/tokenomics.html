@@ -3,15 +3,15 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SIZE. Whitepaper — Where Size Matters</title>
+<title>$SIZE Tokenomics — Where Size Matters</title>
 
-<meta property="og:title" content="SIZE. Whitepaper — Where Size Matters">
-<meta property="og:description" content="The SocialFi protocol for men. Verified. Staked. Onchain. $SIZE on Base.">
+<meta property="og:title" content="$SIZE Tokenomics — Where Size Matters">
+<meta property="og:description" content="100% fair launch. 100B supply. Zero insiders. $SIZE on Base.">
 <meta property="og:image" content="https://wheresizematters.com/og-image.png">
 <meta property="og:type" content="website">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="SIZE. Whitepaper — Where Size Matters">
-<meta name="twitter:description" content="The SocialFi protocol for men. Verified. Staked. Onchain. $SIZE on Base.">
+<meta name="twitter:title" content="$SIZE Tokenomics — Where Size Matters">
+<meta name="twitter:description" content="100% fair launch. 100B supply. Zero insiders. $SIZE on Base.">
 <meta name="twitter:image" content="https://wheresizematters.com/og-image.png">
 <meta name="twitter:site" content="@wheresize">
 
@@ -217,10 +217,6 @@
     animation-delay: 100ms;
   }
 
-  .hero-title .line {
-    display: block;
-  }
-
   .hero-sub {
     font-family: 'DM Sans', sans-serif;
     font-weight: 300;
@@ -368,29 +364,42 @@
     font-weight: 600;
   }
 
-  /* ── Abstract ── */
-  .abstract {
-    background: var(--bg-surface);
-    border: 1px solid var(--border-subtle);
-    border-radius: 12px;
-    padding: 40px;
-    margin-bottom: 0;
+  /* ── Earn Table ── */
+  .earn-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+    margin-top: 20px;
+    margin-bottom: 20px;
   }
 
-  .abstract-label {
+  .earn-table th {
     font-size: 11px;
     font-weight: 600;
     text-transform: uppercase;
-    letter-spacing: 2px;
-    color: var(--accent-light);
-    margin-bottom: 20px;
-    display: block;
+    letter-spacing: 1.2px;
+    color: var(--text-tertiary);
+    padding: 10px 16px;
+    text-align: left;
+    border-bottom: 1px solid var(--border-default);
   }
 
-  .abstract p {
-    font-size: 17px;
-    line-height: 1.85;
+  .earn-table td {
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border-subtle);
     color: var(--text-secondary);
+    transition: background 0.12s ease;
+  }
+
+  .earn-table tr:hover td {
+    background: var(--bg-surface);
+  }
+
+  .earn-table td:last-child {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--text-primary);
+    text-align: right;
   }
 
   /* ── Staking Tier Cards ── */
@@ -468,6 +477,56 @@
     font-size: 13px;
     color: var(--text-primary);
     font-weight: 500;
+  }
+
+  /* ── Fee Bar ── */
+  .fee-bar-wrap {
+    margin-top: 32px;
+    margin-bottom: 32px;
+  }
+
+  .fee-bar {
+    display: flex;
+    height: 48px;
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 12px;
+  }
+
+  .fee-segment {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 600;
+    color: #fff;
+    white-space: nowrap;
+  }
+
+  .fee-segment.purple {
+    background: var(--accent);
+  }
+
+  .fee-segment.orange {
+    background: var(--orange);
+  }
+
+  .fee-segment.dark {
+    background: var(--bg-overlay);
+    color: var(--text-secondary);
+    border: 1px solid var(--border-default);
+    border-left: none;
+    border-radius: 0 10px 10px 0;
+  }
+
+  .fee-labels {
+    display: flex;
+    justify-content: space-between;
+  }
+
+  .fee-label {
+    font-size: 12px;
+    color: var(--text-tertiary);
   }
 
   /* ── Circle Jerk Tiers ── */
@@ -561,52 +620,6 @@
     flex-shrink: 0;
   }
 
-  /* ── Fee Bar ── */
-  .fee-bar-wrap {
-    margin-top: 32px;
-    margin-bottom: 32px;
-  }
-
-  .fee-bar {
-    display: flex;
-    height: 48px;
-    border-radius: 10px;
-    overflow: hidden;
-    margin-bottom: 12px;
-  }
-
-  .fee-segment {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 13px;
-    font-weight: 600;
-    color: #fff;
-    white-space: nowrap;
-  }
-
-  .fee-segment.purple {
-    background: var(--accent);
-  }
-
-  .fee-segment.dark {
-    background: var(--bg-overlay);
-    color: var(--text-secondary);
-    border: 1px solid var(--border-default);
-    border-left: none;
-    border-radius: 0 10px 10px 0;
-  }
-
-  .fee-labels {
-    display: flex;
-    justify-content: space-between;
-  }
-
-  .fee-label {
-    font-size: 12px;
-    color: var(--text-tertiary);
-  }
-
   /* ── Flywheel ── */
   .flywheel {
     margin-top: 32px;
@@ -659,97 +672,84 @@
     line-height: 1.6;
   }
 
-  /* ── Comparison Table ── */
-  .comp-table-wrap {
+  /* ── Launch Flow Steps ── */
+  .launch-flow {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
     margin-top: 32px;
-    overflow-x: auto;
+    margin-bottom: 32px;
   }
 
-  .comp-table {
-    width: 100%;
-    border-collapse: collapse;
+  .launch-step {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .launch-step-num {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--orange);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 600;
     font-size: 14px;
+    color: #fff;
+    flex-shrink: 0;
   }
 
-  .comp-table th {
-    font-size: 11px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 1.2px;
-    color: var(--text-tertiary);
-    padding: 12px 16px;
-    text-align: left;
-    border-bottom: 1px solid var(--border-default);
-  }
-
-  .comp-table td {
-    padding: 14px 16px;
-    border-bottom: 1px solid var(--border-subtle);
+  .launch-step-text {
+    font-size: 15px;
     color: var(--text-secondary);
-    vertical-align: top;
-    transition: background 0.12s ease;
+    line-height: 1.5;
   }
 
-  .comp-table tr:hover td {
-    background: var(--bg-surface);
+  /* ── Callout ── */
+  .callout {
+    background: var(--accent-dim);
+    border: 1px solid rgba(124,58,237,0.2);
+    border-radius: 10px;
+    padding: 20px 24px;
+    margin: 24px 0;
+    font-size: 15px;
+    color: var(--text-secondary);
+    font-style: italic;
   }
 
-  .comp-table tr.highlight td {
-    border-left: 3px solid var(--accent);
-  }
-
-  .comp-table tr.highlight td:first-child {
-    color: var(--text-primary);
-    font-weight: 600;
-  }
-
-  .check {
-    color: var(--green);
-    font-weight: 600;
-  }
-
-  .muted {
-    color: var(--text-tertiary);
-  }
-
-  /* ── Tech Stack Grid ── */
-  .tech-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 12px;
-    margin-top: 32px;
-  }
-
-  @media (max-width: 600px) {
-    .tech-grid {
-      grid-template-columns: repeat(2, 1fr);
-    }
-  }
-
-  .tech-card {
+  /* ── Formula Block ── */
+  .formula-block {
     background: var(--bg-surface);
     border: 1px solid var(--border-subtle);
     border-radius: 10px;
-    padding: 20px 16px;
-    transition: border-color 0.2s ease;
-  }
-
-  .tech-card:hover {
-    border-color: var(--border-strong);
-  }
-
-  .tech-layer {
-    font-size: 11px;
-    text-transform: uppercase;
-    letter-spacing: 1.2px;
-    color: var(--text-tertiary);
-    margin-bottom: 6px;
-  }
-
-  .tech-value {
-    font-weight: 600;
+    padding: 20px 24px;
+    font-family: var(--mono);
     font-size: 14px;
+    color: var(--accent-light);
+    margin: 20px 0;
+    overflow-x: auto;
+  }
+
+  .inline-code {
+    font-family: var(--mono);
+    font-size: 13px;
+    background: var(--bg-raised);
+    border: 1px solid var(--border-subtle);
+    border-radius: 4px;
+    padding: 2px 6px;
     color: var(--text-primary);
+  }
+
+  .sub-title {
+    font-family: 'Playfair Display', serif;
+    font-weight: 700;
+    font-size: 22px;
+    color: var(--text-primary);
+    margin-top: 40px;
+    margin-bottom: 12px;
   }
 
   /* ── CTA Section ── */
@@ -820,131 +820,6 @@
     line-height: 1.7;
   }
 
-  /* ── Earn Table ── */
-  .earn-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 14px;
-    margin-top: 20px;
-    margin-bottom: 20px;
-  }
-
-  .earn-table th {
-    font-size: 11px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 1.2px;
-    color: var(--text-tertiary);
-    padding: 10px 16px;
-    text-align: left;
-    border-bottom: 1px solid var(--border-default);
-  }
-
-  .earn-table td {
-    padding: 10px 16px;
-    border-bottom: 1px solid var(--border-subtle);
-    color: var(--text-secondary);
-    transition: background 0.12s ease;
-  }
-
-  .earn-table tr:hover td {
-    background: var(--bg-surface);
-  }
-
-  .earn-table td:last-child {
-    font-family: var(--mono);
-    font-size: 13px;
-    color: var(--text-primary);
-    text-align: right;
-  }
-
-  /* ── Size Tiers List ── */
-  .size-tier-list {
-    margin-top: 20px;
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-  }
-
-  .size-tier-item {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 10px 16px;
-    background: var(--bg-surface);
-    border-radius: 8px;
-    border: 1px solid var(--border-subtle);
-  }
-
-  .size-tier-dot {
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    flex-shrink: 0;
-  }
-
-  .size-tier-item .label {
-    font-weight: 600;
-    font-size: 14px;
-    color: var(--text-primary);
-    min-width: 120px;
-  }
-
-  .size-tier-item .range {
-    font-family: var(--mono);
-    font-size: 13px;
-    color: var(--text-secondary);
-  }
-
-  /* ── Subsection titles ── */
-  .sub-title {
-    font-family: 'Playfair Display', serif;
-    font-weight: 700;
-    font-size: 22px;
-    color: var(--text-primary);
-    margin-top: 40px;
-    margin-bottom: 12px;
-  }
-
-  .mono {
-    font-family: var(--mono);
-    font-size: 14px;
-    color: var(--accent-light);
-  }
-
-  .inline-code {
-    font-family: var(--mono);
-    font-size: 13px;
-    background: var(--bg-raised);
-    border: 1px solid var(--border-subtle);
-    border-radius: 4px;
-    padding: 2px 6px;
-    color: var(--text-primary);
-  }
-
-  .formula-block {
-    background: var(--bg-surface);
-    border: 1px solid var(--border-subtle);
-    border-radius: 10px;
-    padding: 20px 24px;
-    font-family: var(--mono);
-    font-size: 14px;
-    color: var(--accent-light);
-    margin: 20px 0;
-    overflow-x: auto;
-  }
-
-  .callout {
-    background: var(--accent-dim);
-    border: 1px solid rgba(124,58,237,0.2);
-    border-radius: 10px;
-    padding: 20px 24px;
-    margin: 24px 0;
-    font-size: 15px;
-    color: var(--text-secondary);
-    font-style: italic;
-  }
-
   /* ── Animations ── */
   @keyframes fadeUp {
     from {
@@ -999,10 +874,6 @@
       padding: 64px 0;
     }
 
-    .abstract {
-      padding: 24px;
-    }
-
     .section-title {
       font-size: 28px;
     }
@@ -1018,10 +889,6 @@
     .cj-row.w60 {
       width: 100%;
     }
-
-    .tech-grid {
-      grid-template-columns: 1fr;
-    }
   }
 </style>
 </head>
@@ -1033,7 +900,7 @@
 <header class="header" id="header">
   <a href="https://wheresizematters.com" class="header-logo">SIZE<span class="dot">.</span></a>
   <div class="header-right">
-    <span class="header-pill">Whitepaper v1.0</span>
+    <span class="header-pill">Tokenomics</span>
     <a href="https://wheresizematters.com" class="btn-primary">Launch App</a>
   </div>
 </header>
@@ -1042,16 +909,13 @@
 <!-- HERO                                            -->
 <!-- ════════════════════════════════════════════════ -->
 <section class="hero">
-  <span class="hero-label">Whitepaper V1.0</span>
-  <h1 class="hero-title">
-    <span class="line">Where Size</span>
-    <span class="line">Matters.</span>
-  </h1>
-  <p class="hero-sub">A men's SocialFi protocol on Base. Verified identity, staking economy, personal memecoins, and token-gated communities in a single integrated platform.</p>
+  <span class="hero-label">Tokenomics</span>
+  <h1 class="hero-title">$SIZE Token</h1>
+  <p class="hero-sub">100% fair launch. 100B supply. Zero insiders.</p>
   <div class="hero-chips">
     <span class="chip">Base (L2)</span>
-    <span class="chip">100B Supply</span>
-    <span class="chip">Fair Launch</span>
+    <span class="chip">ERC-20</span>
+    <span class="chip">Clanker Launch</span>
   </div>
   <div class="scroll-indicator">
     <span>Scroll</span>
@@ -1069,12 +933,12 @@
       <span class="stat-label">Total Supply</span>
     </div>
     <div class="stat">
-      <span class="stat-value">75%</span>
-      <span class="stat-label">To Stakers</span>
-    </div>
-    <div class="stat">
       <span class="stat-value">0%</span>
       <span class="stat-label">Team Allocation</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value">75%</span>
+      <span class="stat-label">To Stakers</span>
     </div>
     <div class="stat">
       <span class="stat-value">12x</span>
@@ -1088,110 +952,13 @@
 </div>
 
 <!-- ════════════════════════════════════════════════ -->
-<!-- ABSTRACT                                        -->
-<!-- ════════════════════════════════════════════════ -->
-<div class="container">
-  <div class="section">
-    <div class="abstract">
-      <span class="abstract-label">Abstract</span>
-      <p>SIZE. is a men's SocialFi protocol on Base that combines verified identity, a token economy, personal memecoin issuance, and token-gated communities into a single integrated platform. Users verify their size via AI, earn and stake $SIZE tokens, launch personal memecoins (DickCoins) through Clanker, and participate in token-gated communities (Circle Jerks) with a five-tier role system. The $SIZE token launches as a 100% fair launch&thinsp;&mdash;&thinsp;no team allocation, no presale, no insiders&thinsp;&mdash;&thinsp;with a fee architecture that distributes 75% of all trading fees directly to stakers.</p>
-    </div>
-  </div>
-</div>
-
-<!-- ════════════════════════════════════════════════ -->
-<!-- SECTION 01 — THE PROBLEM                        -->
+<!-- SECTION 01 — TOKEN DETAILS                      -->
 <!-- ════════════════════════════════════════════════ -->
 <div class="container">
   <div class="section">
     <span class="section-number">01</span>
-    <h2 class="section-title">The Problem</h2>
-    <p class="section-subtitle">SocialFi has a market failure.</p>
-
-    <p>friend.tech proved that people will pay real money to access social proximity. It generated over $50M in protocol fees in its first month. Then it died.</p>
-    <p>Not because the idea was wrong. Because the idea was built on nothing. Keys had no underlying utility. Communities had no native identity. The token had no flywheel.</p>
-    <p>The gap is a SocialFi platform built around a <strong>verified social primitive</strong>&thinsp;&mdash;&thinsp;one with real identity, real token economics, and a creator economy that compounds on itself.</p>
-    <p><strong>SIZE. is that platform.</strong></p>
-  </div>
-</div>
-
-<!-- ════════════════════════════════════════════════ -->
-<!-- SECTION 02 — THE PRODUCT                        -->
-<!-- ════════════════════════════════════════════════ -->
-<div class="container">
-  <div class="section">
-    <span class="section-number">02</span>
-    <h2 class="section-title">The Product</h2>
-    <p class="section-subtitle">SIZE. is live at wheresizematters.com as a PWA on Base.</p>
-
-    <h3 class="sub-title">2.1 &mdash; AI Verification</h3>
-    <p>Upload a photo with a reference object (ruler, credit card, dollar bill). Claude Vision AI performs a two-pass analysis with girth cross-check. Outcomes: auto-verified, pending, or rejected. Verification earns <strong>50,000 $SIZE</strong>, a checkmark badge, and leaderboard eligibility.</p>
-
-    <h3 class="sub-title">2.2 &mdash; Size Tiers</h3>
-    <div class="size-tier-list">
-      <div class="size-tier-item">
-        <div class="size-tier-dot" style="background:#6b7280"></div>
-        <span class="label">Micro</span>
-        <span class="range">&lt; 4"</span>
-      </div>
-      <div class="size-tier-item">
-        <div class="size-tier-dot" style="background:var(--blue)"></div>
-        <span class="label">Small</span>
-        <span class="range">4 &ndash; 5"</span>
-      </div>
-      <div class="size-tier-item">
-        <div class="size-tier-dot" style="background:var(--green)"></div>
-        <span class="label">Average</span>
-        <span class="range">5 &ndash; 6"</span>
-      </div>
-      <div class="size-tier-item">
-        <div class="size-tier-dot" style="background:var(--gold)"></div>
-        <span class="label">Above Average</span>
-        <span class="range">6 &ndash; 7"</span>
-      </div>
-      <div class="size-tier-item">
-        <div class="size-tier-dot" style="background:var(--orange)"></div>
-        <span class="label">Large</span>
-        <span class="range">7 &ndash; 8"</span>
-      </div>
-      <div class="size-tier-item">
-        <div class="size-tier-dot" style="background:var(--red)"></div>
-        <span class="label">Huge</span>
-        <span class="range">8 &ndash; 9"</span>
-      </div>
-      <div class="size-tier-item">
-        <div class="size-tier-dot" style="background:var(--accent-light)"></div>
-        <span class="label">Hung</span>
-        <span class="range">9"+</span>
-      </div>
-    </div>
-    <p style="margin-top:16px;">Free users see their tier label. <strong>Premium</strong> unlocks the exact measurement with a holographic badge.</p>
-
-    <h3 class="sub-title">2.3 &mdash; Leaderboard</h3>
-    <p>Global ranking by verified size. Filter by country, age, or nearby via geolocation. Top 3 positions display gold, silver, and bronze badges.</p>
-
-    <h3 class="sub-title">2.4 &mdash; Feed</h3>
-    <p>Discussions, polls, and media. Tag system. Upvote/downvote scoring. Real-time updates. Free users hit a paywall every 5 posts.</p>
-
-    <h3 class="sub-title">2.5 &mdash; DMs</h3>
-    <p>1:1 messaging with signed 5-minute URLs (Snapchat-style ephemeral media). Read receipts included.</p>
-
-    <h3 class="sub-title">2.6 &mdash; Verified Net Worth</h3>
-    <p>Connect your wallet to display on-chain balance on your profile. USD total with a verification checkmark.</p>
-
-    <h3 class="sub-title">2.7 &mdash; Premium</h3>
-    <p><strong>$4.99/mo</strong> or <strong>$29.99/yr</strong> via Stripe. Or <strong>250,000 $SIZE</strong> tokens. Unlocks exact measurements, verified badge, media uploads, priority feed placement, and bio links.</p>
-  </div>
-</div>
-
-<!-- ════════════════════════════════════════════════ -->
-<!-- SECTION 03 — THE $SIZE TOKEN                    -->
-<!-- ════════════════════════════════════════════════ -->
-<div class="container">
-  <div class="section">
-    <span class="section-number">03</span>
-    <h2 class="section-title">The $SIZE Token</h2>
-    <p class="section-subtitle">100% fair launch. No insiders. Every token bought or earned.</p>
+    <h2 class="section-title">Token Details</h2>
+    <p class="section-subtitle">Every token in circulation was bought or earned.</p>
 
     <table class="earn-table">
       <tr><th>Parameter</th><th style="text-align:right">Value</th></tr>
@@ -1203,21 +970,18 @@
       <tr><td>Team Allocation</td><td>None</td></tr>
       <tr><td>Presale</td><td>None</td></tr>
       <tr><td>Insider/Vesting</td><td>None</td></tr>
-      <tr><td>Distribution</td><td>100% to liquidity</td></tr>
     </table>
   </div>
 </div>
 
 <!-- ════════════════════════════════════════════════ -->
-<!-- SECTION 04 — FEE ARCHITECTURE                   -->
+<!-- SECTION 02 — FEE ARCHITECTURE                   -->
 <!-- ════════════════════════════════════════════════ -->
 <div class="container">
   <div class="section">
-    <span class="section-number">04</span>
+    <span class="section-number">02</span>
     <h2 class="section-title">Fee Architecture</h2>
     <p class="section-subtitle">Volume-driven yield. No emissions. No unlocks.</p>
-
-    <p>Every $SIZE trade on Uniswap V4 generates LP fees. Those fees are split:</p>
 
     <div class="fee-bar-wrap">
       <div class="fee-bar">
@@ -1225,29 +989,28 @@
         <div class="fee-segment dark" style="width:25%">25% &mdash; Protocol</div>
       </div>
       <div class="fee-labels">
-        <span class="fee-label">$SIZE tokens, proportional to effective stake</span>
+        <span class="fee-label">$SIZE proportional to effective stake weight</span>
         <span class="fee-label">ETH &rarr; dev / infra / growth</span>
       </div>
     </div>
 
-    <p>Fees are distributed once daily by an EC2 indexer and deposited to <span class="inline-code">SizeStaking.sol</span>. No emission schedule. No team unlocks. Staker yield is a pure function of trading volume.</p>
+    <p><strong>75% to stakers:</strong> Distributed as $SIZE proportional to effective stake weight. Collected every 6 hours by EC2 indexer.</p>
+    <p><strong>25% to protocol:</strong> ETH to protocol treasury for development, infrastructure, and growth.</p>
+
+    <div class="callout">
+      No emission schedule. No team unlocks.
+    </div>
   </div>
 </div>
 
 <!-- ════════════════════════════════════════════════ -->
-<!-- SECTION 05 — STAKING                            -->
+<!-- SECTION 03 — STAKING TIERS                      -->
 <!-- ════════════════════════════════════════════════ -->
 <div class="container">
   <div class="section">
-    <span class="section-number">05</span>
-    <h2 class="section-title">Staking</h2>
+    <span class="section-number">03</span>
+    <h2 class="section-title">Staking Tiers</h2>
     <p class="section-subtitle">On-chain. Four tiers. Up to 12x boost on fee share.</p>
-
-    <p>Staking is fully on-chain via <span class="inline-code">SizeStaking.sol</span> (Solidity 0.8.24, OpenZeppelin, ReentrancyGuard, Pausable, emergency withdraw). Your effective stake determines your share of the 75% fee pool.</p>
-
-    <div class="formula-block">
-      effective_stake = tokens_staked &times; tier_boost
-    </div>
 
     <div class="tier-grid">
       <div class="tier-card green">
@@ -1312,20 +1075,23 @@
       </div>
     </div>
 
-    <p style="margin-top:24px;">APY is variable, driven entirely by trading volume. Higher volume = higher yield for all stakers.</p>
+    <div class="formula-block" style="margin-top:32px;">
+      effective_stake = tokens_staked &times; tier_boost
+    </div>
+
+    <p>Effective stake = tokens x tier boost. Whales get a structurally outsized share of the fee pool.</p>
   </div>
 </div>
 
 <!-- ════════════════════════════════════════════════ -->
-<!-- SECTION 06 — IN-APP ECONOMY                     -->
+<!-- SECTION 04 — EARN RATES                         -->
 <!-- ════════════════════════════════════════════════ -->
 <div class="container">
   <div class="section">
-    <span class="section-number">06</span>
-    <h2 class="section-title">In-App Economy</h2>
-    <p class="section-subtitle">Earn $SIZE for every meaningful action.</p>
+    <span class="section-number">04</span>
+    <h2 class="section-title">Earn Rates</h2>
+    <p class="section-subtitle">Every action earns $SIZE.</p>
 
-    <h3 class="sub-title">6.1 &mdash; Earn Rates</h3>
     <table class="earn-table">
       <tr><th>Action</th><th style="text-align:right">$SIZE Earned</th></tr>
       <tr><td>Verify</td><td>50,000</td></tr>
@@ -1336,41 +1102,26 @@
       <tr><td>Send message</td><td>500</td></tr>
     </table>
 
-    <h3 class="sub-title">6.2 &mdash; Multiplier Formula</h3>
     <div class="formula-block">
-      effective_earn = base_earn &times; staking_boost &times; activity_multiplier
+      effective_earn = base_rate &times; staking_boost &times; activity_multiplier
     </div>
-    <p>Activity multipliers stack:</p>
-    <table class="earn-table">
-      <tr><th>Factor</th><th style="text-align:right">Multiplier</th></tr>
-      <tr><td>Login streak (7+ days)</td><td>1.5x</td></tr>
-      <tr><td>Verified user</td><td>1.2x</td></tr>
-      <tr><td>Active referrals</td><td>1.1x</td></tr>
-      <tr><td>Daily poster</td><td>1.0x</td></tr>
-    </table>
-    <p>Maximum activity multiplier: <strong>~3.3x</strong>. Combined with Whale tier (12x staking boost): <strong>up to 39.6x</strong> effective earn rate.</p>
 
-    <h3 class="sub-title">6.3 &mdash; Anti-Sybil</h3>
-    <p>Photo-based identity verification. Daily earn caps with TTL expiry. AI monitoring for suspicious patterns. On-chain audit trail for all token distributions.</p>
+    <p>Maximum combined multiplier: <strong>39.6x</strong> (Whale 12x staking boost &times; 3.3x activity multiplier).</p>
   </div>
 </div>
 
 <!-- ════════════════════════════════════════════════ -->
-<!-- SECTION 07 — DICKCOINS                          -->
+<!-- SECTION 05 — DICKCOINS                          -->
 <!-- ════════════════════════════════════════════════ -->
 <div class="container">
   <div class="section">
-    <span class="section-number">07</span>
+    <span class="section-number">05</span>
     <h2 class="section-title">DickCoins</h2>
-    <p class="section-subtitle">Every verified user is a launchpad.</p>
+    <p class="section-subtitle">Launch your personal memecoin in one tap.</p>
 
-    <p>Any verified user can launch a personal memecoin via Clanker&thinsp;&mdash;&thinsp;the same audited infrastructure powering Base-native token launches. Each DickCoin is a standard ERC-20 deployed to Uniswap V4.</p>
-
-    <p><strong>Launch flow:</strong> Tap &rarr; name/ticker/image &rarr; Clanker API &rarr; ERC-20 deployed &rarr; Uniswap V4 pool &rarr; Circle Jerk auto-spawns.</p>
-
-    <div class="fee-bar-wrap" style="margin-top:32px;">
+    <div class="fee-bar-wrap">
       <div class="fee-bar">
-        <div class="fee-segment purple" style="width:90%">90% &mdash; Creator</div>
+        <div class="fee-segment orange" style="width:90%">90% &mdash; Creator</div>
         <div class="fee-segment dark" style="width:10%">10% &mdash; Protocol</div>
       </div>
       <div class="fee-labels">
@@ -1379,25 +1130,41 @@
       </div>
     </div>
 
-    <p>Autostaking triggers at <strong>0.5 ETH</strong> cumulative fees&thinsp;&mdash;&thinsp;DickCoin holders automatically begin earning yield from trading activity.</p>
+    <div class="launch-flow">
+      <div class="launch-step">
+        <div class="launch-step-num">1</div>
+        <div class="launch-step-text">Tap "Launch DickCoin" from your profile</div>
+      </div>
+      <div class="launch-step">
+        <div class="launch-step-num">2</div>
+        <div class="launch-step-text">Set name, ticker, and image</div>
+      </div>
+      <div class="launch-step">
+        <div class="launch-step-num">3</div>
+        <div class="launch-step-text">Clanker API deploys ERC-20 to Base</div>
+      </div>
+      <div class="launch-step">
+        <div class="launch-step-num">4</div>
+        <div class="launch-step-text">Uniswap V4 pool goes live instantly</div>
+      </div>
+      <div class="launch-step">
+        <div class="launch-step-num">5</div>
+        <div class="launch-step-text">Circle Jerk auto-spawns for holders</div>
+      </div>
+    </div>
+
+    <p>Autostaking deploys at <strong>0.5 ETH</strong> in cumulative fees&thinsp;&mdash;&thinsp;DickCoin holders automatically begin earning yield from trading activity.</p>
   </div>
 </div>
 
 <!-- ════════════════════════════════════════════════ -->
-<!-- SECTION 08 — CIRCLE JERKS                       -->
+<!-- SECTION 06 — CIRCLE JERKS                       -->
 <!-- ════════════════════════════════════════════════ -->
 <div class="container">
   <div class="section">
-    <span class="section-number">08</span>
+    <span class="section-number">06</span>
     <h2 class="section-title">Circle Jerks</h2>
-    <p class="section-subtitle">Token-gated communities. Five-tier role system. Real-time enforcement.</p>
-
-    <p>Every DickCoin launch auto-spawns a Circle Jerk&thinsp;&mdash;&thinsp;a token-gated group chat with roles determined by holder balance in real time. Two channels per Circle Jerk:</p>
-
-    <p><strong>General</strong>&thinsp;&mdash;&thinsp;Stroker and above can write. Cucks are read-only.<br>
-    <strong>The Bukake</strong>&thinsp;&mdash;&thinsp;Finisher and above can write. All tiers can read. This is the high-signal alpha channel.</p>
-
-    <p>Zero balance = gate screen with buy CTA. Server-side tier enforcement on every message.</p>
+    <p class="section-subtitle">Token-gated communities. Hold to enter. Hold more to speak.</p>
 
     <div class="cj-tiers">
       <div class="cj-row w100">
@@ -1446,28 +1213,18 @@
         <span class="cj-pill">Read-only</span>
       </div>
     </div>
+
+    <p style="margin-top:24px;"><strong>General</strong>&thinsp;&mdash;&thinsp;Stroker and above can write. Cucks are read-only.<br>
+    <strong>The Bukake</strong>&thinsp;&mdash;&thinsp;Finisher and above can write. All tiers can read.</p>
   </div>
 </div>
 
 <!-- ════════════════════════════════════════════════ -->
-<!-- SECTION 09 — GIFTING                            -->
+<!-- SECTION 07 — THE FLYWHEEL                       -->
 <!-- ════════════════════════════════════════════════ -->
 <div class="container">
   <div class="section">
-    <span class="section-number">09</span>
-    <h2 class="section-title">Gifting</h2>
-    <p class="section-subtitle">Atomic profile-to-profile transfers and post tipping.</p>
-
-    <p>$SIZE tokens can be sent directly between profiles or tipped on individual posts. All transfers are atomic. Tipped posts receive a visible "Tipped" badge, creating social incentive for high-quality content.</p>
-  </div>
-</div>
-
-<!-- ════════════════════════════════════════════════ -->
-<!-- SECTION 10 — THE FLYWHEEL                       -->
-<!-- ════════════════════════════════════════════════ -->
-<div class="container">
-  <div class="section">
-    <span class="section-number">10</span>
+    <span class="section-number">07</span>
     <h2 class="section-title">The Flywheel</h2>
     <p class="section-subtitle">Nine steps. Self-reinforcing. Every action compounds.</p>
 
@@ -1509,156 +1266,6 @@
         <div class="flywheel-text">New users see leaderboard + communities &rarr; join &rarr; verify &rarr; repeat</div>
       </div>
     </div>
-
-    <div class="callout">
-      "Every user action makes the protocol more valuable for every other participant."
-    </div>
-  </div>
-</div>
-
-<!-- ════════════════════════════════════════════════ -->
-<!-- SECTION 11 — COMPETITIVE POSITIONING            -->
-<!-- ════════════════════════════════════════════════ -->
-<div class="container">
-  <div class="section">
-    <span class="section-number">11</span>
-    <h2 class="section-title">Competitive Positioning</h2>
-    <p class="section-subtitle">The only platform with verified identity + staking + personal memecoins + gated communities.</p>
-
-    <div class="comp-table-wrap">
-      <table class="comp-table">
-        <thead>
-          <tr>
-            <th>Feature</th>
-            <th>friend.tech</th>
-            <th>SIZE.</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>Token Model</td>
-            <td class="muted">Keys (deprecated)</td>
-            <td class="highlight">$SIZE + DickCoins</td>
-          </tr>
-          <tr>
-            <td>Economics</td>
-            <td class="muted">Bonding curve only</td>
-            <td>Creator fees + staking yield</td>
-          </tr>
-          <tr>
-            <td>Identity</td>
-            <td class="muted">None</td>
-            <td class="check">AI-verified</td>
-          </tr>
-          <tr>
-            <td>Communities</td>
-            <td class="muted">Chat rooms</td>
-            <td>Circle Jerks (5-tier)</td>
-          </tr>
-          <tr>
-            <td>Staking</td>
-            <td class="muted">None</td>
-            <td class="check">4-tier, up to 12x boost</td>
-          </tr>
-          <tr>
-            <td>Creator Tokens</td>
-            <td class="muted">None</td>
-            <td class="check">DickCoins via Clanker</td>
-          </tr>
-          <tr>
-            <td>Fee Distribution</td>
-            <td class="muted">Creator only</td>
-            <td>75% stakers / 25% protocol</td>
-          </tr>
-          <tr class="highlight">
-            <td>STATUS</td>
-            <td class="muted">Dead</td>
-            <td class="check">Live on Base</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
-</div>
-
-<!-- ════════════════════════════════════════════════ -->
-<!-- SECTION 12 — TECHNICAL ARCHITECTURE             -->
-<!-- ════════════════════════════════════════════════ -->
-<div class="container">
-  <div class="section">
-    <span class="section-number">12</span>
-    <h2 class="section-title">Technical Architecture</h2>
-    <p class="section-subtitle">Production stack. No vaporware.</p>
-
-    <div class="tech-grid">
-      <div class="tech-card">
-        <div class="tech-layer">Frontend</div>
-        <div class="tech-value">Expo (React Native Web) + Vercel</div>
-      </div>
-      <div class="tech-card">
-        <div class="tech-layer">Routing</div>
-        <div class="tech-value">expo-router</div>
-      </div>
-      <div class="tech-card">
-        <div class="tech-layer">Auth</div>
-        <div class="tech-value">OAuth + X Identity</div>
-      </div>
-      <div class="tech-card">
-        <div class="tech-layer">Database</div>
-        <div class="tech-value">AWS DynamoDB</div>
-      </div>
-      <div class="tech-card">
-        <div class="tech-layer">Storage</div>
-        <div class="tech-value">AWS S3 (signed URLs)</div>
-      </div>
-      <div class="tech-card">
-        <div class="tech-layer">AI</div>
-        <div class="tech-value">Claude Vision + Edge Function</div>
-      </div>
-      <div class="tech-card">
-        <div class="tech-layer">Chain</div>
-        <div class="tech-value">Base + Chainstack RPC</div>
-      </div>
-      <div class="tech-card">
-        <div class="tech-layer">Staking</div>
-        <div class="tech-value">SizeStaking.sol + OpenZeppelin</div>
-      </div>
-      <div class="tech-card">
-        <div class="tech-layer">Fee Indexer</div>
-        <div class="tech-value">EC2 + daily cycle</div>
-      </div>
-      <div class="tech-card">
-        <div class="tech-layer">Payments</div>
-        <div class="tech-value">Stripe</div>
-      </div>
-      <div class="tech-card">
-        <div class="tech-layer">Token Launch</div>
-        <div class="tech-value">Clanker + Uniswap V4</div>
-      </div>
-      <div class="tech-card">
-        <div class="tech-layer">Token Standard</div>
-        <div class="tech-value">ERC-20, 18 decimals</div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- ════════════════════════════════════════════════ -->
-<!-- SECTION 13 — LAUNCH                             -->
-<!-- ════════════════════════════════════════════════ -->
-<div class="container">
-  <div class="section">
-    <span class="section-number">13</span>
-    <h2 class="section-title">Launch</h2>
-    <p class="section-subtitle">100% fair launch. 100 billion supply. No insiders.</p>
-
-    <p>$SIZE launches on Base via Clanker with the full 100,000,000,000 supply deployed to Uniswap V4 liquidity. There is no team allocation, no presale, no insider distribution, and no vesting schedule. Every single token is either bought on the open market or earned through verified activity on the platform.</p>
-
-    <p>The app is live at <a href="https://wheresizematters.com" style="color:var(--accent-light);text-decoration:none;border-bottom:1px solid var(--accent-light);">wheresizematters.com</a>.</p>
-
-    <div class="callout">
-      Where size matters.
-    </div>
   </div>
 </div>
 
@@ -1667,10 +1274,10 @@
 <!-- ════════════════════════════════════════════════ -->
 <section class="cta-section">
   <h2 class="cta-title">Ready to Size Up?</h2>
-  <p class="cta-sub">Join the only SocialFi protocol where your size is your identity.</p>
+  <p class="cta-sub">100% fair launch. Zero insiders. Your size, your token.</p>
   <div class="cta-buttons">
     <a href="https://wheresizematters.com" class="btn-primary">Launch App</a>
-    <a href="#" class="btn-ghost">Read Docs</a>
+    <a href="/whitepaper" class="btn-ghost">Read Whitepaper</a>
   </div>
 </section>
 
@@ -1681,8 +1288,8 @@
   <div class="container">
     <div class="footer-links">
       <a href="https://wheresizematters.com">App</a>
-      <a href="https://x.com/wheresize">X / Twitter</a>
-      <a href="#">Docs</a>
+      <a href="https://x.com/wheresize">X / @wheresize</a>
+      <a href="/whitepaper">Whitepaper</a>
     </div>
     <p class="footer-disclaimer">This document is for informational purposes only. It does not constitute financial advice, an offer to sell, or a solicitation to buy any tokens. $SIZE is a community token with no guaranteed returns. DYOR.</p>
   </div>
