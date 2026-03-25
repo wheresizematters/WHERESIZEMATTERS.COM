@@ -42,35 +42,47 @@ export default function CircleJerkScreen() {
   const [gated, setGated] = useState(false);
 
   const loadData = useCallback(async () => {
-    if (!coinAddress) return;
-    const [coinData, holders] = await Promise.all([
-      getDickCoinInfo(coinAddress),
-      getDickCoinHolders(coinAddress),
-    ]);
-    setCoin(coinData);
+    if (!coinAddress) { setLoading(false); return; }
+    try {
+      const [coinData, holders] = await Promise.all([
+        getDickCoinInfo(coinAddress),
+        getDickCoinHolders(coinAddress),
+      ]);
 
-    // Find my tier
-    const walletAddr = profile?.wallet_address?.toLowerCase();
-    const myHolding = holders.find(h =>
-      h.holderAddress.toLowerCase() === walletAddr ||
-      h.userId === session?.user.id
-    );
+      if (!coinData) {
+        // Coin doesn't exist or was deleted
+        setLoading(false);
+        return;
+      }
 
-    if (!myHolding || myHolding.tier === 'NONE') {
-      setGated(true);
-      setMyTier('NONE');
-    } else {
-      setGated(false);
-      setMyTier(myHolding.tier);
+      setCoin(coinData);
+
+      // Find my tier
+      const walletAddr = profile?.wallet_address?.toLowerCase();
+      const myHolding = holders.find(h =>
+        (h.holderAddress?.toLowerCase() === walletAddr) ||
+        h.userId === session?.user.id ||
+        h.user_id === session?.user.id
+      );
+
+      if (!myHolding) {
+        setGated(true);
+        setMyTier('NONE');
+      } else {
+        setGated(false);
+        setMyTier(myHolding.role === 'owner' ? 'DADDY' : 'STROKER');
+      }
+
+      // Fetch messages
+      await loadMessages();
+    } catch (e) {
+      console.error('loadData error:', e);
     }
-
-    // Fetch messages
-    await loadMessages();
     setLoading(false);
   }, [coinAddress, profile?.wallet_address, session?.user.id]);
 
   async function loadMessages() {
-    if (!API_BASE || !coinAddress) return;
+    if (!coinAddress) return;
     try {
       const token = getToken();
       const res = await fetch(`${API_BASE}/api/v1/circle-jerks/${coinAddress}/messages?channel=${channel}`, {
