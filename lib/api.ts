@@ -297,3 +297,19 @@ export async function createCommunityPost(id: string, title: string, content: st
 }
 
 export async function fetchCommunityMembers(id: string): Promise<any[]> { return (await api(`/api/v1/communities/${id}/members`)) ?? []; }
+
+// ── Gifting ───────────────────────────────────────────────────────
+
+export async function sendGift(
+  recipientId: string, amount: number, postId?: string, message?: string,
+): Promise<{ error: string | null }> {
+  return (await post('/api/v1/gifts', { recipientId, amount, postId, message })) ?? { error: 'API unavailable' };
+}
+
+export async function getGiftsForPost(postId: string): Promise<{ totalAmount: number; gifts: any[] }> {
+  return (await api(`/api/v1/gifts/post/${postId}`)) ?? { totalAmount: 0, gifts: [] };
+}
+
+export async function getGiftsReceived(userId: string): Promise<any[]> {
+  return (await api(`/api/v1/gifts/received/${userId}`)) ?? [];
+}
