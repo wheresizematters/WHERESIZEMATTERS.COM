@@ -3,11 +3,13 @@ import express from "express";
 import cors from "cors";
 import rateLimit from "express-rate-limit";
 
+import authRoutes from "./routes/auth";
 import profileRoutes from "./routes/profiles";
 import postRoutes from "./routes/posts";
 import messagingRoutes from "./routes/messaging";
 import communityRoutes from "./routes/communities";
 import followRoutes from "./routes/follows";
+import storageRoutes from "./routes/storage";
 
 const app = express();
 const PORT = parseInt(process.env.PORT ?? "3000", 10);
@@ -29,7 +31,9 @@ app.get("/health", (_req, res) => {
 });
 
 // Routes
+app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/profiles", profileRoutes);
+app.use("/api/v1/storage", storageRoutes);
 app.use("/api/v1/posts", postRoutes);
 app.use("/api/v1/messaging", messagingRoutes);
 app.use("/api/v1/communities", communityRoutes);

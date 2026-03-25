@@ -1,31 +1,35 @@
-import 'react-native-url-polyfill/auto';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import { Platform } from 'react-native';
+/**
+ * API client — all requests go through the AWS backend.
+ * Supabase has been fully removed. Auth is JWT-based via our own API.
+ */
 
-const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL ?? '';
-const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? '';
+const API_URL = process.env.EXPO_PUBLIC_API_URL ?? '';
 
-const isConfigured =
-  supabaseUrl.startsWith('https://') && supabaseAnonKey.length > 10;
+// Token management
+let _accessToken: string | null = null;
 
-const webStorage = {
-  getItem: (key: string) => Promise.resolve(typeof window !== 'undefined' ? localStorage.getItem(key) : null),
-  setItem: (key: string, value: string) => Promise.resolve(typeof window !== 'undefined' ? localStorage.setItem(key, value) : undefined),
-  removeItem: (key: string) => Promise.resolve(typeof window !== 'undefined' ? localStorage.removeItem(key) : undefined),
-};
+export function getToken(): string | null {
+  if (_accessToken) return _accessToken;
+  if (typeof window !== 'undefined') {
+    return localStorage.getItem('size_token');
+  }
+  return null;
+}
 
-const storage = Platform.OS === 'web' ? webStorage : AsyncStorage;
+export function setToken(token: string | null): void {
+  _accessToken = token;
+  if (typeof window !== 'undefined') {
+    if (token) localStorage.setItem('size_token', token);
+    else localStorage.removeItem('size_token');
+  }
+}
 
-export const supabase: SupabaseClient = isConfigured
-  ? createClient(supabaseUrl, supabaseAnonKey, {
-      auth: {
-        storage,
-        autoRefreshToken: true,
-        persistSession: true,
-        detectSessionInUrl: Platform.OS === 'web',
-      },
-    })
-  : (null as unknown as SupabaseClient);
+export function getApiUrl(): string {
+  return API_URL;
+}
 
-export const SUPABASE_READY = isConfigured;
+export const SUPABASE_READY = API_URL.length > 0;
+
+// Keep this export name for backward compat during migration
+// but it's really just a marker that the API is configured
+export const supabase = null as any;

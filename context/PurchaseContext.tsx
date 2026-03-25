@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { stripeCheckout } from '@/lib/purchases';
 import { useAuth } from './AuthContext';
-import { supabase } from '@/lib/supabase';
+import { getToken, getApiUrl } from '@/lib/supabase';
 
 interface PurchaseContextType {
   isPremium: boolean;
@@ -12,46 +12,39 @@ interface PurchaseContextType {
 const PurchaseContext = createContext<PurchaseContextType | null>(null);
 
 export function PurchaseProvider({ children }: { children: React.ReactNode }) {
-  const { session } = useAuth();
+  const { session, profile } = useAuth();
   const [isPremium, setIsPremium] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!session?.user.id) { setLoading(false); return; }
+    setIsPremium(profile?.is_premium ?? false);
+    setLoading(false);
 
-    async function checkPremium() {
-      const { data } = await supabase
-        .from('profiles')
-        .select('is_premium')
-        .eq('id', session!.user.id)
-        .single();
-      setIsPremium(data?.is_premium ?? false);
-      setLoading(false);
-    }
-
-    checkPremium();
-
-    // Check if user just returned from Stripe
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
       if (params.get('subscribed') === '1') {
         let attempts = 0;
+        const API = getApiUrl();
         const interval = setInterval(async () => {
-          const { data } = await supabase
-            .from('profiles')
-            .select('is_premium')
-            .eq('id', session!.user.id)
-            .single();
-          if (data?.is_premium) {
-            setIsPremium(true);
-            clearInterval(interval);
-            window.history.replaceState({}, '', window.location.pathname);
+          const token = getToken();
+          if (!API || !token) return;
+          const res = await fetch(`${API}/api/v1/auth/me`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          if (res.ok) {
+            const data = await res.json();
+            if (data?.is_premium) {
+              setIsPremium(true);
+              clearInterval(interval);
+              window.history.replaceState({}, '', window.location.pathname);
+            }
           }
           if (++attempts >= 10) clearInterval(interval);
         }, 2000);
       }
     }
-  }, [session?.user.id]);
+  }, [session?.user.id, profile?.is_premium]);
 
   async function purchaseWeb(plan: 'monthly' | 'annual') {
     if (!session?.user.id) throw new Error('Not logged in');

@@ -10,7 +10,7 @@ import PageContainer from '@/components/PageContainer';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SIZES, RADIUS, getSizeTier } from '@/constants/theme';
 import { fetchPosts, createPost, voteOnPoll, voteOnPost } from '@/lib/api';
-import { supabase, SUPABASE_READY } from '@/lib/supabase';
+import { SUPABASE_READY, getToken } from '@/lib/supabase';
 import { pickMedia, uploadMedia } from '@/lib/media';
 import { useAuth } from '@/context/AuthContext';
 import { usePurchase } from '@/context/PurchaseContext';
@@ -647,7 +647,7 @@ export default function FeedScreen() {
         loadPosts();
       })
       .subscribe();
-    return () => { supabase.removeChannel(channel); };
+    // Realtime replaced by polling
   }, [loadPosts]);
 
   // Pull-to-refresh via touch events

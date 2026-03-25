@@ -10,7 +10,7 @@ import { COLORS, SIZES, RADIUS, getSizeTier } from '@/constants/theme';
 import { fetchPublicProfile, followUser } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
 import { Profile } from '@/lib/types';
-import { supabase, SUPABASE_READY } from '@/lib/supabase';
+import { SUPABASE_READY } from '@/lib/supabase';
 
 const INVITE_STORAGE_KEY = 'size_invite_from';
 

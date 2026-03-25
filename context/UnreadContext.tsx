@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { fetchConversations } from '@/lib/api';
 import { useAuth } from './AuthContext';
-import { supabase, SUPABASE_READY } from '@/lib/supabase';
+import { SUPABASE_READY } from '@/lib/supabase';
 import { Conversation } from '@/lib/types';
 
 interface UnreadContextType {
@@ -31,27 +31,22 @@ export function UnreadProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => { load(); }, [load]);
 
-  // Refresh when conversations are created or updated (new messages)
+  // Poll for new messages every 15 seconds (replaces Supabase realtime)
   useEffect(() => {
     if (!SUPABASE_READY || !myId) return;
-    const channel = supabase
-      .channel('unread-tracker')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'conversations' }, () => load())
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'conversations' }, () => load())
-      .subscribe();
-    return () => { supabase.removeChannel(channel); };
+    const interval = setInterval(load, 15_000);
+    return () => clearInterval(interval);
   }, [myId, load]);
 
   const unreadIds = conversations
     .filter(conv => {
       const isUser1 = conv.user_1_id === myId;
       const myLastRead = isUser1 ? conv.user_1_last_read : conv.user_2_last_read;
-      if (!myLastRead) return !!conv.last_message_preview; // never opened but has messages
+      if (!myLastRead) return !!conv.last_message_preview;
       return new Date(conv.last_message_at) > new Date(myLastRead);
     })
     .map(c => c.id);
 
-  // Optimistically mark a conversation as read in local state immediately
   function markRead(conversationId: string) {
     const now = new Date().toISOString();
     setConversations(prev =>

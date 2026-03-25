@@ -15,7 +15,7 @@ import {
 import { useUnread } from '@/context/UnreadContext';
 import { pickMedia } from '@/lib/media';
 import { useAuth } from '@/context/AuthContext';
-import { supabase, SUPABASE_READY } from '@/lib/supabase';
+import { SUPABASE_READY, getToken } from '@/lib/supabase';
 import { Message, Conversation } from '@/lib/types';
 
 function formatTime(ts: string): string {
@@ -213,7 +213,7 @@ export default function ChatScreen() {
         },
       )
       .subscribe();
-    return () => { supabase.removeChannel(channel); };
+    // Realtime replaced by polling
   }, [conversationId]);
 
   async function handlePickMedia() {

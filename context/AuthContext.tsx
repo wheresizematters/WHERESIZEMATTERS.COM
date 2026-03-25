@@ -1,16 +1,47 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { Platform } from 'react-native';
-import { Session } from '@supabase/supabase-js';
-import * as WebBrowser from 'expo-web-browser';
-import * as Linking from 'expo-linking';
-import { supabase, SUPABASE_READY } from '@/lib/supabase';
+import { getToken, setToken, getApiUrl, SUPABASE_READY } from '@/lib/supabase';
 import { Profile } from '@/lib/types';
 import { registerPushToken } from '@/lib/notifications';
-import { maybeAwardDailyLoginCoins } from '@/lib/api';
 
-WebBrowser.maybeCompleteAuthSession();
+const API = getApiUrl();
 
-// Demo profile used when Supabase isn't configured yet
+interface AuthContextType {
+  session: { user: { id: string } } | null;
+  profile: Profile | null;
+  loading: boolean;
+  demoMode: boolean;
+  signIn: (email: string, password: string) => Promise<{ error: string | null }>;
+  signUp: (email: string, password: string, username: string, sizeInches: number, ageRange?: string, girthInches?: number) => Promise<{ error: string | null }>;
+  signInWithOAuth: (provider: 'google' | 'x') => Promise<{ error: string | null }>;
+  signOut: () => Promise<void>;
+  updateProfile: (updates: Partial<Profile>) => Promise<void>;
+  refreshProfile: () => void;
+}
+
+const AuthContext = createContext<AuthContextType | null>(null);
+
+async function apiFetch<T = any>(path: string, opts?: { method?: string; body?: any }): Promise<T | null> {
+  if (!API) return null;
+  const token = getToken();
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  try {
+    const res = await fetch(`${API}${path}`, {
+      method: opts?.method ?? 'GET',
+      headers,
+      body: opts?.body ? JSON.stringify(opts.body) : undefined,
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      return { error: err.error ?? `Request failed (${res.status})` } as any;
+    }
+    return res.json();
+  } catch {
+    return null;
+  }
+}
+
+// Demo profile for when API isn't configured
 const DEMO_PROFILE: Profile = {
   id: 'demo',
   username: 'DemoUser',
@@ -20,234 +51,120 @@ const DEMO_PROFILE: Profile = {
   created_at: new Date().toISOString(),
 };
 
-interface AuthContextType {
-  session: Session | null;
-  profile: Profile | null;
-  loading: boolean;
-  demoMode: boolean;
-  signIn: (email: string, password: string) => Promise<{ error: string | null }>;
-  signUp: (email: string, password: string, username: string, sizeInches: number, ageRange?: string, girthInches?: number) => Promise<{ error: string | null }>;
-  signInWithOAuth: (provider: 'google' | 'x') => Promise<{ error: string | null }>;
-  signInWithPhone: (phone: string) => Promise<{ error: string | null }>;
-  verifyPhoneOtp: (phone: string, token: string) => Promise<{ error: string | null }>;
-  signOut: () => Promise<void>;
-  updateProfile: (updates: Partial<Profile>) => Promise<void>;
-  refreshProfile: () => void;
-}
-
-const AuthContext = createContext<AuthContextType | null>(null);
-
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [session, setSession] = useState<Session | null>(null);
+  const [session, setSession] = useState<{ user: { id: string } } | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Demo mode — skip Supabase entirely
     if (!SUPABASE_READY) {
       setProfile(DEMO_PROFILE);
-      setSession({ user: { id: 'demo' } } as any);
+      setSession({ user: { id: 'demo' } });
       setLoading(false);
       return;
     }
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      if (session) fetchProfile(session.user.id);
-      else setLoading(false);
-    });
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      if (session) {
-        fetchProfile(session.user.id);
-        // Auto-follow if user arrived via an invite link
-        if (typeof window !== 'undefined') {
-          const inviteFrom = sessionStorage.getItem('size_invite_from');
-          const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-          if (inviteFrom && UUID_REGEX.test(inviteFrom) && inviteFrom !== session.user.id) {
-            sessionStorage.removeItem('size_invite_from');
-            supabase.from('follows').upsert([
-              { follower_id: session.user.id, following_id: inviteFrom },
-              { follower_id: inviteFrom, following_id: session.user.id },
-            ]).then(() => {});
-          } else if (inviteFrom) {
-            // Invalid value — clear it
-            sessionStorage.removeItem('size_invite_from');
-          }
-        }
-      } else { setProfile(null); setLoading(false); }
-    });
-
-    return () => subscription.unsubscribe();
+    // Check for existing token
+    const token = getToken();
+    if (token) {
+      fetchMe();
+    } else {
+      setLoading(false);
+    }
   }, []);
 
-  async function fetchProfile(userId: string) {
-    const { data } = await supabase.from('profiles').select('*').eq('id', userId).single();
-    if (!data) {
-      // DB trigger may not have fired yet for new OAuth users — retry once
-      await new Promise(r => setTimeout(r, 1200));
-      const { data: retried } = await supabase.from('profiles').select('*').eq('id', userId).single();
-      setProfile(retried ?? null);
-      if (retried) syncOAuthIdentity(userId, retried);
-    } else {
+  async function fetchMe() {
+    const data = await apiFetch<Profile & { error?: string }>('/api/v1/auth/me');
+    if (data && !data.error && data.id) {
       setProfile(data);
-      syncOAuthIdentity(userId, data);
+      setSession({ user: { id: data.id } });
+    } else {
+      // Token expired or invalid
+      setToken(null);
+      setProfile(null);
+      setSession(null);
     }
     setLoading(false);
-    // Register for push notifications in the background — don't block auth flow
-    registerPushToken(userId).catch(() => {});
-    // Award daily login coins in the background
-    maybeAwardDailyLoginCoins(userId).catch(() => {});
-  }
-
-  /** Extract X/Google identity from Supabase auth metadata and sync to profile */
-  async function syncOAuthIdentity(userId: string, currentProfile: any) {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const meta = user.user_metadata ?? {};
-      const provider = user.app_metadata?.provider;
-      const updates: Record<string, any> = {};
-
-      if (provider === 'twitter' || provider === 'x') {
-        const xHandle = meta.user_name ?? meta.preferred_username ?? null;
-        const xName = meta.full_name ?? meta.name ?? null;
-        const xAvatar = meta.avatar_url ?? meta.picture ?? null;
-
-        if (xHandle && xHandle !== currentProfile.x_handle) updates.x_handle = xHandle;
-        if (xName && xName !== currentProfile.x_name) updates.x_name = xName;
-        if (xAvatar && xAvatar !== currentProfile.x_avatar_url) updates.x_avatar_url = xAvatar;
-        if (!currentProfile.auth_provider) updates.auth_provider = 'x';
-        // Use X avatar as profile avatar if user hasn't set a custom one
-        if (xAvatar && !currentProfile.avatar_url) updates.avatar_url = xAvatar;
-        // Use X display name as username if still default
-        if (xHandle && currentProfile.username === userId.slice(0, 8)) updates.username = xHandle;
-      } else if (provider === 'google') {
-        const gAvatar = meta.avatar_url ?? meta.picture ?? null;
-        const gName = meta.full_name ?? meta.name ?? null;
-        if (!currentProfile.auth_provider) updates.auth_provider = 'google';
-        if (gAvatar && !currentProfile.avatar_url) updates.avatar_url = gAvatar;
-        if (gName && currentProfile.username === userId.slice(0, 8)) updates.username = gName.split(' ')[0];
-      }
-
-      if (Object.keys(updates).length > 0) {
-        const { data: updated } = await supabase
-          .from('profiles')
-          .update(updates)
-          .eq('id', userId)
-          .select()
-          .single();
-        if (updated) setProfile(updated);
-      }
-    } catch {}
   }
 
   async function signIn(email: string, password: string) {
-    if (!SUPABASE_READY) return { error: 'Supabase not configured — running in demo mode' };
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    return { error: error?.message ?? null };
+    const data = await apiFetch<{ token: string; profile: Profile; error?: string }>(
+      '/api/v1/auth/login',
+      { method: 'POST', body: { email, password } },
+    );
+    if (!data) return { error: 'API unavailable' };
+    if (data.error) return { error: data.error };
+    setToken(data.token);
+    setProfile(data.profile);
+    setSession({ user: { id: data.profile.id } });
+    return { error: null };
   }
 
-  async function signUp(email: string, password: string, username: string, sizeInches: number, ageRange?: string, girthInches?: number) {
-    if (!SUPABASE_READY) return { error: 'Supabase not configured — running in demo mode' };
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: { data: { username: username.trim(), size_inches: sizeInches, age_range: ageRange ?? null, girth_inches: girthInches ?? null } },
-    });
-    if (error) return { error: error.message };
+  async function signUp(
+    email: string, password: string, username: string,
+    sizeInches: number, ageRange?: string, girthInches?: number,
+  ) {
+    const data = await apiFetch<{ token: string; profile: Profile; error?: string }>(
+      '/api/v1/auth/signup',
+      { method: 'POST', body: { email, password, username, sizeInches, ageRange, girthInches } },
+    );
+    if (!data) return { error: 'API unavailable' };
+    if (data.error) return { error: data.error };
+    setToken(data.token);
+    setProfile(data.profile);
+    setSession({ user: { id: data.profile.id } });
     return { error: null };
   }
 
   async function signInWithOAuth(provider: 'google' | 'x') {
-    if (!SUPABASE_READY) return { error: 'Supabase not configured' };
-
-    if (Platform.OS === 'web') {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider,
-        options: { redirectTo: 'https://www.wheresizematters.com/' },
-      });
-      return { error: error?.message ?? null };
-    }
-
-    // Native: open OAuth in browser, handle deep link callback
-    const redirectUri = Linking.createURL('auth/callback');
-    const { data, error } = await supabase.auth.signInWithOAuth({
-      provider,
-      options: { redirectTo: redirectUri, skipBrowserRedirect: true },
-    });
-    if (error || !data.url) return { error: error?.message ?? 'OAuth failed' };
-
-    const result = await WebBrowser.openAuthSessionAsync(data.url, redirectUri);
-    if (result.type === 'success') {
-      // Handle both hash fragment (#access_token=...) and query param (?code=...) flows
-      const hash = result.url.split('#')[1] ?? '';
-      const query = result.url.split('?')[1] ?? '';
-      const hashParams = new URLSearchParams(hash);
-      const queryParams = new URLSearchParams(query);
-
-      const access_token = hashParams.get('access_token');
-      const refresh_token = hashParams.get('refresh_token');
-      const code = queryParams.get('code');
-
-      if (access_token && refresh_token) {
-        const { error: sessionError } = await supabase.auth.setSession({ access_token, refresh_token });
-        return { error: sessionError?.message ?? null };
-      } else if (code) {
-        const { error: codeError } = await supabase.auth.exchangeCodeForSession(code);
-        return { error: codeError?.message ?? null };
-      }
+    if (!API) return { error: 'API not configured' };
+    // Redirect to backend OAuth endpoint — backend handles the OAuth flow
+    // and redirects back with a token
+    if (typeof window !== 'undefined') {
+      window.location.href = `${API}/api/v1/auth/oauth/${provider}/redirect`;
     }
     return { error: null };
   }
 
-  async function signInWithPhone(phone: string) {
-    if (!SUPABASE_READY) return { error: 'Supabase not configured' };
-    const { error } = await supabase.auth.signInWithOtp({ phone });
-    return { error: error?.message ?? null };
-  }
-
-  async function verifyPhoneOtp(phone: string, token: string) {
-    if (!SUPABASE_READY) return { error: 'Supabase not configured' };
-    const { error } = await supabase.auth.verifyOtp({ phone, token, type: 'sms' });
-    return { error: error?.message ?? null };
-  }
-
   async function signOut() {
-    if (!SUPABASE_READY) return;
-    await supabase.auth.signOut();
+    setToken(null);
+    setProfile(null);
+    setSession(null);
   }
 
   async function updateProfile(updates: Partial<Profile>) {
-    if (!SUPABASE_READY || !session) return;
-    // Try update first; if no row exists (new OAuth user), upsert it
-    const { data, error } = await supabase
-      .from('profiles')
-      .update(updates)
-      .eq('id', session.user.id)
-      .select()
-      .single();
-    if (data) {
-      setProfile(data);
-    } else if (error) {
-      // Row may not exist yet — upsert with safe defaults
-      const { data: upserted } = await supabase
-        .from('profiles')
-        .upsert({ id: session.user.id, username: session.user.email?.split('@')[0] ?? session.user.id.slice(0, 8), size_inches: 6.0, ...updates })
-        .select()
-        .single();
-      if (upserted) setProfile(upserted);
-    }
+    if (!session) return;
+    const data = await apiFetch<Profile>('/api/v1/profiles/me', {
+      method: 'PATCH',
+      body: updates,
+    });
+    if (data && (data as any).id) setProfile(data);
   }
 
   function refreshProfile() {
-    if (session?.user.id) fetchProfile(session.user.id);
+    if (session) fetchMe();
   }
 
+  // Check for OAuth callback token in URL
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get('token');
+    if (token) {
+      setToken(token);
+      // Clean URL
+      window.history.replaceState({}, '', window.location.pathname);
+      fetchMe();
+    }
+  }, []);
+
   return (
-    <AuthContext.Provider value={{ session, profile, loading, demoMode: !SUPABASE_READY, signIn, signUp, signInWithOAuth, signInWithPhone, verifyPhoneOtp, signOut, updateProfile, refreshProfile }}>
+    <AuthContext.Provider value={{
+      session, profile, loading,
+      demoMode: !SUPABASE_READY,
+      signIn, signUp, signInWithOAuth, signOut,
+      updateProfile, refreshProfile,
+    }}>
       {children}
     </AuthContext.Provider>
   );

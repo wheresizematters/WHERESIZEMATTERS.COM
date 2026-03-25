@@ -9,7 +9,7 @@ import { COLORS, SIZES, RADIUS } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
 import PageContainer from '@/components/PageContainer';
 import { getMyCircleJerks, getTrendingDickCoins, getTierInfo, DickCoin } from '@/lib/dickcoin';
-import { supabase } from '@/lib/supabase';
+import { getToken } from '@/lib/supabase';
 
 export default function CommunitiesScreen() {
   const router = useRouter();
@@ -22,7 +22,7 @@ export default function CommunitiesScreen() {
   const [refreshing, setRefreshing] = useState(false);
 
   const loadData = useCallback(async () => {
-    const token = (await supabase.auth.getSession()).data.session?.access_token ?? '';
+    const token = getToken() ?? '';
     const [mine, trend] = await Promise.all([
       getMyCircleJerks(token),
       getTrendingDickCoins(),

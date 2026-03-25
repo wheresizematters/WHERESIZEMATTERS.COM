@@ -71,7 +71,7 @@ export default function CircleJerkScreen() {
   async function loadMessages() {
     if (!API_BASE || !coinAddress) return;
     try {
-      const token = (await (await import('@/lib/supabase')).supabase.auth.getSession()).data.session?.access_token;
+      const token = getToken();
       const res = await fetch(`${API_BASE}/api/v1/circle-jerks/${coinAddress}/messages?channel=${channel}`, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
@@ -86,7 +86,7 @@ export default function CircleJerkScreen() {
     if (!input.trim() || sending || !coinAddress) return;
     setSending(true);
     try {
-      const token = (await (await import('@/lib/supabase')).supabase.auth.getSession()).data.session?.access_token;
+      const token = getToken();
       await fetch(`${API_BASE}/api/v1/circle-jerks/${coinAddress}/messages`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },

@@ -8,7 +8,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SIZES, RADIUS } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
 import PageContainer from '@/components/PageContainer';
-import { supabase, SUPABASE_READY } from '@/lib/supabase';
+import { getToken, getApiUrl, SUPABASE_READY } from '@/lib/supabase';
 import { launchDickCoin } from '@/lib/dickcoin';
 import * as ImagePicker from 'expo-image-picker';
 

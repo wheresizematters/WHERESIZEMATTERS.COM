@@ -8,7 +8,7 @@ import { useRouter } from 'expo-router';
 import { COLORS, SIZES, RADIUS } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
 import { usePurchase } from '@/context/PurchaseContext';
-import { supabase } from '@/lib/supabase';
+import { getToken, getApiUrl } from '@/lib/supabase';
 import PaywallModal from '@/components/PaywallModal';
 
 const COUNTRIES = [

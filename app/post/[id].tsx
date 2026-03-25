@@ -11,7 +11,7 @@ import { COLORS, SIZES, RADIUS, getSizeTier } from '@/constants/theme';
 import { fetchPost, fetchComments, createComment, voteOnPoll, voteOnPost } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
 import { usePurchase } from '@/context/PurchaseContext';
-import { supabase, SUPABASE_READY } from '@/lib/supabase';
+import { SUPABASE_READY } from '@/lib/supabase';
 import { Post, Comment } from '@/lib/types';
 import LockedMedia from '@/components/LockedMedia';
 import LinkPreview from '@/components/LinkPreview';
@@ -284,7 +284,7 @@ export default function PostScreen() {
         fetchComments(postId).then(setComments);
       })
       .subscribe();
-    return () => { supabase.removeChannel(channel); };
+    // Realtime replaced by polling
   }, [postId]);
 
   async function handleSubmit() {

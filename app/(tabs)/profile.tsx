@@ -12,7 +12,7 @@ import { COLORS, SIZES, RADIUS, getSizeTier } from '@/constants/theme';
 import { WORLD_AVERAGE } from '@/lib/mockData';
 import { fetchUserRank, fetchUserPostCount, fetchTotalUserCount, fetchUserPosts, searchUsers, fetchUserPercentile } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
-import { supabase } from '@/lib/supabase';
+import { getToken, getApiUrl } from '@/lib/supabase';
 import { Post } from '@/lib/types';
 
 type ProfileTab = 'posts' | 'compare';

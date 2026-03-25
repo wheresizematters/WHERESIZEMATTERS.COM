@@ -4,6 +4,13 @@ import { T, getItem, putItem, updateItem, queryItems, scanAll } from "../db";
 export interface Profile {
   id: string;
   username: string;
+  email?: string | null;
+  password_hash?: string | null;
+  auth_provider?: string | null;        // "email" | "x" | "google"
+  oauth_provider_id?: string | null;    // external provider user ID
+  x_handle?: string | null;
+  x_avatar_url?: string | null;
+  x_name?: string | null;
   size_inches: number;
   girth_inches?: number | null;
   is_verified: boolean;
@@ -132,4 +139,119 @@ export async function getUserPercentile(sizeInches: number): Promise<number> {
   if (all.length === 0) return 0;
   const smaller = all.filter((p) => p.size_inches < sizeInches).length;
   return Math.round((smaller / all.length) * 100);
+}
+
+// ── Auth helpers ──────────────────────────────────────────────────
+
+/** Look up a profile by email using the email-index GSI */
+export async function getProfileByEmail(email: string): Promise<Profile | null> {
+  const results = await queryItems<Profile>(
+    T.profiles,
+    "email = :e",
+    { ":e": email },
+    { indexName: "email-index", limit: 1 },
+  );
+  return results[0] ?? null;
+}
+
+/** Look up a profile by OAuth provider + provider user ID */
+export async function getProfileByOAuth(provider: string, providerId: string): Promise<Profile | null> {
+  const results = await queryItems<Profile>(
+    T.profiles,
+    "oauth_provider_id = :pid",
+    { ":pid": providerId, ":ap": provider },
+    {
+      indexName: "oauth-provider-index",
+      limit: 1,
+      filterExpr: "auth_provider = :ap",
+    },
+  );
+  return results[0] ?? null;
+}
+
+/** Create a new profile with email/password auth */
+export async function createProfileWithAuth(params: {
+  email: string;
+  passwordHash: string;
+  username: string;
+  sizeInches: number;
+  ageRange?: string | null;
+  girthInches?: number | null;
+  authProvider: string;
+}): Promise<Profile> {
+  const now = new Date().toISOString();
+  const profile: Profile = {
+    id: uuid(),
+    username: params.username,
+    email: params.email,
+    password_hash: params.passwordHash,
+    auth_provider: params.authProvider,
+    oauth_provider_id: null,
+    x_handle: null,
+    x_avatar_url: null,
+    x_name: null,
+    size_inches: params.sizeInches,
+    girth_inches: params.girthInches ?? null,
+    is_verified: false,
+    has_set_size: true,
+    age_range: params.ageRange ?? undefined,
+    notifications_enabled: true,
+    size_coins: 0,
+    is_admin: false,
+    is_premium: false,
+    staking_tier: 0,
+    staking_amount: 0,
+    created_at: now,
+  };
+
+  await putItem(T.profiles, profile);
+  return profile;
+}
+
+/** Create a new profile from an OAuth provider (X, Google) */
+export async function createOAuthProfile(params: {
+  authProvider: string;
+  oauthProviderId: string;
+  username: string;
+  email?: string | null;
+  avatarUrl?: string | null;
+  xHandle?: string | null;
+  xAvatarUrl?: string | null;
+  xName?: string | null;
+}): Promise<Profile> {
+  const now = new Date().toISOString();
+
+  // Ensure username uniqueness — append random suffix if taken
+  let username = params.username;
+  const existing = await getProfileByUsername(username);
+  if (existing) {
+    username = `${username}_${Math.random().toString(36).slice(2, 6)}`;
+  }
+
+  const profile: Profile = {
+    id: uuid(),
+    username,
+    email: params.email ?? null,
+    password_hash: null,
+    auth_provider: params.authProvider,
+    oauth_provider_id: params.oauthProviderId,
+    x_handle: params.xHandle ?? null,
+    x_avatar_url: params.xAvatarUrl ?? null,
+    x_name: params.xName ?? null,
+    size_inches: 0,
+    girth_inches: null,
+    is_verified: false,
+    has_set_size: false,
+    avatar_url: params.avatarUrl ?? undefined,
+    notifications_enabled: true,
+    size_coins: 0,
+    is_admin: false,
+    is_premium: false,
+    staking_tier: 0,
+    staking_amount: 0,
+    created_at: now,
+  };
+
+  await putItem(T.profiles, profile);
+  return profile;
 }

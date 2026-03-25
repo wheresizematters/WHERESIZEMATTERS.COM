@@ -1,5 +1,7 @@
 import * as ImagePicker from 'expo-image-picker';
-import { supabase, SUPABASE_READY } from './supabase';
+import { getToken, getApiUrl, SUPABASE_READY } from './supabase';
+
+const API = getApiUrl();
 
 export async function pickMedia(type: 'image' | 'video' | 'all' = 'all') {
   const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -26,20 +28,29 @@ export async function uploadMedia(
   localUri: string,
   mimeType: string,
 ): Promise<string | null> {
-  if (!SUPABASE_READY) return localUri; // return local URI in demo mode
+  if (!SUPABASE_READY || !API) return localUri;
 
   const ext = mimeType.includes('video') ? 'mp4' : 'jpg';
-  const path = `${userId}/${postId}.${ext}`;
+  const path = `media/${userId}/${postId}.${ext}`;
+  const token = getToken();
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (token) headers['Authorization'] = `Bearer ${token}`;
 
+  // Get presigned URL from API
+  const urlRes = await fetch(`${API}/api/v1/storage/upload-url`, {
+    method: 'POST', headers,
+    body: JSON.stringify({ bucket: 'media', path, contentType: mimeType }),
+  });
+  if (!urlRes.ok) return null;
+  const { uploadUrl, publicUrl } = await urlRes.json();
+
+  // Upload to S3
   const response = await fetch(localUri);
   const blob = await response.blob();
-
-  const { error } = await supabase.storage
-    .from('media')
-    .upload(path, blob, { contentType: mimeType, upsert: true });
-
-  if (error) return null;
-
-  const { data } = supabase.storage.from('media').getPublicUrl(path);
-  return data.publicUrl;
+  const uploadRes = await fetch(uploadUrl, {
+    method: 'PUT', body: blob,
+    headers: { 'Content-Type': mimeType },
+  });
+  if (!uploadRes.ok) return null;
+  return publicUrl;
 }
