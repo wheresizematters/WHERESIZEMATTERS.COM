@@ -19,9 +19,11 @@ resource "aws_dynamodb_table" "profiles" {
   billing_mode = "PAY_PER_REQUEST"
   hash_key     = "id"
 
-  attribute { name = "id"             type = "S" }
-  attribute { name = "username"       type = "S" }
-  attribute { name = "wallet_address" type = "S" }
+  attribute { name = "id"                type = "S" }
+  attribute { name = "username"          type = "S" }
+  attribute { name = "wallet_address"    type = "S" }
+  attribute { name = "email"             type = "S" }
+  attribute { name = "oauth_provider_id" type = "S" }
 
   global_secondary_index {
     name            = "username-index"
@@ -32,6 +34,18 @@ resource "aws_dynamodb_table" "profiles" {
   global_secondary_index {
     name            = "wallet-index"
     hash_key        = "wallet_address"
+    projection_type = "ALL"
+  }
+
+  global_secondary_index {
+    name            = "email-index"
+    hash_key        = "email"
+    projection_type = "ALL"
+  }
+
+  global_secondary_index {
+    name            = "oauth-provider-index"
+    hash_key        = "oauth_provider_id"
     projection_type = "ALL"
   }
 
