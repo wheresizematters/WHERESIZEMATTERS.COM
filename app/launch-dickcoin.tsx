@@ -35,8 +35,8 @@ export default function LaunchDickCoinScreen() {
   const { session, profile } = useAuth();
 
   const [step, setStep] = useState<Step>('info');
-  const [name, setName] = useState(profile?.username ? `${profile.username}Coin` : '');
-  const [ticker, setTicker] = useState(profile?.username ? `$${profile.username.toUpperCase().slice(0, 7)}` : '');
+  const [name, setName] = useState('');
+  const [ticker, setTicker] = useState('');
   const [description, setDescription] = useState('');
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [error, setError] = useState('');
