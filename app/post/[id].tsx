@@ -8,7 +8,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SIZES, RADIUS, getSizeTier } from '@/constants/theme';
-import { fetchPost, fetchComments, createComment, voteOnPoll, voteOnPost } from '@/lib/api';
+import { fetchPost, fetchComments, createComment, voteOnPoll, voteOnPost, deletePost } from "@/lib/api";
 import { useAuth } from '@/context/AuthContext';
 import { usePurchase } from '@/context/PurchaseContext';
 import { SUPABASE_READY } from '@/lib/supabase';
@@ -122,6 +122,11 @@ function PostDetail({ post, myId, isPremium, onVotePost }: {
           )}
         </View>
         <Text style={styles.postTime}>{timeAgo(post.created_at)}</Text>
+        {isOwner && (
+          <TouchableOpacity onPress={async () => { if (window.confirm("Delete this post?")) { await deletePost(post.id); window.alert("Post deleted."); router.push("/(tabs)" as any); } }} style={{ padding: 6 }}>
+            <Ionicons name="trash-outline" size={16} color={COLORS.red} />
+          </TouchableOpacity>
+        )}
       </TouchableOpacity>
 
       {/* Tag */}

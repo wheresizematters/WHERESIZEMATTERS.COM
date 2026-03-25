@@ -55,6 +55,10 @@ export async function voteOnPoll(pollOptionId: string, userId: string): Promise<
   return (await post(`/api/v1/posts/poll/${pollOptionId}/vote`, {})) ?? { error: null };
 }
 
+export async function deletePost(postId: string): Promise<{ error: string | null }> {
+  return (await del(`/api/v1/posts/${postId}`)) ?? { error: "API unavailable" };
+}
+
 export async function createPost(
   userId: string, type: 'discussion' | 'poll', content: string,
   pollOptions?: string[], mediaUrl?: string, tag?: string, title?: string,
