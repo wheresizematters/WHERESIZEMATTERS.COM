@@ -39,7 +39,7 @@ export default function WhitepaperScreen() {
       <PageContainer maxWidth={800}>
         {/* Header */}
         <View style={s.header}>
-          <TouchableOpacity onPress={() => router.back()} style={s.backBtn}>
+          <TouchableOpacity onPress={() => router.push("/(tabs)" as any)} style={s.backBtn}>
             <Ionicons name="arrow-back" size={22} color={COLORS.white} />
           </TouchableOpacity>
           <View style={s.headerTitle}>

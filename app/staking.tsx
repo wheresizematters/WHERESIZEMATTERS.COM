@@ -138,7 +138,7 @@ export default function StakingScreen() {
       <PageContainer>
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+          <TouchableOpacity onPress={() => router.push("/(tabs)" as any)} style={styles.backBtn}>
             <Ionicons name="arrow-back" size={22} color={COLORS.white} />
           </TouchableOpacity>
           <View style={styles.headerTitle}>
