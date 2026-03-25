@@ -28,6 +28,7 @@ scp -i "$KEY" \
   public/privacy.html \
   public/terms.html \
   public/og-image.png \
+  public/coin.html \
   "$SERVER:/tmp/"
 
 ssh -i "$KEY" "$SERVER" "
@@ -38,6 +39,7 @@ ssh -i "$KEY" "$SERVER" "
   sudo cp /tmp/privacy.html /var/www/size/privacy.html
   sudo cp /tmp/terms.html /var/www/size/terms.html
   sudo cp /tmp/og-image.png /var/www/size/og-image.png
+sudo cp /tmp/coin.html /var/www/size/coin.html
 "
 
 echo "Updating API..."
