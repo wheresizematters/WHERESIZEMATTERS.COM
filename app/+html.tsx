@@ -8,6 +8,26 @@ export default function Root({ children }: { children: React.ReactNode }) {
         <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
         <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
 
+        {/* SEO */}
+        <title>SIZE. — Where Size Matters</title>
+        <meta name="description" content="Verify your size via AI, earn $SIZE tokens, launch DickCoins, and compete on the global leaderboard. SocialFi on Base." />
+
+        {/* Open Graph */}
+        <meta property="og:title" content="SIZE. — Where Size Matters" />
+        <meta property="og:description" content="Verify your size via AI, earn $SIZE tokens, launch DickCoins, and compete on the global leaderboard. SocialFi on Base." />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://wheresizematters.com" />
+        <meta property="og:site_name" content="SIZE." />
+        <meta property="og:image" content="https://wheresizematters.com/og-image.png" />
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
+
+        {/* Twitter Card */}
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="SIZE. — Where Size Matters" />
+        <meta name="twitter:description" content="Verify your size via AI, earn $SIZE tokens, launch DickCoins, and compete on the global leaderboard." />
+        <meta name="twitter:image" content="https://wheresizematters.com/og-image.png" />
+
         {/* PWA */}
         <link rel="manifest" href="/manifest.json" />
         <meta name="application-name" content="SIZE." />
@@ -19,6 +39,9 @@ export default function Root({ children }: { children: React.ReactNode }) {
         <meta name="apple-mobile-web-app-title" content="SIZE." />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <link rel="apple-touch-icon" href="/icon.png" />
+
+        {/* Canonical */}
+        <link rel="canonical" href="https://wheresizematters.com" />
 
         <ScrollViewStyleReset />
         <style>{`

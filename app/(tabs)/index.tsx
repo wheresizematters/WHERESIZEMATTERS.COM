@@ -18,6 +18,8 @@ import { Post } from '@/lib/types';
 import LockedMedia from '@/components/LockedMedia';
 import LinkPreview from '@/components/LinkPreview';
 import PaywallModal from '@/components/PaywallModal';
+import UserAvatar from '@/components/UserAvatar';
+import RichText from '@/components/RichText';
 
 const FEED_TABS = ['FEED', 'DISCUSSIONS', 'MEDIA'] as const;
 type FeedTab = typeof FEED_TABS[number];
@@ -148,11 +150,14 @@ function AuthorRow({ post, isPremium }: { post: Post; isPremium: boolean }) {
       onPress={() => router.push(`/profile/${post.author.id}` as any)}
       activeOpacity={0.7}
     >
-      <View style={[styles.authorAvatar, { borderColor: tier.color }]}>
-        <Text style={[styles.authorAvatarLetter, { color: tier.color }]}>
-          {post.author.username.charAt(0).toUpperCase()}
-        </Text>
-      </View>
+      <UserAvatar
+        username={post.author.username}
+        avatarUrl={(post.author as any).avatar_url}
+        sizeInches={post.author.size_inches}
+        size={36}
+        isVerified={post.author.is_verified}
+        showVerified
+      />
       <View style={styles.authorMeta}>
         <Text style={styles.authorUsername}>@{post.author.username}</Text>
         <SizeBadge inches={post.author.size_inches} verified={post.author.is_verified} isPremium={isPremium} />

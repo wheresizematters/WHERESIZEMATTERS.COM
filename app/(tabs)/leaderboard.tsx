@@ -13,6 +13,7 @@ import { usePurchase } from '@/context/PurchaseContext';
 import { useAuth } from '@/context/AuthContext';
 import PaywallModal from '@/components/PaywallModal';
 import { LeaderboardEntry } from '@/lib/types';
+import UserAvatar from '@/components/UserAvatar';
 import { requestAndSaveLocation, getCurrentLocation, UserLocation } from '@/lib/location';
 import NearbyMap from '@/components/NearbyMap';
 
@@ -114,6 +115,7 @@ function LeaderboardRow({ entry, onPress, isPremium }: { entry: LeaderboardEntry
   return (
     <TouchableOpacity style={styles.row} onPress={onPress} activeOpacity={0.7}>
       <RankBadge rank={entry.rank} />
+      <UserAvatar username={entry.username} sizeInches={entry.size_inches} size={32} isVerified={entry.is_verified} />
       <View style={styles.userInfo}>
         <View style={styles.usernameRow}>
           <Text style={styles.username}>@{entry.username}</Text>

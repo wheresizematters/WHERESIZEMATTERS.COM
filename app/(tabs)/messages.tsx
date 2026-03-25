@@ -10,6 +10,7 @@ import { COLORS, SIZES, RADIUS, getSizeTier } from '@/constants/theme';
 import { fetchConversations, searchUsers, getOrCreateConversation } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
 import { useUnread } from '@/context/UnreadContext';
+import UserAvatar from '@/components/UserAvatar';
 import { Conversation } from '@/lib/types';
 import PageContainer from '@/components/PageContainer';
 
@@ -31,11 +32,14 @@ function ConversationRow({ conv, myId, onPress, unread }: {
   return (
     <TouchableOpacity style={styles.row} onPress={onPress} activeOpacity={0.7}>
       <View style={styles.avatarWrap}>
-        <View style={[styles.avatar, { borderColor: tier.color }]}>
-          <Text style={[styles.avatarText, { color: tier.color }]}>
-            {(other.username ?? '?').charAt(0).toUpperCase()}
-          </Text>
-        </View>
+        <UserAvatar
+          username={other.username ?? '?'}
+          avatarUrl={(other as any).avatar_url}
+          sizeInches={other.size_inches ?? 0}
+          size={46}
+          isVerified={other.is_verified}
+          showVerified
+        />
         {unread && <View style={styles.unreadDot} />}
       </View>
       <View style={styles.rowBody}>

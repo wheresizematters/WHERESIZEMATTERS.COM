@@ -15,6 +15,8 @@ import { supabase, SUPABASE_READY } from '@/lib/supabase';
 import { Post, Comment } from '@/lib/types';
 import LockedMedia from '@/components/LockedMedia';
 import LinkPreview from '@/components/LinkPreview';
+import UserAvatar from '@/components/UserAvatar';
+import RichText from '@/components/RichText';
 
 const HOLO_COLORS: [string, string, string, string] = ['#FF6B2B', '#E8500A', '#C9A84C', '#BF5AF2'];
 const TAG_COLORS: Record<string, string> = { size: '#A78BFA', content: '#60A5FA', viral: '#F87171' };
