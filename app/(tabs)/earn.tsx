@@ -142,7 +142,7 @@ export default function EarnScreen() {
         <View style={styles.header}>
           <View style={styles.headerTitle}>
             <Text style={styles.logo}>SIZE.</Text>
-            <Text style={styles.title}>EARN</Text>
+            <Text style={styles.title}>GROW</Text>
           </View>
           <View style={styles.coinBadge}>
             <Ionicons name="cash-outline" size={18} color={COLORS.gold} />
@@ -214,52 +214,49 @@ export default function EarnScreen() {
             )}
           </View>
 
-          {/* Tokenomics link */}
-          <TouchableOpacity
-            style={styles.tokenomicsLink}
-            activeOpacity={0.8}
-            onPress={() => router.push('/tokenomics' as any)}
-          >
-            <View style={styles.tokenomicsLeft}>
-              <Ionicons name="logo-usd" size={18} color={COLORS.gold} />
-              <View>
-                <Text style={styles.tokenomicsTitle}>$SIZE Tokenomics</Text>
-                <Text style={styles.tokenomicsSub}>100B supply · Base chain · Learn more</Text>
+          {/* Staking section inline */}
+          <View style={styles.section}>
+            <Text style={styles.sectionLabel}>STAKING</Text>
+            <View style={styles.stakingCard}>
+              <View style={styles.stakingRow}>
+                <View style={styles.stakingStat}>
+                  <Text style={styles.stakingStatLabel}>YOUR TIER</Text>
+                  <Text style={styles.stakingStatValue}>--</Text>
+                </View>
+                <View style={styles.stakingStatDivider} />
+                <View style={styles.stakingStat}>
+                  <Text style={styles.stakingStatLabel}>STAKED</Text>
+                  <Text style={styles.stakingStatValue}>0</Text>
+                </View>
+                <View style={styles.stakingStatDivider} />
+                <View style={styles.stakingStat}>
+                  <Text style={styles.stakingStatLabel}>REWARDS</Text>
+                  <Text style={styles.stakingStatValue}>0</Text>
+                </View>
               </View>
+              <TouchableOpacity style={styles.stakingBtn} onPress={() => router.push('/staking' as any)}>
+                <Text style={styles.stakingBtnText}>Manage Staking</Text>
+              </TouchableOpacity>
             </View>
-            <Ionicons name="chevron-forward" size={16} color={COLORS.gold} />
-          </TouchableOpacity>
-
-          {/* Staking link */}
-          <TouchableOpacity
-            style={styles.tokenomicsLink}
-            activeOpacity={0.8}
-            onPress={() => router.push('/staking' as any)}
-          >
-            <View style={styles.tokenomicsLeft}>
-              <Ionicons name="trending-up" size={18} color={COLORS.gold} />
-              <View>
-                <Text style={styles.tokenomicsTitle}>Stake $SIZE</Text>
-                <Text style={styles.tokenomicsSub}>Earn up to 80% APY · Hold more, earn more</Text>
-              </View>
-            </View>
-            <Ionicons name="chevron-forward" size={16} color={COLORS.gold} />
-          </TouchableOpacity>
+          </View>
 
           {/* Launch DickCoin CTA */}
-          <TouchableOpacity
-            style={styles.launchCta}
-            activeOpacity={0.85}
-            onPress={() => router.push('/launch-dickcoin' as any)}
-          >
-            <View style={styles.launchCtaInner}>
-              <Ionicons name="rocket" size={22} color={COLORS.bg} />
-              <View style={{ flex: 1 }}>
-                <Text style={styles.launchCtaTitle}>Launch a DickCoin</Text>
-                <Text style={styles.launchCtaSub}>Deploy your personal memecoin on Base. Earn 90% of all trading fees. Your community gets a Circle Jerk instantly.</Text>
+          <View style={styles.section}>
+            <Text style={styles.sectionLabel}>CREATE</Text>
+            <TouchableOpacity
+              style={styles.launchCta}
+              activeOpacity={0.85}
+              onPress={() => router.push('/launch-dickcoin' as any)}
+            >
+              <View style={styles.launchCtaInner}>
+                <Ionicons name="rocket" size={22} color={COLORS.bg} />
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.launchCtaTitle}>Launch a DickCoin</Text>
+                  <Text style={styles.launchCtaSub}>Deploy your personal memecoin on Base. Earn 90% of trading fees. Get a Circle Jerk community instantly.</Text>
+                </View>
               </View>
-            </View>
-          </TouchableOpacity>
+            </TouchableOpacity>
+          </View>
 
           {/* Tab toggle */}
           <View style={styles.tabBar}>
@@ -267,7 +264,7 @@ export default function EarnScreen() {
               style={[styles.tabBtn, tab === 'earn' && styles.tabBtnActive]}
               onPress={() => setTab('earn')}
             >
-              <Text style={[styles.tabBtnText, tab === 'earn' && styles.tabBtnTextActive]}>How to Earn</Text>
+              <Text style={[styles.tabBtnText, tab === 'earn' && styles.tabBtnTextActive]}>How to Grow</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.tabBtn, tab === 'rewards' && styles.tabBtnActive]}
@@ -399,6 +396,19 @@ const styles = StyleSheet.create({
   walletDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: COLORS.green },
   walletConnectedText: { color: COLORS.green, fontSize: SIZES.xs, fontWeight: '600' },
   walletHint: { color: COLORS.mutedDark, fontSize: SIZES.xs, lineHeight: 16 },
+
+  // Section
+  section: { paddingHorizontal: 16, marginBottom: 16 },
+
+  // Staking inline
+  stakingCard: { backgroundColor: COLORS.card, borderRadius: RADIUS.lg, borderWidth: 1, borderColor: COLORS.cardBorder, padding: 16, gap: 12 },
+  stakingRow: { flexDirection: 'row', alignItems: 'center' },
+  stakingStat: { flex: 1, alignItems: 'center' },
+  stakingStatLabel: { color: COLORS.muted, fontSize: 9, fontWeight: '800', letterSpacing: 1.5 },
+  stakingStatValue: { color: COLORS.white, fontSize: SIZES.lg, fontWeight: '900', marginTop: 4 },
+  stakingStatDivider: { width: 1, height: 28, backgroundColor: COLORS.cardBorder },
+  stakingBtn: { backgroundColor: `${COLORS.gold}20`, borderRadius: RADIUS.md, borderWidth: 1, borderColor: `${COLORS.gold}40`, paddingVertical: 10, alignItems: 'center' },
+  stakingBtnText: { color: COLORS.gold, fontWeight: '700', fontSize: SIZES.sm },
 
   // Launch DickCoin CTA
   launchCta: { marginHorizontal: 16, marginBottom: 16, backgroundColor: COLORS.gold, borderRadius: RADIUS.lg, padding: 16 },

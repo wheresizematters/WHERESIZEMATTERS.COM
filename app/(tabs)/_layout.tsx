@@ -56,7 +56,7 @@ export default function TabLayout() {
         />
         <Tabs.Screen
           name="earn"
-          options={{ tabBarIcon: ({ focused }) => <EarnTabIcon focused={focused} /> }}
+          options={{ tabBarIcon: ({ focused }) => <TabIcon name="trending-up" focused={focused} label="Grow" /> }}
         />
         <Tabs.Screen
           name="explore"
