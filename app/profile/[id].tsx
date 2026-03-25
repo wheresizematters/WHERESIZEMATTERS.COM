@@ -144,7 +144,7 @@ export default function PublicProfileScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingWrap}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backBtnAbs}>
+          <TouchableOpacity onPress={() => { if (typeof window !== 'undefined' && window.history.length > 1) { router.back(); } else { router.push('/(tabs)' as any); } }} style={styles.backBtnAbs}>
             <Ionicons name="chevron-back" size={22} color={COLORS.white} />
           </TouchableOpacity>
           <Text style={{ color: COLORS.muted, marginTop: 20 }}>User not found.</Text>
@@ -171,7 +171,7 @@ export default function PublicProfileScreen() {
           }
           {/* Back button */}
           <View style={styles.topBar}>
-            <TouchableOpacity onPress={() => router.back()} style={styles.topBarBtn}>
+            <TouchableOpacity onPress={() => { if (typeof window !== 'undefined' && window.history.length > 1) { router.back(); } else { router.push('/(tabs)' as any); } }} style={styles.topBarBtn}>
               <Ionicons name="chevron-back" size={20} color="#fff" />
             </TouchableOpacity>
           </View>

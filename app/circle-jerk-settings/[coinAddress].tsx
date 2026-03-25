@@ -69,7 +69,7 @@ export default function CircleJerkSettingsScreen() {
       <SafeAreaView style={s.container}>
         <PageContainer>
           <View style={s.header}>
-            <TouchableOpacity onPress={() => router.back()} style={s.backBtn}>
+            <TouchableOpacity onPress={() => { if (typeof window !== 'undefined' && window.history.length > 1) { router.back(); } else { router.push('/(tabs)' as any); } }} style={s.backBtn}>
               <Ionicons name="arrow-back" size={22} color={COLORS.white} />
             </TouchableOpacity>
             <Text style={s.headerText}>Settings</Text>
@@ -88,7 +88,7 @@ export default function CircleJerkSettingsScreen() {
     <SafeAreaView style={s.container}>
       <PageContainer>
         <View style={s.header}>
-          <TouchableOpacity onPress={() => router.back()} style={s.backBtn}>
+          <TouchableOpacity onPress={() => { if (typeof window !== 'undefined' && window.history.length > 1) { router.back(); } else { router.push('/(tabs)' as any); } }} style={s.backBtn}>
             <Ionicons name="arrow-back" size={22} color={COLORS.white} />
           </TouchableOpacity>
           <Text style={s.headerText}>Circle Jerk Settings</Text>

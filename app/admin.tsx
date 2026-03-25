@@ -98,7 +98,7 @@ export default function AdminScreen() {
     return (
       <SafeAreaView style={s.container}>
         <View style={s.header}>
-          <TouchableOpacity onPress={() => router.back()} style={s.backBtn}>
+          <TouchableOpacity onPress={() => { if (typeof window !== 'undefined' && window.history.length > 1) { router.back(); } else { router.push('/(tabs)' as any); } }} style={s.backBtn}>
             <Ionicons name="chevron-back" size={24} color={COLORS.white} />
           </TouchableOpacity>
           <Text style={s.headerTitle}>ADMIN</Text>
@@ -118,7 +118,7 @@ export default function AdminScreen() {
     return (
       <SafeAreaView style={s.container}>
         <View style={s.header}>
-          <TouchableOpacity onPress={() => router.back()} style={s.backBtn}>
+          <TouchableOpacity onPress={() => { if (typeof window !== 'undefined' && window.history.length > 1) { router.back(); } else { router.push('/(tabs)' as any); } }} style={s.backBtn}>
             <Ionicons name="chevron-back" size={24} color={COLORS.white} />
           </TouchableOpacity>
           <Text style={s.headerTitle}>ADMIN</Text>
@@ -135,7 +135,7 @@ export default function AdminScreen() {
   return (
     <SafeAreaView style={s.container}>
       <View style={s.header}>
-        <TouchableOpacity onPress={() => router.back()} style={s.backBtn}>
+        <TouchableOpacity onPress={() => { if (typeof window !== 'undefined' && window.history.length > 1) { router.back(); } else { router.push('/(tabs)' as any); } }} style={s.backBtn}>
           <Ionicons name="chevron-back" size={24} color={COLORS.white} />
         </TouchableOpacity>
         <Text style={s.headerTitle}>VERIFY QUEUE</Text>
