@@ -84,7 +84,7 @@ export default function CommunitiesScreen() {
             renderItem={({ item }) => (
               <TouchableOpacity
                 style={styles.coinRow}
-                onPress={() => router.push(`/circle-jerk/${item.contractAddress}` as any)}
+                onPress={() => router.push(`/coin/${item.contractAddress}` as any)}
                 activeOpacity={0.7}
               >
                 <View style={styles.coinInfo}>

@@ -109,7 +109,7 @@ export default function ExploreScreen() {
             renderItem={({ item, index }) => (
               <TouchableOpacity
                 style={s.coinCard}
-                onPress={() => router.push(`/circle-jerk/${item.contractAddress}` as any)}
+                onPress={() => router.push(`/coin/${item.contractAddress}` as any)}
                 activeOpacity={0.7}
               >
                 <View style={s.coinRank}>
