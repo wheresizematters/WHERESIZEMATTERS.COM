@@ -109,7 +109,7 @@ export default function ExploreScreen() {
             renderItem={({ item, index }) => (
               <TouchableOpacity
                 style={s.coinCard}
-                onPress={() => router.push(`/coin/${item.contractAddress}` as any)}
+                onPress={() => (() => { if (typeof window !== 'undefined') window.location.href = `/coin/${item.contractAddress}`; })()}
                 activeOpacity={0.7}
               >
                 <View style={s.coinRank}>
