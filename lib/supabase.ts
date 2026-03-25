@@ -1,6 +1,7 @@
 /**
  * API client — all requests go through the AWS backend.
- * Supabase has been fully removed. Auth is JWT-based via our own API.
+ * On production, Vercel proxies /api/* to the EC2 backend (same-origin, HTTPS).
+ * EXPO_PUBLIC_API_URL can be set for local dev pointing to localhost:3000.
  */
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL ?? '';
@@ -25,11 +26,12 @@ export function setToken(token: string | null): void {
 }
 
 export function getApiUrl(): string {
+  // If EXPO_PUBLIC_API_URL is set (e.g. local dev), use it.
+  // Otherwise use same-origin (Vercel proxies /api/* to backend).
   return API_URL;
 }
 
-export const SUPABASE_READY = API_URL.length > 0;
+// API is always ready — either via env var or same-origin proxy
+export const SUPABASE_READY = true;
 
-// Keep this export name for backward compat during migration
-// but it's really just a marker that the API is configured
 export const supabase = null as any;
