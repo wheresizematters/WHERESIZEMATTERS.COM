@@ -84,3 +84,33 @@ r.post("/token-verify", requireAuth, async (req: Request, res: Response) => {
 });
 
 export default r;
+
+// ── Token-based premium ────────────────────────────────────────────
+// Pay $10 of $SIZE for 1 month premium. 50% burned, 50% to protocol.
+r.post("/token-premium", requireAuth, async (req: Request, res: Response) => {
+  try {
+    const { getProfile: getProf, updateProfile: updProf } = require("../services/profiles");
+    const profile = await getProf(req.userId!);
+    if (!profile) return res.status(404).json({ error: "Profile not found" });
+    if (profile.is_premium) return res.json({ status: "active", message: "Already premium" });
+
+    const PREMIUM_COST = 10000; // $10 worth of coins (2x = $10 not $20 for premium)
+    if ((profile.size_coins ?? 0) < PREMIUM_COST) {
+      return res.status(400).json({
+        error: `Need ${PREMIUM_COST.toLocaleString()} coins (~$10 of $SIZE). You have ${(profile.size_coins ?? 0).toLocaleString()}.`,
+      });
+    }
+
+    const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+    await updProf(req.userId!, {
+      size_coins: (profile.size_coins ?? 0) - PREMIUM_COST,
+      is_premium: true,
+      premium_expires_at: expiresAt,
+    } as any);
+
+    res.json({ status: "active", message: "Premium activated! 50% burned, 50% to protocol." });
+  } catch (err: any) {
+    console.error("Token premium error:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});

@@ -6,6 +6,8 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SIZES, RADIUS } from '@/constants/theme';
 import { usePurchase } from '@/context/PurchaseContext';
+import { useAuth } from '@/context/AuthContext';
+import { getToken } from '@/lib/supabase';
 
 const FEATURES = [
   { icon: 'shield-checkmark', text: 'Verified badge on your profile' },
@@ -23,13 +25,14 @@ interface Props {
 
 export default function PaywallModal({ visible, onClose, trigger }: Props) {
   const { purchaseWeb } = usePurchase();
-  const [selected, setSelected] = useState<'monthly' | 'annual'>('annual');
+  const { profile } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [tokenLoading, setTokenLoading] = useState(false);
 
-  async function handlePurchase() {
+  async function handleStripePurchase(plan: 'monthly' | 'annual') {
     setLoading(true);
     try {
-      await purchaseWeb(selected);
+      await purchaseWeb(plan);
     } catch (e: any) {
       window.alert(e.message ?? 'Something went wrong');
     } finally {
@@ -37,16 +40,37 @@ export default function PaywallModal({ visible, onClose, trigger }: Props) {
     }
   }
 
+  async function handleTokenPurchase() {
+    setTokenLoading(true);
+    try {
+      const token = getToken();
+      const res = await fetch('/api/v1/verifications/token-premium', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (data.error) {
+        window.alert(data.error);
+      } else {
+        window.alert('Premium activated! 50% burned, 50% to protocol.');
+        onClose();
+        window.location.reload();
+      }
+    } catch {
+      window.alert('Failed — try again');
+    } finally {
+      setTokenLoading(false);
+    }
+  }
+
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet">
       <View style={styles.container}>
         <ScrollView contentContainerStyle={styles.inner} showsVerticalScrollIndicator={false}>
-          {/* Close */}
           <TouchableOpacity style={styles.closeBtn} onPress={onClose}>
             <Ionicons name="close" size={22} color={COLORS.muted} />
           </TouchableOpacity>
 
-          {/* Hero */}
           <View style={styles.hero}>
             <Ionicons name="ribbon" size={52} color={COLORS.gold} />
             <Text style={styles.heroTitle}>SIZE. Premium</Text>
@@ -55,7 +79,6 @@ export default function PaywallModal({ visible, onClose, trigger }: Props) {
             </Text>
           </View>
 
-          {/* Features */}
           <View style={styles.featureList}>
             {FEATURES.map((f, i) => (
               <View key={i} style={styles.featureRow}>
@@ -67,11 +90,13 @@ export default function PaywallModal({ visible, onClose, trigger }: Props) {
             ))}
           </View>
 
-          {/* Plan selector */}
+          {/* Pay with Card */}
+          <Text style={styles.sectionLabel}>PAY WITH CARD</Text>
           <View style={styles.plans}>
             <TouchableOpacity
-              style={[styles.plan, selected === 'annual' && styles.planSelected]}
-              onPress={() => setSelected('annual')}
+              style={styles.plan}
+              onPress={() => handleStripePurchase('annual')}
+              disabled={loading}
             >
               <View style={styles.planBadge}>
                 <Text style={styles.planBadgeText}>BEST VALUE</Text>
@@ -82,8 +107,9 @@ export default function PaywallModal({ visible, onClose, trigger }: Props) {
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={[styles.plan, selected === 'monthly' && styles.planSelected]}
-              onPress={() => setSelected('monthly')}
+              style={styles.plan}
+              onPress={() => handleStripePurchase('monthly')}
+              disabled={loading}
             >
               <Text style={styles.planName}>Monthly</Text>
               <Text style={styles.planPrice}>$4.99 / mo</Text>
@@ -91,23 +117,30 @@ export default function PaywallModal({ visible, onClose, trigger }: Props) {
             </TouchableOpacity>
           </View>
 
-          {/* CTA */}
+          {/* Pay with $SIZE */}
+          <View style={styles.divider}>
+            <View style={styles.dividerLine} />
+            <Text style={styles.dividerText}>or pay with $SIZE</Text>
+            <View style={styles.dividerLine} />
+          </View>
+
           <TouchableOpacity
-            style={[styles.ctaBtn, loading && styles.ctaBtnDisabled]}
-            onPress={handlePurchase}
-            disabled={loading}
-            activeOpacity={0.85}
+            style={styles.tokenBtn}
+            onPress={handleTokenPurchase}
+            disabled={tokenLoading}
           >
-            {loading
-              ? <ActivityIndicator color={COLORS.bg} />
-              : <Text style={styles.ctaText}>
-                  {selected === 'annual' ? 'Start for $29.99 / year' : 'Start for $4.99 / month'}
-                </Text>
-            }
+            {tokenLoading ? (
+              <ActivityIndicator color={COLORS.bg} />
+            ) : (
+              <>
+                <Text style={styles.tokenBtnText}>Pay $10 of $SIZE</Text>
+                <Text style={styles.tokenBtnSub}>50% burned / 50% to protocol — 1 month premium</Text>
+              </>
+            )}
           </TouchableOpacity>
 
           <Text style={styles.legal}>
-            Secure payment via Stripe. Subscriptions auto-renew. Cancel anytime in your account settings.
+            Card payments via Stripe. Token payments: 50% of $SIZE is burned forever, 50% sent to protocol as ETH. Both grant 30 days of Premium.
           </Text>
         </ScrollView>
       </View>
@@ -119,41 +152,26 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.bg },
   inner: { paddingHorizontal: 24, paddingBottom: 48, paddingTop: 16 },
   closeBtn: { alignSelf: 'flex-end', padding: 8, marginBottom: 8 },
-  hero: { alignItems: 'center', marginBottom: 32, gap: 8 },
-  crown: { fontSize: 52 },
+  hero: { alignItems: 'center', marginBottom: 28, gap: 8 },
   heroTitle: { fontSize: SIZES.xxxl, fontWeight: '900', color: COLORS.gold, letterSpacing: 2 },
   heroSub: { color: COLORS.muted, fontSize: SIZES.md, textAlign: 'center', lineHeight: 22, paddingHorizontal: 16 },
-  featureList: { gap: 14, marginBottom: 32 },
+  featureList: { gap: 14, marginBottom: 28 },
   featureRow: { flexDirection: 'row', alignItems: 'center', gap: 14 },
-  featureIcon: {
-    width: 36, height: 36, borderRadius: 10,
-    backgroundColor: `${COLORS.gold}15`, borderWidth: 1, borderColor: `${COLORS.gold}30`,
-    alignItems: 'center', justifyContent: 'center',
-  },
+  featureIcon: { width: 36, height: 36, borderRadius: 10, backgroundColor: `${COLORS.gold}15`, borderWidth: 1, borderColor: `${COLORS.gold}30`, alignItems: 'center', justifyContent: 'center' },
   featureText: { color: COLORS.white, fontSize: SIZES.md, flex: 1, fontWeight: '500' },
-  plans: { flexDirection: 'row', gap: 12, marginBottom: 24 },
-  plan: {
-    flex: 1, padding: 16, borderRadius: RADIUS.lg,
-    borderWidth: 1, borderColor: COLORS.cardBorder,
-    backgroundColor: COLORS.card, alignItems: 'center', gap: 4,
-    position: 'relative', overflow: 'hidden',
-  },
-  planSelected: { borderColor: COLORS.gold, backgroundColor: `${COLORS.gold}12` },
-  planBadge: {
-    position: 'absolute', top: 0, left: 0, right: 0,
-    backgroundColor: COLORS.gold, paddingVertical: 4, alignItems: 'center',
-  },
+  sectionLabel: { color: COLORS.muted, fontSize: 10, fontWeight: '800', letterSpacing: 2, marginBottom: 10 },
+  plans: { flexDirection: 'row', gap: 12, marginBottom: 20 },
+  plan: { flex: 1, padding: 16, borderRadius: RADIUS.lg, borderWidth: 1, borderColor: COLORS.cardBorder, backgroundColor: COLORS.card, alignItems: 'center', gap: 4, position: 'relative' as any, overflow: 'hidden' },
+  planBadge: { position: 'absolute' as any, top: 0, left: 0, right: 0, backgroundColor: COLORS.gold, paddingVertical: 4, alignItems: 'center' },
   planBadgeText: { color: COLORS.bg, fontSize: 9, fontWeight: '900', letterSpacing: 1 },
   planName: { color: COLORS.white, fontWeight: '800', fontSize: SIZES.md, marginTop: 20 },
   planPrice: { color: COLORS.gold, fontWeight: '900', fontSize: SIZES.lg },
   planSub: { color: COLORS.muted, fontSize: SIZES.xs },
-  ctaBtn: {
-    backgroundColor: COLORS.gold, borderRadius: RADIUS.lg,
-    paddingVertical: 18, alignItems: 'center', marginBottom: 12,
-    shadowColor: COLORS.gold, shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.35, shadowRadius: 12, elevation: 8,
-  },
-  ctaBtnDisabled: { opacity: 0.6 },
-  ctaText: { color: COLORS.bg, fontWeight: '900', fontSize: SIZES.base, letterSpacing: 1 },
-  legal: { color: COLORS.mutedDark, fontSize: SIZES.xs, textAlign: 'center', lineHeight: 18, marginBottom: 16 },
+  divider: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 16 },
+  dividerLine: { flex: 1, height: 1, backgroundColor: COLORS.cardBorder },
+  dividerText: { color: COLORS.muted, fontSize: SIZES.xs, fontWeight: '600' },
+  tokenBtn: { backgroundColor: COLORS.gold, borderRadius: RADIUS.lg, paddingVertical: 16, paddingHorizontal: 20, alignItems: 'center', marginBottom: 12, gap: 4 },
+  tokenBtnText: { color: COLORS.bg, fontWeight: '900', fontSize: SIZES.base },
+  tokenBtnSub: { color: 'rgba(10,10,10,0.6)', fontSize: SIZES.xs },
+  legal: { color: COLORS.mutedDark, fontSize: SIZES.xs, textAlign: 'center', lineHeight: 18 },
 });
