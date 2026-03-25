@@ -27,6 +27,7 @@ export default function Root({ children }: { children: React.ReactNode }) {
         <meta name="twitter:title" content="SIZE. — Where Size Matters" />
         <meta name="twitter:description" content="Verify your size via AI, earn $SIZE tokens, launch DickCoins, and compete on the global leaderboard." />
         <meta name="twitter:image" content="https://wheresizematters.com/og-image.png" />
+        <meta name="twitter:site" content="@wheresize" />
 
         {/* PWA */}
         <link rel="manifest" href="/manifest.json" />
