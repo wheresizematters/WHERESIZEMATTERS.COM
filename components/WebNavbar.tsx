@@ -7,6 +7,7 @@ const TABS = [
   { label: 'Feed',        href: '/',            icon: 'home-outline' as const,           iconActive: 'home' as const },
   { label: 'Leaderboard', href: '/leaderboard', icon: 'trophy-outline' as const,         iconActive: 'trophy' as const },
   { label: 'Earn',        href: '/earn',        icon: 'flash-outline' as const,          iconActive: 'flash' as const },
+  { label: '$SIZE',       href: '/tokenomics',  icon: 'logo-usd' as const,              iconActive: 'logo-usd' as const },
   { label: 'Messages',    href: '/messages',    icon: 'chatbubbles-outline' as const,    iconActive: 'chatbubbles' as const },
   { label: 'Profile',     href: '/profile',     icon: 'person-outline' as const,         iconActive: 'person' as const },
 ];

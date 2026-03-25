@@ -95,7 +95,7 @@ export default function SettingsScreen() {
         {/* Premium status */}
         {isPremium ? (
           <View style={styles.premiumBanner}>
-            <Text style={styles.premiumEmoji}>👑</Text>
+            <Ionicons name="ribbon" size={20} color={COLORS.gold} />
             <Text style={styles.premiumText}>SIZE. Premium — Active</Text>
           </View>
         ) : (

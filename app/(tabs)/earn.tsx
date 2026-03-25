@@ -140,13 +140,13 @@ export default function EarnScreen() {
 
     if (reward.label === 'Premium — 1 Month') {
       if (Platform.OS === 'web') window.alert('Premium unlocked for 30 days! Refresh to see your benefits.');
-      else Alert.alert('Premium Unlocked! 👑', 'You have 30 days of SIZE. Premium.');
+      else Alert.alert('Premium Unlocked', 'You have 30 days of SIZE. Premium.');
     } else if (reward.label === 'Feed Boost') {
       if (Platform.OS === 'web') window.alert('Feed Boost activated! Your next post will be prioritized in the feed.');
-      else Alert.alert('Feed Boost Activated! ⚡', 'Your next post will be prioritized in the feed.');
+      else Alert.alert('Feed Boost Activated', 'Your next post will be prioritized in the feed.');
     } else if (reward.label === 'Exclusive Badge') {
       if (Platform.OS === 'web') window.alert('Exclusive badge coming soon! We\'ll add it to your profile shortly.');
-      else Alert.alert('Badge Incoming! 🏅', 'Your exclusive badge will appear on your profile soon.');
+      else Alert.alert('Badge Incoming', 'Your exclusive badge will appear on your profile soon.');
     }
   }
 
@@ -160,7 +160,7 @@ export default function EarnScreen() {
             <Text style={styles.title}>EARN</Text>
           </View>
           <View style={styles.coinBadge}>
-            <Text style={styles.coinEmoji}>💰</Text>
+            <Ionicons name="cash-outline" size={18} color={COLORS.gold} />
             {loading
               ? <ActivityIndicator size="small" color={COLORS.gold} />
               : <Text style={styles.coinCount}>{coins.toLocaleString()}</Text>
@@ -186,7 +186,7 @@ export default function EarnScreen() {
             >
               <Text style={styles.balanceLabel}>YOUR $SIZE BALANCE</Text>
               <View style={styles.balanceRow}>
-                <Text style={styles.coinBig}>💰</Text>
+                <Ionicons name="cash" size={40} color={COLORS.gold} />
                 <Text style={styles.balanceAmount}>{loading ? '—' : coins.toLocaleString()}</Text>
               </View>
               <Text style={styles.balanceSub}>$SIZE Coins · Earn more below</Text>
@@ -197,7 +197,7 @@ export default function EarnScreen() {
           <View style={styles.walletCard}>
             <View style={styles.walletTop}>
               <View style={styles.walletIconWrap}>
-                <Text style={styles.walletIcon}>💎</Text>
+                <Ionicons name="wallet-outline" size={20} color={COLORS.gold} />
               </View>
               <View style={styles.walletInfo}>
                 <Text style={styles.walletTitle}>$SIZE Wallet</Text>
@@ -236,7 +236,7 @@ export default function EarnScreen() {
             onPress={() => router.push('/tokenomics' as any)}
           >
             <View style={styles.tokenomicsLeft}>
-              <Text style={{ fontSize: 18 }}>🪙</Text>
+              <Ionicons name="logo-usd" size={18} color={COLORS.gold} />
               <View>
                 <Text style={styles.tokenomicsTitle}>$SIZE Tokenomics</Text>
                 <Text style={styles.tokenomicsSub}>100B supply · Base chain · Learn more</Text>
@@ -252,7 +252,7 @@ export default function EarnScreen() {
             onPress={() => router.push('/staking' as any)}
           >
             <View style={styles.tokenomicsLeft}>
-              <Text style={{ fontSize: 18 }}>📈</Text>
+              <Ionicons name="trending-up" size={18} color={COLORS.gold} />
               <View>
                 <Text style={styles.tokenomicsTitle}>Stake $SIZE</Text>
                 <Text style={styles.tokenomicsSub}>Earn up to 80% APY · Hold more, earn more</Text>
@@ -291,7 +291,7 @@ export default function EarnScreen() {
                   </View>
                   <View style={styles.actionCoins}>
                     <Text style={styles.actionCoinText}>+{action.coins}</Text>
-                    <Text style={styles.actionCoinSub}>💰</Text>
+                    <Ionicons name="cash-outline" size={14} color={COLORS.gold} />
                   </View>
                 </View>
               ))}
@@ -321,7 +321,7 @@ export default function EarnScreen() {
                           <Text style={[styles.actionCoinText, { color: coins >= reward.cost ? COLORS.gold : COLORS.muted }]}>
                             {reward.cost.toLocaleString()}
                           </Text>
-                          <Text style={styles.actionCoinSub}>💰</Text>
+                          <Ionicons name="cash-outline" size={14} color={COLORS.gold} />
                         </>
                     }
                   </View>

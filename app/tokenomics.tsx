@@ -90,7 +90,7 @@ export default function TokenomicsScreen() {
               start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
               style={styles.heroInner}
             >
-              <Text style={styles.heroEmoji}>🪙</Text>
+              <Ionicons name="logo-usd" size={48} color={COLORS.gold} />
               <Text style={styles.heroTitle}>$SIZE Token</Text>
               <Text style={styles.heroSub}>The reward token for the SIZE. ecosystem</Text>
               <View style={styles.heroStats}>
@@ -393,13 +393,13 @@ export default function TokenomicsScreen() {
                 <View style={styles.nwStat}>
                   <Text style={styles.nwLabel}>VERIFIED SIZE</Text>
                   <Text style={styles.nwValue}>7.2"</Text>
-                  <Text style={styles.nwBadge}>✅ AI Verified</Text>
+                  <Text style={styles.nwBadge}>AI Verified</Text>
                 </View>
                 <View style={styles.nwDivider} />
                 <View style={styles.nwStat}>
                   <Text style={styles.nwLabel}>CRYPTO NET WORTH</Text>
                   <Text style={styles.nwValue}>$42.0K</Text>
-                  <Text style={styles.nwBadge}>🔗 On-Chain</Text>
+                  <Text style={styles.nwBadge}>On-Chain</Text>
                 </View>
               </View>
             </View>
@@ -411,7 +411,7 @@ export default function TokenomicsScreen() {
             <View style={styles.infoCard}>
               <View style={styles.giftRow}>
                 <View style={styles.giftIcon}>
-                  <Text style={{ fontSize: 28 }}>🎁</Text>
+                  <Ionicons name="gift-outline" size={28} color={COLORS.gold} />
                 </View>
                 <View style={styles.giftInfo}>
                   <Text style={styles.giftTitle}>Send $SIZE to anyone</Text>
@@ -459,7 +459,7 @@ export default function TokenomicsScreen() {
               onPress={() => router.push('/whitepaper' as any)}
             >
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>
-                <Text style={{ fontSize: 18 }}>📄</Text>
+                <Ionicons name="document-text-outline" size={18} color={COLORS.gold} />
                 <View>
                   <Text style={styles.wpLinkTitle}>Read the Full Whitepaper</Text>
                   <Text style={styles.wpLinkSub}>v1.0 · $SIZE protocol, DickCoins, Circle Jerks</Text>

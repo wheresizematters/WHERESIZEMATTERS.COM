@@ -142,7 +142,7 @@ function InstallPromptInner() {
 
         {/* Feature pills */}
         <View style={styles.featureRow}>
-          {['📏 Measure', '🏆 Rank', '💰 Earn'].map((label) => (
+          {['Measure', 'Rank', 'Earn'].map((label) => (
             <View key={label} style={styles.featurePill}>
               <Text style={styles.featurePillText}>{label}</Text>
             </View>

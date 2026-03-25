@@ -48,7 +48,7 @@ export default function PaywallModal({ visible, onClose, trigger }: Props) {
 
           {/* Hero */}
           <View style={styles.hero}>
-            <Text style={styles.crown}>👑</Text>
+            <Ionicons name="ribbon" size={52} color={COLORS.gold} />
             <Text style={styles.heroTitle}>SIZE. Premium</Text>
             <Text style={styles.heroSub}>
               {trigger ?? 'Unlock everything. Know exactly where you stand.'}

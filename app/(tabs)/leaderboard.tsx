@@ -71,7 +71,7 @@ function RankBadge({ rank }: { rank: number }) {
     const colors = RANK_PALETTES[rank];
     return (
       <LinearGradient colors={colors} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.rankBadge}>
-        <Text style={styles.rankBadgeText}>{rank === 1 ? '👑' : rank === 2 ? '🥈' : '🥉'}</Text>
+        <Text style={styles.rankBadgeText}>{rank === 1 ? '1' : rank === 2 ? '2' : '3'}</Text>
       </LinearGradient>
     );
   }
@@ -94,7 +94,7 @@ function TopThreeCard({ entry, position, onPress, isPremium }: { entry: Leaderbo
       >
         <View style={styles.topCardRankRow}>
           <Text style={[styles.topCardRankLabel, { color: colors[0] }]}>
-            {position === 1 ? '👑 #1' : position === 2 ? '🥈 #2' : '🥉 #3'}
+            {position === 1 ? '#1' : position === 2 ? '#2' : '#3'}
           </Text>
           {entry.is_verified && (
             <View style={[styles.verifiedPill, { backgroundColor: `${colors[0]}30`, borderColor: `${colors[0]}60` }]}>

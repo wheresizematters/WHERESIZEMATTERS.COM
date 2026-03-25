@@ -572,7 +572,7 @@ function PremiumNudgeBanner({ onDismiss, onUpgrade }: { onDismiss: () => void; o
         style={styles.nudgeBannerInner}
       >
         <View style={styles.nudgeBannerContent}>
-          <Text style={styles.nudgeBannerTitle}>👑 SIZE. Premium</Text>
+          <Text style={styles.nudgeBannerTitle}>SIZE. Premium</Text>
           <Text style={styles.nudgeBannerSub}>See exact sizes, unlock photos & videos, get verified.</Text>
           <TouchableOpacity style={styles.nudgeUpgradeBtn} onPress={onUpgrade} activeOpacity={0.85}>
             <Text style={styles.nudgeUpgradeBtnText}>Upgrade</Text>
