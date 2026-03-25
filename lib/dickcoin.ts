@@ -3,21 +3,51 @@
  *
  * Each verified user can deploy one DickCoin (ERC-20) through Clanker's
  * Uniswap V4 factory. The coin gets a Circle Jerk (token-gated group chat)
- * automatically.
+ * automatically. The creator can customize role names and token thresholds.
  */
 
-import { TOKEN_ADDRESS, RPC_URL, BASE_CHAIN_ID_HEX } from './web3';
+import { getToken, getApiUrl } from './supabase';
 
-const API_BASE = process.env.EXPO_PUBLIC_API_URL ?? '';
+const API_BASE = getApiUrl();
 
-// ── Clanker deployment ─────────────────────────────────────────────
+// ── Types ──────────────────────────────────────────────────────────
+
+export interface CircleJerkRole {
+  tier: number;          // 1-5
+  name: string;          // custom name, e.g. "Intern", "Partner", "CEO"
+  minTokens: string;     // minimum tokens required (BigInt as string)
+  canWriteGeneral: boolean;
+  canWriteBukake: boolean;
+  color: string;
+}
+
+export interface CircleJerkConfig {
+  roles: CircleJerkRole[];
+  generalChannelName: string;   // default "General"
+  bukakeChannelName: string;    // default "Inner Circle" (creator can rename)
+}
+
+export const DEFAULT_ROLES: CircleJerkRole[] = [
+  { tier: 1, name: 'Cuck',     minTokens: '1',           canWriteGeneral: false, canWriteBukake: false, color: '#6b7280' },
+  { tier: 2, name: 'Stroker',  minTokens: '1000',        canWriteGeneral: true,  canWriteBukake: false, color: '#3b82f6' },
+  { tier: 3, name: 'Edger',    minTokens: '10000',       canWriteGeneral: true,  canWriteBukake: false, color: '#8b5cf6' },
+  { tier: 4, name: 'Finisher', minTokens: '100000',      canWriteGeneral: true,  canWriteBukake: true,  color: '#ea580c' },
+  { tier: 5, name: 'Daddy',    minTokens: '1000000',     canWriteGeneral: true,  canWriteBukake: true,  color: '#d97706' },
+];
+
+export const DEFAULT_CONFIG: CircleJerkConfig = {
+  roles: DEFAULT_ROLES,
+  generalChannelName: 'General',
+  bukakeChannelName: 'Inner Circle',
+};
 
 export interface DickCoinDeployParams {
-  name: string;           // e.g. "JackCoin"
-  ticker: string;         // e.g. "$JACK", max 8 chars
-  description?: string;   // optional, max 280 chars
-  imageUrl: string;       // uploaded to Supabase Storage
-  creatorAddress: string; // wallet address on Base
+  name: string;
+  ticker: string;
+  description?: string;
+  imageUrl: string;
+  creatorAddress: string;
+  circleJerkConfig?: CircleJerkConfig; // optional — uses defaults if not set
 }
 
 export interface DickCoinDeployResult {
@@ -40,6 +70,7 @@ export interface DickCoin {
   totalFeesEarned: number;
   holderCount: number;
   hasStaking: boolean;
+  circleJerkConfig: CircleJerkConfig;
   createdAt: string;
 }
 
@@ -48,42 +79,16 @@ export interface DickCoinHolder {
   userId: string | null;
   username: string | null;
   balance: string;
-  tier: 'DADDY' | 'FINISHER' | 'EDGER' | 'STROKER' | 'CUCK';
-  tierNumber: number;
+  tier: number;       // 1-5
+  tierName: string;    // custom role name
 }
 
-/**
- * Deploy a DickCoin via Clanker SDK.
- * This calls the backend which holds the Clanker deployment keys.
- */
-export async function launchDickCoin(
-  params: DickCoinDeployParams,
-  authToken: string,
-): Promise<DickCoinDeployResult> {
-  if (!API_BASE) return { contractAddress: '', poolAddress: '', txHash: '', error: 'API not configured' };
+// ── API helpers ────────────────────────────────────────────────────
 
-  const res = await fetch(`${API_BASE}/api/v1/dickcoins/launch`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${authToken}`,
-    },
-    body: JSON.stringify(params),
-  });
-
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({ error: 'Launch failed' }));
-    return { contractAddress: '', poolAddress: '', txHash: '', error: err.error ?? 'Launch failed' };
-  }
-
-  return res.json();
-}
-
-// ── Queries ────────────────────────────────────────────────────────
-
-async function apiFetch<T>(path: string, token?: string): Promise<T | null> {
+async function apiFetch<T>(path: string, authToken?: string): Promise<T | null> {
   if (!API_BASE) return null;
-  const headers: Record<string, string> = {};
+  const token = authToken ?? getToken();
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
   if (token) headers['Authorization'] = `Bearer ${token}`;
   try {
     const res = await fetch(`${API_BASE}${path}`, { headers });
@@ -91,6 +96,38 @@ async function apiFetch<T>(path: string, token?: string): Promise<T | null> {
     return res.json();
   } catch { return null; }
 }
+
+async function apiPost<T>(path: string, body: any, authToken?: string): Promise<T | null> {
+  if (!API_BASE) return null;
+  const token = authToken ?? getToken();
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  try {
+    const res = await fetch(`${API_BASE}${path}`, {
+      method: 'POST', headers, body: JSON.stringify(body),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      return { error: err.error ?? 'Request failed' } as any;
+    }
+    return res.json();
+  } catch { return null; }
+}
+
+// ── Launch ─────────────────────────────────────────────────────────
+
+export async function launchDickCoin(
+  params: DickCoinDeployParams,
+  authToken: string,
+): Promise<DickCoinDeployResult> {
+  const result = await apiPost<DickCoinDeployResult>('/api/v1/dickcoins/launch', {
+    ...params,
+    circleJerkConfig: params.circleJerkConfig ?? DEFAULT_CONFIG,
+  }, authToken);
+  return result ?? { contractAddress: '', poolAddress: '', txHash: '', error: 'API unavailable' };
+}
+
+// ── Queries ────────────────────────────────────────────────────────
 
 export async function getDickCoinsByUser(userId: string): Promise<DickCoin[]> {
   return (await apiFetch<DickCoin[]>(`/api/v1/dickcoins/user/${userId}`)) ?? [];
@@ -104,7 +141,7 @@ export async function getDickCoinHolders(contractAddress: string): Promise<DickC
   return (await apiFetch<DickCoinHolder[]>(`/api/v1/dickcoins/${contractAddress}/holders`)) ?? [];
 }
 
-export async function getMyCircleJerks(token: string): Promise<DickCoin[]> {
+export async function getMyCircleJerks(token?: string): Promise<DickCoin[]> {
   return (await apiFetch<DickCoin[]>('/api/v1/dickcoins/my-circle-jerks', token)) ?? [];
 }
 
@@ -112,27 +149,54 @@ export async function getTrendingDickCoins(): Promise<DickCoin[]> {
   return (await apiFetch<DickCoin[]>('/api/v1/dickcoins/trending')) ?? [];
 }
 
-// ── Tier helpers ───────────────────────────────────────────────────
+// ── Circle Jerk Config Management ──────────────────────────────────
 
-export const CJ_TIERS = [
-  { number: 0, name: 'NONE',     color: '#666' },
-  { number: 1, name: 'CUCK',     color: '#6b7280' },
-  { number: 2, name: 'STROKER',  color: '#3b82f6' },
-  { number: 3, name: 'EDGER',    color: '#8b5cf6' },
-  { number: 4, name: 'FINISHER', color: '#ea580c' },
-  { number: 5, name: 'DADDY',    color: '#d97706' },
-] as const;
+export async function updateCircleJerkConfig(
+  contractAddress: string,
+  config: CircleJerkConfig,
+): Promise<{ error: string | null }> {
+  const result = await apiPost<{ error: string | null }>(
+    `/api/v1/dickcoins/${contractAddress}/config`,
+    { circleJerkConfig: config },
+  );
+  return result ?? { error: 'API unavailable' };
+}
 
+// ── Tier resolution (uses the coin's custom config) ────────────────
+
+export function resolveHolderTier(
+  balance: string,
+  config: CircleJerkConfig,
+  isCreator: boolean,
+): { tier: number; name: string; color: string; canWriteGeneral: boolean; canWriteBukake: boolean } {
+  const roles = [...config.roles].sort((a, b) => b.tier - a.tier); // highest first
+  const bal = BigInt(balance || '0');
+
+  // Creator is always highest tier
+  if (isCreator && roles.length > 0) {
+    const top = roles[0];
+    return { tier: top.tier, name: top.name, color: top.color, canWriteGeneral: true, canWriteBukake: true };
+  }
+
+  for (const role of roles) {
+    if (bal >= BigInt(role.minTokens)) {
+      return { tier: role.tier, name: role.name, color: role.color, canWriteGeneral: role.canWriteGeneral, canWriteBukake: role.canWriteBukake };
+    }
+  }
+
+  return { tier: 0, name: 'None', color: '#666', canWriteGeneral: false, canWriteBukake: false };
+}
+
+// Legacy compat
+export const CJ_TIERS = DEFAULT_ROLES.map(r => ({ number: r.tier, name: r.name, color: r.color }));
 export function getTierInfo(tier: string) {
-  return CJ_TIERS.find(t => t.name === tier) ?? CJ_TIERS[0];
+  return CJ_TIERS.find(t => t.name === tier) ?? { number: 0, name: 'None', color: '#666' };
 }
-
 export function canWriteGeneral(tier: string): boolean {
-  const t = CJ_TIERS.find(c => c.name === tier);
-  return (t?.number ?? 0) >= 2; // Stroker+
+  const r = DEFAULT_ROLES.find(r => r.name === tier);
+  return r?.canWriteGeneral ?? false;
 }
-
 export function canWriteBukake(tier: string): boolean {
-  const t = CJ_TIERS.find(c => c.name === tier);
-  return (t?.number ?? 0) >= 4; // Finisher+
+  const r = DEFAULT_ROLES.find(r => r.name === tier);
+  return r?.canWriteBukake ?? false;
 }

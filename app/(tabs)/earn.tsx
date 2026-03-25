@@ -261,6 +261,21 @@ export default function EarnScreen() {
             <Ionicons name="chevron-forward" size={16} color={COLORS.gold} />
           </TouchableOpacity>
 
+          {/* Launch DickCoin CTA */}
+          <TouchableOpacity
+            style={styles.launchCta}
+            activeOpacity={0.85}
+            onPress={() => router.push('/launch-dickcoin' as any)}
+          >
+            <View style={styles.launchCtaInner}>
+              <Ionicons name="rocket" size={22} color={COLORS.bg} />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.launchCtaTitle}>Launch a DickCoin</Text>
+                <Text style={styles.launchCtaSub}>Deploy your personal memecoin on Base. Earn 90% of all trading fees. Your community gets a Circle Jerk instantly.</Text>
+              </View>
+            </View>
+          </TouchableOpacity>
+
           {/* Tab toggle */}
           <View style={styles.tabBar}>
             <TouchableOpacity
@@ -399,6 +414,12 @@ const styles = StyleSheet.create({
   walletDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: COLORS.green },
   walletConnectedText: { color: COLORS.green, fontSize: SIZES.xs, fontWeight: '600' },
   walletHint: { color: COLORS.mutedDark, fontSize: SIZES.xs, lineHeight: 16 },
+
+  // Launch DickCoin CTA
+  launchCta: { marginHorizontal: 16, marginBottom: 16, backgroundColor: COLORS.gold, borderRadius: RADIUS.lg, padding: 16 },
+  launchCtaInner: { flexDirection: 'row', alignItems: 'center', gap: 14 },
+  launchCtaTitle: { color: COLORS.bg, fontWeight: '900', fontSize: SIZES.base },
+  launchCtaSub: { color: 'rgba(10,10,10,0.7)', fontSize: SIZES.xs, marginTop: 2, lineHeight: 16 },
 
   // Tokenomics link
   tokenomicsLink: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginHorizontal: 16, marginBottom: 16, backgroundColor: COLORS.card, borderRadius: RADIUS.lg, borderWidth: 1, borderColor: `${COLORS.gold}30`, padding: 14 },

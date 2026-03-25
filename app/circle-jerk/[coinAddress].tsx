@@ -12,6 +12,7 @@ import UserAvatar from '@/components/UserAvatar';
 import {
   getDickCoinInfo, getDickCoinHolders, getTierInfo,
   canWriteGeneral, canWriteBukake, CJ_TIERS, DickCoin, DickCoinHolder,
+  resolveHolderTier, DEFAULT_CONFIG, CircleJerkConfig,
 } from '@/lib/dickcoin';
 
 const API_BASE = process.env.EXPO_PUBLIC_API_URL ?? '';
@@ -156,7 +157,14 @@ export default function CircleJerkScreen() {
               <Text style={styles.holderCount}>{coin?.holderCount ?? 0} holders</Text>
             </View>
           </View>
-          <View style={{ width: 36 }} />
+          {coin?.userId === session?.user.id ? (
+            <TouchableOpacity
+              onPress={() => router.push(`/circle-jerk-settings/${coinAddress}` as any)}
+              style={styles.backBtn}
+            >
+              <Ionicons name="settings-outline" size={20} color={COLORS.white} />
+            </TouchableOpacity>
+          ) : <View style={{ width: 36 }} />}
         </View>
 
         {/* Channel toggle */}
@@ -165,7 +173,9 @@ export default function CircleJerkScreen() {
             style={[styles.channelBtn, channel === 'GENERAL' && styles.channelBtnActive]}
             onPress={() => setChannel('GENERAL')}
           >
-            <Text style={[styles.channelBtnText, channel === 'GENERAL' && styles.channelBtnTextActive]}>General</Text>
+            <Text style={[styles.channelBtnText, channel === 'GENERAL' && styles.channelBtnTextActive]}>
+              {coin?.circleJerkConfig?.generalChannelName ?? 'General'}
+            </Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.channelBtn, channel === 'BUKAKE' && styles.channelBtnActive]}

@@ -100,6 +100,7 @@ function RootLayoutNav() {
       <Stack.Screen name="staking" options={{ presentation: 'card', animation: 'slide_from_right' }} />
       <Stack.Screen name="launch-dickcoin" options={{ presentation: 'card', animation: 'slide_from_bottom' }} />
       <Stack.Screen name="circle-jerk/[coinAddress]" options={{ presentation: 'card', animation: 'slide_from_right' }} />
+      <Stack.Screen name="circle-jerk-settings/[coinAddress]" options={{ presentation: 'card', animation: 'slide_from_right' }} />
       <Stack.Screen name="setup-size" options={{ presentation: 'fullScreenModal', animation: 'fade' }} />
     </Stack>
   );
