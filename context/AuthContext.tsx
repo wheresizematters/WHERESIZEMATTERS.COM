@@ -26,22 +26,22 @@ async function apiFetch<T = any>(path: string, opts?: { method?: string; body?: 
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
   if (token) headers['Authorization'] = `Bearer ${token}`;
   try {
-    console.log(`[SIZE API] ${opts?.method ?? 'GET'} ${url}`);
+    // console.log(`[SIZE API] ${opts?.method ?? 'GET'} ${url}`);
     const res = await fetch(url, {
       method: opts?.method ?? 'GET',
       headers,
       body: opts?.body ? JSON.stringify(opts.body) : undefined,
     });
-    console.log(`[SIZE API] Response: ${res.status}`);
+    // console.log(`[SIZE API] Response: ${res.status}`);
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
       const msg = err.error ?? `Request failed (${res.status})`;
-      console.error(`[SIZE API] Error: ${msg}`);
+      // console.error(`[SIZE API] Error: ${msg}`);
       return { error: msg } as any;
     }
     return res.json();
   } catch (e: any) {
-    console.error(`[SIZE API] Fetch failed: ${url}`, e?.message ?? e);
+    // console.error(`[SIZE API] Fetch failed: ${url}`, e?.message ?? e);
     return { error: `Connection failed: ${e?.message ?? 'unknown'}` } as any;
   }
 }

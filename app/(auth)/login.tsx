@@ -84,25 +84,25 @@ export default function LoginScreen() {
               if (!wallet) return;
               setLoading(true);
               try {
-                console.log('[WALLET] Got address:', wallet.address);
+                // console.log('[WALLET] Got address:', wallet.address);
                 const res = await fetch('/api/v1/auth/wallet', {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
                   body: JSON.stringify({ walletAddress: wallet.address }),
                 });
-                console.log('[WALLET] API status:', res.status);
+                // console.log('[WALLET] API status:', res.status);
                 const data = await res.json();
-                console.log('[WALLET] Has token:', !!data.token);
+                // console.log('[WALLET] Has token:', !!data.token);
                 if (data.token) {
                   setToken(data.token);
-                  console.log('[WALLET] Token saved, redirecting...');
+                  // console.log('[WALLET] Token saved, redirecting...');
                   window.location.href = '/earn';
                   return; // don't setLoading(false) — we're navigating away
                 } else {
                   setError(data.error ?? 'Wallet login failed');
                 }
               } catch (e: any) {
-                console.error('[WALLET] Error:', e);
+                // console.error('[WALLET] Error:', e);
                 setError('Connection failed: ' + (e?.message ?? ''));
               }
               setLoading(false);

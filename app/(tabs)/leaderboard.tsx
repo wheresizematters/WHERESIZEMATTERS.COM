@@ -270,7 +270,7 @@ export default function LeaderboardScreen() {
               }
             </TouchableOpacity>
             <Text style={styles.locationPrivacy}>
-              📍 Approximate location only · Never shared publicly
+               Approximate location only · Never shared publicly
             </Text>
           </LinearGradient>
         </View>

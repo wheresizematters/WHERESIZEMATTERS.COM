@@ -103,7 +103,7 @@ function MessageBubble({
           disabled={!canView}
         >
           <Text style={styles.snapIcon}>
-            {msg.media_type === 'video' ? '🎥' : '📸'}
+            {msg.media_type === 'video' ? 'video' : 'photo'}
           </Text>
           <View>
             <Text style={[styles.snapLabel, isViewed && styles.snapLabelViewed]}>
@@ -316,7 +316,7 @@ export default function ChatScreen() {
           <View style={styles.mediaPreviewStrip}>
             <View style={styles.mediaPreviewBadge}>
               <Text style={styles.mediaPreviewIcon}>
-                {(mediaAsset.mimeType ?? '').includes('video') ? '🎥' : '📸'}
+                {(mediaAsset.mimeType ?? '').includes('video') ? 'video' : 'photo'}
               </Text>
               <Text style={styles.mediaPreviewLabel}>
                 {(mediaAsset.mimeType ?? '').includes('video') ? 'Video ready' : 'Photo ready'}

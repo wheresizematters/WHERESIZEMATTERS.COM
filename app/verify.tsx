@@ -20,9 +20,9 @@ import {
 type Step = 'checking' | 'already_verified' | 'pending_review' | 'instructions' | 'girth' | 'photo' | 'uploading' | 'result_verified' | 'result_pending' | 'error';
 
 const REFERENCE_OBJECTS = [
-  { icon: '💳', label: 'Credit card', detail: '3.37" wide — lay it flat beside the subject' },
-  { icon: '💵', label: 'Dollar bill', detail: '6.14" long — place alongside' },
-  { icon: '📏', label: 'Ruler / tape', detail: 'Most accurate — measure directly' },
+  { icon: 'card', label: 'Credit card', detail: '3.37" wide — lay it flat beside the subject' },
+  { icon: 'cash', label: 'Dollar bill', detail: '6.14" long — place alongside' },
+  { icon: 'ruler', label: 'Ruler / tape', detail: 'Most accurate — measure directly' },
 ];
 
 export default function VerifyScreen() {

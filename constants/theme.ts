@@ -46,10 +46,10 @@ export const RADIUS = {
 };
 
 export const SIZE_TIERS = {
-  small:   { label: 'Below Average', min: 0,   max: 5,   color: '#666666', emoji: '🩶' },
-  average: { label: 'Average',       min: 5,   max: 6.5, color: '#4A9EFF', emoji: '💙' },
-  large:   { label: 'Above Average', min: 6.5, max: 8,   color: '#BF5AF2', emoji: '💜' },
-  xl:      { label: 'XL',            min: 8,   max: 99,  color: '#C9A84C', emoji: '👑' },
+  small:   { label: 'Below Average', min: 0,   max: 5,   color: '#666666', emoji: '' },
+  average: { label: 'Average',       min: 5,   max: 6.5, color: '#4A9EFF', emoji: '' },
+  large:   { label: 'Above Average', min: 6.5, max: 8,   color: '#BF5AF2', emoji: '' },
+  xl:      { label: 'XL',            min: 8,   max: 99,  color: '#C9A84C', emoji: '' },
 };
 
 export function getSizeTier(inches: number) {

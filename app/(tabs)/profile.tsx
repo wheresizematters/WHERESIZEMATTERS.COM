@@ -171,7 +171,7 @@ export default function ProfileScreen() {
   async function handleShare() {
     if (!session) return;
     const inviteUrl = `https://wheresizematters.com/invite/${session.user.id}`;
-    const message = `Hey. Join me on SIZE. 🍆\n\nThe app where size actually matters — rankings, real stats, and the most honest size community on the internet.\n\nSee where you stack up 👇\n${inviteUrl}`;
+    const message = `Hey. Join me on SIZE. \n\nThe app where size actually matters — rankings, real stats, and the most honest size community on the internet.\n\nSee where you stack up \n${inviteUrl}`;
     if (Platform.OS === 'web') {
       try { await navigator.share({ title: 'Join me on SIZE.', text: message, url: inviteUrl }); return; } catch {}
       try { await navigator.clipboard.writeText(message); window.alert('Invite link copied!'); } catch { window.alert(`Share:\n${inviteUrl}`); }
