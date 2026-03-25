@@ -18,13 +18,22 @@ const SOCIAL_PROVIDERS: { provider: OAuthProvider; label: string; icon: any; bg:
 
 // Wallet connect
 async function connectWalletLogin(): Promise<{ address: string } | null> {
-  const eth = (window as any)?.ethereum;
-  if (!eth) { window.alert('Install MetaMask or Coinbase Wallet to connect.'); return null; }
+  // Support MetaMask, Coinbase Wallet, OKX, and other EIP-1193 wallets
+  const eth = (window as any)?.ethereum ?? (window as any)?.okxwallet;
+  if (!eth) {
+    window.alert('No wallet detected. Install MetaMask, Coinbase Wallet, or OKX Wallet.');
+    return null;
+  }
   try {
     const accounts: string[] = await eth.request({ method: 'eth_requestAccounts' });
     if (!accounts[0]) return null;
     return { address: accounts[0] };
-  } catch { return null; }
+  } catch (err: any) {
+    if (err?.code === 4001) return null; // user rejected
+    console.error('Wallet connect error:', err);
+    window.alert('Failed to connect wallet. Try again.');
+    return null;
+  }
 }
 
 export default function LoginScreen() {
