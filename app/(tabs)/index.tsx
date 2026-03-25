@@ -409,9 +409,9 @@ function CreatePostModal({ visible, onClose, onPost, isPremium }: {
     );
     setLoading(false);
     if (error) {
-      Alert.alert('Post failed', error);
+      window.alert('Post failed: ' + error);
     } else {
-      reset(); onPost(); onClose();
+      window.alert('Post created! Pull down to refresh.'); reset(); onPost(); onClose();
     }
   }
 

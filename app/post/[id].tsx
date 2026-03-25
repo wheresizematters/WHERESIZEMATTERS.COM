@@ -283,11 +283,9 @@ export default function PostScreen() {
     setSubmitting(false);
     if (error) {
       setText(content);
-      if (Platform.OS === 'web') {
-        window.alert(`Failed to post comment: ${error}`);
-      } else {
-        Alert.alert('Error', `Failed to post comment: ${error}`);
-      }
+      window.alert(`Failed to post comment: ${error}`);
+    } else {
+      window.alert('Comment posted! Pull down to refresh.');
     }
   }
 
