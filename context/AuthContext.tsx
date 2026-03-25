@@ -21,7 +21,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | null>(null);
 
 async function apiFetch<T = any>(path: string, opts?: { method?: string; body?: any }): Promise<T | null> {
-  if (!API) return null;
+  // API can be empty string for same-origin requests (nginx proxies /api/)
   const token = getToken();
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
   if (token) headers['Authorization'] = `Bearer ${token}`;
