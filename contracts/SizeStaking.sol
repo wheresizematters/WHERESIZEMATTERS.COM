@@ -49,7 +49,8 @@ contract SizeStaking is ReentrancyGuard, Pausable, Ownable2Step {
         uint256 amount;          // raw tokens staked
         uint256 rewardDebt;      // accRewardPerShare snapshot × effective stake
         uint256 pendingRewards;  // claimable but unclaimed
-        uint64  stakedAt;        // timestamp of first/latest stake
+        uint64  firstStakedAt;   // timestamp of very first stake (never overwritten)
+        uint64  lastStakedAt;    // timestamp of most recent stake action
         uint64  lastClaimAt;     // timestamp of last claim
     }
 
@@ -143,7 +144,8 @@ contract SizeStaking is ReentrancyGuard, Pausable, Ownable2Step {
 
         // Reset reward debt to current checkpoint
         s.rewardDebt = (_effectiveStake(newBalance) * accRewardPerShare) / PRECISION;
-        s.stakedAt = uint64(block.timestamp);
+        if (s.firstStakedAt == 0) s.firstStakedAt = uint64(block.timestamp);
+        s.lastStakedAt = uint64(block.timestamp);
 
         // Flush any buffered rewards now that there are stakers
         if (bufferedRewards > 0 && totalEffectiveStaked > 0) {
@@ -172,12 +174,12 @@ contract SizeStaking is ReentrancyGuard, Pausable, Ownable2Step {
 
         uint256 remaining = s.amount - _amount;
 
-        // If remaining drops below minimum tier, force full unstake
+        // Revert if remaining balance would be below minimum tier
+        // User must unstake fully if they want to drop below GROWER_MIN
+        if (remaining > 0 && remaining < GROWER_MIN)
+            revert BelowMinimumTier(remaining, GROWER_MIN);
+
         uint256 actualUnstake = _amount;
-        if (remaining > 0 && remaining < GROWER_MIN) {
-            actualUnstake = s.amount;
-            remaining = 0;
-        }
 
         // Remove old effective stake
         totalEffectiveStaked -= _effectiveStake(s.amount);

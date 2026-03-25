@@ -138,16 +138,23 @@ describe("SizeStaking", function () {
         .to.be.revertedWithCustomError(staking, "ExceedsStake");
     });
 
-    it("forces full unstake if remaining drops below Grower min", async function () {
+    it("reverts if remaining would drop below Grower min", async function () {
+      const { staking, alice } = await loadFixture(deployFixture);
+      await staking.connect(alice).stake(SIZE(200_000));
+
+      // Try to unstake 150K — remaining would be 50K < 100K, should revert
+      await expect(staking.connect(alice).unstake(SIZE(150_000)))
+        .to.be.revertedWithCustomError(staking, "BelowMinimumTier");
+    });
+
+    it("allows full unstake to zero", async function () {
       const { staking, token, alice } = await loadFixture(deployFixture);
       await staking.connect(alice).stake(SIZE(200_000));
 
       const balBefore = await token.balanceOf(alice.address);
-      // Try to unstake 150K — remaining would be 50K < 100K, so full unstake
-      await staking.connect(alice).unstake(SIZE(150_000));
+      await staking.connect(alice).unstake(SIZE(200_000));
       const balAfter = await token.balanceOf(alice.address);
 
-      // Should get all 200K back (forced full unstake)
       expect(balAfter - balBefore).to.equal(SIZE(200_000));
       expect((await staking.getStakeInfo(alice.address)).stakedAmount).to.equal(0n);
     });
