@@ -5,6 +5,7 @@
     { "source": "/_sitemap", "destination": "/", "permanent": false }
   ],
   "rewrites": [
+    { "source": "/whitepaper", "destination": "/whitepaper.html" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }

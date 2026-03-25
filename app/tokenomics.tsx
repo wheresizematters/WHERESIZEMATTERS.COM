@@ -456,7 +456,7 @@ export default function TokenomicsScreen() {
             <TouchableOpacity
               style={styles.wpLink}
               activeOpacity={0.8}
-              onPress={() => router.push('/whitepaper' as any)}
+              onPress={() => (() => { if (typeof window !== 'undefined') window.location.href = '/whitepaper'; })()}
             >
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>
                 <Ionicons name="document-text-outline" size={18} color={COLORS.gold} />

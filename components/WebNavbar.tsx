@@ -9,6 +9,7 @@ const TABS = [
   { label: 'Earn',        href: '/(tabs)/earn',          icon: 'flash-outline' as const,          iconActive: 'flash' as const,       match: '/earn' },
   { label: '$SIZE',       href: '/tokenomics',            icon: 'logo-usd' as const,              iconActive: 'logo-usd' as const,    match: '/tokenomics' },
   { label: 'Stake',      href: '/staking',               icon: 'trending-up-outline' as const,   iconActive: 'trending-up' as const, match: '/staking' },
+  { label: 'Whitepaper', href: '/whitepaper',             icon: 'document-text-outline' as const, iconActive: 'document-text' as const, match: '/whitepaper', external: true },
   { label: 'Messages',    href: '/(tabs)/messages',      icon: 'chatbubbles-outline' as const,    iconActive: 'chatbubbles' as const, match: '/messages' },
   { label: 'Profile',     href: '/(tabs)/profile',       icon: 'person-outline' as const,         iconActive: 'person' as const,      match: '/profile' },
 ];
@@ -33,7 +34,7 @@ export default function WebNavbar() {
               <TouchableOpacity
                 key={tab.href}
                 style={[styles.tab, active && styles.tabActive]}
-                onPress={() => router.push(tab.href as any)}
+                onPress={() => (tab as any).external ? (typeof window !== 'undefined' && (window.location.href = tab.href)) : router.push(tab.href as any)}
               >
                 <Ionicons
                   name={active ? tab.iconActive : tab.icon}
