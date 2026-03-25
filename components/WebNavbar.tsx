@@ -8,6 +8,7 @@ const TABS = [
   { label: 'Leaderboard', href: '/(tabs)/leaderboard',  icon: 'trophy-outline' as const,         iconActive: 'trophy' as const,      match: '/leaderboard' },
   { label: 'Earn',        href: '/(tabs)/earn',          icon: 'flash-outline' as const,          iconActive: 'flash' as const,       match: '/earn' },
   { label: '$SIZE',       href: '/tokenomics',            icon: 'logo-usd' as const,              iconActive: 'logo-usd' as const,    match: '/tokenomics' },
+  { label: 'Stake',      href: '/staking',               icon: 'trending-up-outline' as const,   iconActive: 'trending-up' as const, match: '/staking' },
   { label: 'Messages',    href: '/(tabs)/messages',      icon: 'chatbubbles-outline' as const,    iconActive: 'chatbubbles' as const, match: '/messages' },
   { label: 'Profile',     href: '/(tabs)/profile',       icon: 'person-outline' as const,         iconActive: 'person' as const,      match: '/profile' },
 ];
