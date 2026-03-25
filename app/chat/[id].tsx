@@ -188,10 +188,13 @@ export default function ChatScreen() {
 
   useEffect(() => { load(); }, [load]);
 
-  // Realtime subscription
+  // Poll for new messages every 3 seconds
   useEffect(() => {
-    if (!SUPABASE_READY) return;
-  }, [conversationId]);
+    const interval = setInterval(() => {
+      load();
+    }, 3000);
+    return () => clearInterval(interval);
+  }, [load]);
 
   async function handlePickMedia() {
     const asset = await pickMedia('all');
@@ -229,16 +232,27 @@ export default function ChatScreen() {
       mediaPath = path ?? undefined;
     }
 
+    // Optimistically add message to UI immediately
+    const optimisticMsg = {
+      id: `temp-${Date.now()}`,
+      conversation_id: conversationId,
+      sender_id: myId,
+      content: content || '',
+      media_url: null,
+      media_type: null,
+      viewed_at: null,
+      created_at: new Date().toISOString(),
+    };
+    setMessages(prev => [optimisticMsg, ...prev]);
+
     const { error } = await sendMessage(conversationId, myId, content, mediaPath, mediaType);
     setSending(false);
     if (error) {
+      // Remove optimistic message on failure
+      setMessages(prev => prev.filter(m => m.id !== optimisticMsg.id));
       setText(content);
       if (asset) setMediaAsset(asset);
-      if (Platform.OS === 'web') {
-        window.alert(`Failed to send: ${error}`);
-      } else {
-        Alert.alert('Error', `Failed to send: ${error}`);
-      }
+      window.alert(`Failed to send: ${error}`);
     }
   }
 

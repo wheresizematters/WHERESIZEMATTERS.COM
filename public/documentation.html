@@ -1,0 +1,1233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SIZE. Documentation — Where Size Matters</title>
+
+<meta property="og:title" content="SIZE. Documentation — Where Size Matters">
+<meta property="og:description" content="Everything you need to know about SIZE. Developer and user documentation.">
+<meta property="og:image" content="https://wheresizematters.com/og-image.png">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="SIZE. Documentation — Where Size Matters">
+<meta name="twitter:description" content="Everything you need to know about SIZE. Developer and user documentation.">
+<meta name="twitter:image" content="https://wheresizematters.com/og-image.png">
+<meta name="twitter:site" content="@wheresize">
+
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+<style>
+  *, *::before, *::after {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  :root {
+    --bg-void: #050505;
+    --bg-surface: #0d0d0d;
+    --bg-raised: #141414;
+    --bg-overlay: #1a1a1a;
+    --border-subtle: rgba(255,255,255,0.06);
+    --border-default: rgba(255,255,255,0.10);
+    --border-strong: rgba(255,255,255,0.18);
+    --text-primary: #f5f5f5;
+    --text-secondary: #a0a0a0;
+    --text-tertiary: #505050;
+    --accent: #7c3aed;
+    --accent-light: #8b5cf6;
+    --accent-dim: rgba(124, 58, 237, 0.12);
+    --green: #10b981;
+    --gold: #d97706;
+    --blue: #2563eb;
+    --orange: #ea580c;
+    --red: #dc2626;
+    --mono: 'SF Mono', 'Fira Code', monospace;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background: var(--bg-void);
+    color: var(--text-primary);
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 400;
+    font-size: 16px;
+    line-height: 1.7;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  ::selection {
+    background: var(--accent);
+    color: #fff;
+  }
+
+  /* ── Sticky Header ── */
+  .header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 32px;
+    height: 64px;
+    background: rgba(5,5,5,0.85);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-bottom: 1px solid transparent;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  }
+
+  .header.scrolled {
+    border-bottom-color: var(--border-subtle);
+    box-shadow: 0 1px 24px rgba(0,0,0,0.5);
+  }
+
+  .header-logo {
+    font-family: 'Playfair Display', serif;
+    font-weight: 900;
+    font-size: 24px;
+    color: var(--text-primary);
+    text-decoration: none;
+    letter-spacing: -0.5px;
+  }
+
+  .header-logo .dot {
+    color: var(--accent-light);
+  }
+
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .header-pill {
+    font-size: 11px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    color: var(--text-secondary);
+    background: var(--bg-raised);
+    border: 1px solid var(--border-default);
+    border-radius: 100px;
+    padding: 6px 14px;
+  }
+
+  .btn-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    color: #fff;
+    background: var(--accent);
+    border: none;
+    border-radius: 8px;
+    padding: 10px 20px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: background 0.2s ease, transform 0.2s ease;
+  }
+
+  .btn-primary:hover {
+    background: var(--accent-light);
+    transform: translateY(-1px);
+  }
+
+  .btn-ghost {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    background: transparent;
+    border: 1px solid var(--border-strong);
+    border-radius: 8px;
+    padding: 10px 20px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: border-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
+  }
+
+  .btn-ghost:hover {
+    border-color: var(--text-secondary);
+    color: var(--text-primary);
+    transform: translateY(-1px);
+  }
+
+  /* ── Layout ── */
+  .container {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 0 24px;
+  }
+
+  .section {
+    padding: 100px 0;
+  }
+
+  .section + .section {
+    border-top: 1px solid var(--border-subtle);
+  }
+
+  /* ── Hero (compact) ── */
+  .hero-compact {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    position: relative;
+    background: radial-gradient(ellipse 60% 40% at 50% 40%, rgba(124,58,237,0.08) 0%, transparent 70%);
+    padding-top: 160px;
+    padding-bottom: 80px;
+  }
+
+  .hero-compact .hero-title {
+    font-family: 'Playfair Display', serif;
+    font-weight: 900;
+    font-size: clamp(40px, 6vw, 64px);
+    line-height: 1.0;
+    letter-spacing: -2px;
+    color: var(--text-primary);
+    margin-bottom: 16px;
+    animation: fadeUp 0.6s ease both;
+    animation-delay: 100ms;
+  }
+
+  .hero-compact .hero-sub {
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 300;
+    font-size: 18px;
+    color: var(--text-secondary);
+    max-width: 520px;
+    margin-bottom: 0;
+    animation: fadeUp 0.6s ease both;
+    animation-delay: 200ms;
+  }
+
+  /* ── Section Headings ── */
+  .section-number {
+    font-family: 'Playfair Display', serif;
+    font-style: italic;
+    font-weight: 400;
+    font-size: 14px;
+    color: var(--accent-light);
+    margin-bottom: 12px;
+    display: block;
+  }
+
+  .section-title {
+    font-family: 'Playfair Display', serif;
+    font-weight: 700;
+    font-size: 36px;
+    line-height: 1.2;
+    letter-spacing: -0.5px;
+    color: var(--text-primary);
+    margin-bottom: 16px;
+  }
+
+  .section-subtitle {
+    font-size: 16px;
+    font-weight: 300;
+    color: var(--text-secondary);
+    margin-bottom: 40px;
+  }
+
+  p {
+    color: var(--text-secondary);
+    margin-bottom: 20px;
+    line-height: 1.8;
+  }
+
+  strong {
+    color: var(--text-primary);
+    font-weight: 600;
+  }
+
+  /* ── Subsection titles ── */
+  .sub-title {
+    font-family: 'Playfair Display', serif;
+    font-weight: 700;
+    font-size: 22px;
+    color: var(--text-primary);
+    margin-top: 40px;
+    margin-bottom: 12px;
+  }
+
+  .mono {
+    font-family: var(--mono);
+    font-size: 14px;
+    color: var(--accent-light);
+  }
+
+  .inline-code {
+    font-family: var(--mono);
+    font-size: 13px;
+    background: var(--bg-raised);
+    border: 1px solid var(--border-subtle);
+    border-radius: 4px;
+    padding: 2px 6px;
+    color: var(--text-primary);
+  }
+
+  .formula-block {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: 10px;
+    padding: 20px 24px;
+    font-family: var(--mono);
+    font-size: 14px;
+    color: var(--accent-light);
+    margin: 20px 0;
+    overflow-x: auto;
+  }
+
+  .callout {
+    background: var(--accent-dim);
+    border: 1px solid rgba(124,58,237,0.2);
+    border-radius: 10px;
+    padding: 20px 24px;
+    margin: 24px 0;
+    font-size: 15px;
+    color: var(--text-secondary);
+    font-style: italic;
+  }
+
+  /* ── Earn Table ── */
+  .earn-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+    margin-top: 20px;
+    margin-bottom: 20px;
+  }
+
+  .earn-table th {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    color: var(--text-tertiary);
+    padding: 10px 16px;
+    text-align: left;
+    border-bottom: 1px solid var(--border-default);
+  }
+
+  .earn-table td {
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border-subtle);
+    color: var(--text-secondary);
+    transition: background 0.12s ease;
+  }
+
+  .earn-table tr:hover td {
+    background: var(--bg-surface);
+  }
+
+  .earn-table td:last-child {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--text-primary);
+    text-align: right;
+  }
+
+  /* ── Size Tiers List ── */
+  .size-tier-list {
+    margin-top: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .size-tier-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 16px;
+    background: var(--bg-surface);
+    border-radius: 8px;
+    border: 1px solid var(--border-subtle);
+  }
+
+  .size-tier-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .size-tier-item .label {
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--text-primary);
+    min-width: 120px;
+  }
+
+  .size-tier-item .range {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--text-secondary);
+  }
+
+  /* ── Staking Tier Cards ── */
+  .tier-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+    margin-top: 32px;
+  }
+
+  @media (min-width: 640px) {
+    .tier-grid {
+      grid-template-columns: repeat(4, 1fr);
+    }
+  }
+
+  .tier-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: 12px;
+    padding: 24px 18px;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .tier-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 40px rgba(0,0,0,0.4);
+  }
+
+  .tier-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+  }
+
+  .tier-card.green::before { background: var(--green); }
+  .tier-card.blue::before { background: var(--blue); }
+  .tier-card.orange::before { background: var(--orange); }
+  .tier-card.purple::before { background: var(--accent-light); }
+
+  .tier-card-name {
+    font-family: 'Playfair Display', serif;
+    font-weight: 700;
+    font-size: 18px;
+    color: var(--text-primary);
+    margin-bottom: 16px;
+  }
+
+  .tier-card-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 6px 0;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .tier-card-row:last-child {
+    border-bottom: none;
+  }
+
+  .tier-card-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-tertiary);
+  }
+
+  .tier-card-value {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--text-primary);
+    font-weight: 500;
+  }
+
+  /* ── Circle Jerk Tiers ── */
+  .cj-tiers {
+    margin-top: 32px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .cj-row {
+    display: flex;
+    align-items: center;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: 10px;
+    padding: 16px 20px;
+    gap: 16px;
+    transition: background 0.12s ease;
+  }
+
+  .cj-row:hover {
+    background: var(--bg-raised);
+  }
+
+  .cj-row.w100 { width: 100%; }
+  .cj-row.w90 { width: 92%; margin-left: auto; margin-right: auto; }
+  .cj-row.w80 { width: 84%; margin-left: auto; margin-right: auto; }
+  .cj-row.w70 { width: 76%; margin-left: auto; margin-right: auto; }
+  .cj-row.w60 { width: 68%; margin-left: auto; margin-right: auto; }
+
+  .cj-accent {
+    width: 4px;
+    height: 32px;
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+
+  .cj-accent.purple { background: var(--accent-light); }
+  .cj-accent.red { background: var(--red); }
+  .cj-accent.orange { background: var(--orange); }
+  .cj-accent.blue { background: var(--blue); }
+  .cj-accent.gray { background: var(--text-tertiary); }
+
+  .cj-badge {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Playfair Display', serif;
+    font-weight: 700;
+    font-size: 14px;
+    color: #fff;
+    flex-shrink: 0;
+  }
+
+  .cj-badge.purple { background: var(--accent); }
+  .cj-badge.red { background: var(--red); }
+  .cj-badge.orange { background: var(--orange); }
+  .cj-badge.blue { background: var(--blue); }
+  .cj-badge.gray { background: var(--text-tertiary); }
+
+  .cj-info {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .cj-name {
+    font-weight: 600;
+    font-size: 15px;
+    color: var(--text-primary);
+  }
+
+  .cj-desc {
+    font-size: 13px;
+    color: var(--text-tertiary);
+    margin-bottom: 0;
+  }
+
+  .cj-pill {
+    font-size: 11px;
+    font-weight: 500;
+    padding: 5px 12px;
+    border-radius: 100px;
+    background: var(--bg-overlay);
+    border: 1px solid var(--border-default);
+    color: var(--text-secondary);
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  /* ── Fee Bar ── */
+  .fee-bar-wrap {
+    margin-top: 32px;
+    margin-bottom: 32px;
+  }
+
+  .fee-bar {
+    display: flex;
+    height: 48px;
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 12px;
+  }
+
+  .fee-segment {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 600;
+    color: #fff;
+    white-space: nowrap;
+  }
+
+  .fee-segment.purple {
+    background: var(--accent);
+  }
+
+  .fee-segment.dark {
+    background: var(--bg-overlay);
+    color: var(--text-secondary);
+    border: 1px solid var(--border-default);
+    border-left: none;
+    border-radius: 0 10px 10px 0;
+  }
+
+  .fee-labels {
+    display: flex;
+    justify-content: space-between;
+  }
+
+  .fee-label {
+    font-size: 12px;
+    color: var(--text-tertiary);
+  }
+
+  /* ── FAQ ── */
+  .faq-item {
+    padding: 24px 0;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .faq-item:last-child {
+    border-bottom: none;
+  }
+
+  .faq-q {
+    font-family: 'Playfair Display', serif;
+    font-weight: 700;
+    font-size: 18px;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+  }
+
+  .faq-a {
+    font-size: 15px;
+    color: var(--text-secondary);
+    line-height: 1.8;
+    margin-bottom: 0;
+  }
+
+  /* ── Links ── */
+  a.doc-link {
+    color: var(--accent-light);
+    text-decoration: none;
+    border-bottom: 1px solid var(--accent-light);
+    transition: opacity 0.2s ease;
+  }
+
+  a.doc-link:hover {
+    opacity: 0.8;
+  }
+
+  /* ── CTA Section ── */
+  .cta-section {
+    min-height: 40vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 80px 24px;
+    position: relative;
+    background: radial-gradient(ellipse 50% 50% at 50% 50%, rgba(124,58,237,0.12) 0%, transparent 70%);
+  }
+
+  .cta-title {
+    font-family: 'Playfair Display', serif;
+    font-weight: 900;
+    font-size: clamp(32px, 5vw, 48px);
+    color: var(--text-primary);
+    margin-bottom: 12px;
+  }
+
+  .cta-sub {
+    font-size: 16px;
+    font-weight: 300;
+    color: var(--text-secondary);
+    margin-bottom: 36px;
+  }
+
+  .cta-buttons {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  /* ── Footer ── */
+  .footer {
+    border-top: 1px solid var(--border-subtle);
+    padding: 48px 0;
+    text-align: center;
+  }
+
+  .footer-links {
+    display: flex;
+    gap: 24px;
+    justify-content: center;
+    margin-bottom: 24px;
+  }
+
+  .footer-links a {
+    font-size: 13px;
+    color: var(--text-secondary);
+    text-decoration: none;
+    transition: color 0.2s ease;
+  }
+
+  .footer-links a:hover {
+    color: var(--text-primary);
+  }
+
+  .footer-disclaimer {
+    font-size: 12px;
+    color: var(--text-tertiary);
+    max-width: 560px;
+    margin: 0 auto;
+    line-height: 1.7;
+  }
+
+  /* ── Animations ── */
+  @keyframes fadeUp {
+    from {
+      opacity: 0;
+      transform: translateY(24px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* ── Responsive ── */
+  @media (max-width: 600px) {
+    .header {
+      padding: 0 16px;
+    }
+
+    .header-pill {
+      display: none;
+    }
+
+    .section {
+      padding: 64px 0;
+    }
+
+    .section-title {
+      font-size: 28px;
+    }
+
+    .cj-pill {
+      font-size: 10px;
+      padding: 4px 8px;
+    }
+
+    .cj-row.w90,
+    .cj-row.w80,
+    .cj-row.w70,
+    .cj-row.w60 {
+      width: 100%;
+    }
+  }
+</style>
+</head>
+<body>
+
+<!-- ════════════════════════════════════════════════ -->
+<!-- HEADER                                          -->
+<!-- ════════════════════════════════════════════════ -->
+<header class="header" id="header">
+  <a href="https://wheresizematters.com" class="header-logo">SIZE<span class="dot">.</span></a>
+  <div class="header-right">
+    <span class="header-pill">Documentation</span>
+    <a href="https://wheresizematters.com" class="btn-primary">Launch App</a>
+  </div>
+</header>
+
+<!-- ════════════════════════════════════════════════ -->
+<!-- HERO (compact)                                   -->
+<!-- ════════════════════════════════════════════════ -->
+<section class="hero-compact">
+  <h1 class="hero-title">Documentation</h1>
+  <p class="hero-sub">Everything you need to know about SIZE.</p>
+</section>
+
+<!-- ════════════════════════════════════════════════ -->
+<!-- SECTION 01 — GETTING STARTED                    -->
+<!-- ════════════════════════════════════════════════ -->
+<div class="container">
+  <div class="section">
+    <span class="section-number">01</span>
+    <h2 class="section-title">Getting Started</h2>
+    <p class="section-subtitle">Create your account and get verified in minutes.</p>
+
+    <h3 class="sub-title">Creating an Account</h3>
+    <p>Sign up at <a href="https://wheresizematters.com" class="doc-link">wheresizematters.com</a> using one of three methods:</p>
+    <p><strong>Email</strong>&thinsp;&mdash;&thinsp;Enter your email and set a password. You'll receive a verification link to confirm your address.</p>
+    <p><strong>X / Twitter</strong>&thinsp;&mdash;&thinsp;Tap "Sign in with X" to authenticate via OAuth. Your X handle is linked to your SIZE profile automatically.</p>
+    <p><strong>Crypto Wallet</strong>&thinsp;&mdash;&thinsp;Connect a wallet (MetaMask, Coinbase Wallet, or any WalletConnect-compatible wallet) and sign a message to verify ownership.</p>
+
+    <h3 class="sub-title">Setting Up Your Profile</h3>
+    <p>Once signed in, complete your profile:</p>
+    <p><strong>Username</strong>&thinsp;&mdash;&thinsp;Choose a unique handle. This is how others find you on the leaderboard and in DMs.</p>
+    <p><strong>Size</strong>&thinsp;&mdash;&thinsp;Self-report your size or skip this step until you're ready to verify.</p>
+    <p><strong>Bio</strong>&thinsp;&mdash;&thinsp;A short description that appears on your profile card. Premium users can add clickable links.</p>
+
+    <h3 class="sub-title">Getting Verified</h3>
+    <p>Verification uses AI-powered image analysis. Upload a photo with a <strong>reference object</strong> (ruler, credit card, or dollar bill). Claude Vision AI performs a two-pass measurement with girth cross-check.</p>
+    <p>Possible outcomes:</p>
+    <p><strong>Auto-verified</strong>&thinsp;&mdash;&thinsp;AI confirms your measurement. You earn <strong>50,000 $SIZE</strong>, a verified checkmark badge, and leaderboard eligibility.</p>
+    <p><strong>Pending</strong>&thinsp;&mdash;&thinsp;Edge case. Queued for manual review.</p>
+    <p><strong>Rejected</strong>&thinsp;&mdash;&thinsp;Photo didn't meet requirements. You can resubmit.</p>
+
+    <div class="callout">
+      Verification photos are deleted after review. They are never stored permanently or shared.
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════ -->
+<!-- SECTION 02 — FEED & POSTING                     -->
+<!-- ════════════════════════════════════════════════ -->
+<div class="container">
+  <div class="section">
+    <span class="section-number">02</span>
+    <h2 class="section-title">Feed &amp; Posting</h2>
+    <p class="section-subtitle">Share, discuss, and discover content.</p>
+
+    <h3 class="sub-title">Creating Posts</h3>
+    <p>Tap the compose button to create a new post. Three post types are available:</p>
+    <p><strong>Discussion</strong>&thinsp;&mdash;&thinsp;Text-based posts with optional tags. The default format for sharing thoughts, questions, and updates.</p>
+    <p><strong>Poll</strong>&thinsp;&mdash;&thinsp;Create a poll with up to four options. Results are visible in real time.</p>
+    <p><strong>Media</strong>&thinsp;&mdash;&thinsp;Attach images to your post. Available to Premium and verified users. Media is hosted on S3 with signed URLs.</p>
+
+    <h3 class="sub-title">Voting &amp; Commenting</h3>
+    <p>Every post supports <strong>upvotes</strong> and <strong>downvotes</strong>. Upvoting quality content earns both you and the author $SIZE tokens. Comments are threaded and support the same voting system.</p>
+
+    <h3 class="sub-title">Tags &amp; Content Discovery</h3>
+    <p>Tag your posts with relevant topics to help others find your content. The feed supports filtering by tag, trending topics, and a "Nearby" view powered by geolocation. Free users see a paywall after every 5 posts.</p>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════ -->
+<!-- SECTION 03 — LEADERBOARD                        -->
+<!-- ════════════════════════════════════════════════ -->
+<div class="container">
+  <div class="section">
+    <span class="section-number">03</span>
+    <h2 class="section-title">Leaderboard</h2>
+    <p class="section-subtitle">Global rankings by verified size.</p>
+
+    <h3 class="sub-title">How Rankings Work</h3>
+    <p>The leaderboard is restricted to <strong>verified users only</strong>. Rankings are determined by verified size measurement. Top 3 positions display gold, silver, and bronze badges. Filter by country, age, or nearby via geolocation.</p>
+
+    <h3 class="sub-title">Size Tiers</h3>
+    <p>Every verified user is assigned a tier based on their measurement:</p>
+
+    <div class="size-tier-list">
+      <div class="size-tier-item">
+        <div class="size-tier-dot" style="background:#6b7280"></div>
+        <span class="label">Micro</span>
+        <span class="range">&lt; 4"</span>
+      </div>
+      <div class="size-tier-item">
+        <div class="size-tier-dot" style="background:var(--blue)"></div>
+        <span class="label">Small</span>
+        <span class="range">4 &ndash; 5"</span>
+      </div>
+      <div class="size-tier-item">
+        <div class="size-tier-dot" style="background:var(--green)"></div>
+        <span class="label">Average</span>
+        <span class="range">5 &ndash; 6"</span>
+      </div>
+      <div class="size-tier-item">
+        <div class="size-tier-dot" style="background:var(--gold)"></div>
+        <span class="label">Above Average</span>
+        <span class="range">6 &ndash; 7"</span>
+      </div>
+      <div class="size-tier-item">
+        <div class="size-tier-dot" style="background:var(--orange)"></div>
+        <span class="label">Large</span>
+        <span class="range">7 &ndash; 8"</span>
+      </div>
+      <div class="size-tier-item">
+        <div class="size-tier-dot" style="background:var(--red)"></div>
+        <span class="label">Huge</span>
+        <span class="range">8 &ndash; 9"</span>
+      </div>
+      <div class="size-tier-item">
+        <div class="size-tier-dot" style="background:var(--accent-light)"></div>
+        <span class="label">Hung</span>
+        <span class="range">9"+</span>
+      </div>
+    </div>
+
+    <p style="margin-top:16px;">Free users see their tier label only. <strong>Premium</strong> unlocks the exact measurement with a holographic badge.</p>
+
+    <h3 class="sub-title">Nearby Leaderboard</h3>
+    <p>Enable location access to see how you rank against users in your area. The nearby leaderboard updates in real time and respects all the same verified-only rules.</p>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════ -->
+<!-- SECTION 04 — DIRECT MESSAGING                   -->
+<!-- ════════════════════════════════════════════════ -->
+<div class="container">
+  <div class="section">
+    <span class="section-number">04</span>
+    <h2 class="section-title">Direct Messaging</h2>
+    <p class="section-subtitle">Private 1:1 conversations with ephemeral media.</p>
+
+    <h3 class="sub-title">Starting Conversations</h3>
+    <p>Tap any user's profile to open a DM thread. Messages are delivered in real time. You can message any user on the platform&thinsp;&mdash;&thinsp;no mutual follow required.</p>
+
+    <h3 class="sub-title">Media Sharing</h3>
+    <p>Send photos and media in DMs. All media is served via <strong>ephemeral signed URLs</strong> that expire after 5 minutes&thinsp;&mdash;&thinsp;Snapchat-style. Once the URL expires, the media is no longer accessible.</p>
+
+    <h3 class="sub-title">Read Receipts</h3>
+    <p>DMs include read receipts so you always know when your message has been seen. Receipts appear as a subtle checkmark beneath the message.</p>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════ -->
+<!-- SECTION 05 — $SIZE TOKEN                        -->
+<!-- ════════════════════════════════════════════════ -->
+<div class="container">
+  <div class="section">
+    <span class="section-number">05</span>
+    <h2 class="section-title">$SIZE Token</h2>
+    <p class="section-subtitle">The native token powering the SIZE. economy.</p>
+
+    <h3 class="sub-title">What is $SIZE</h3>
+    <p>$SIZE is an ERC-20 token on Base (Ethereum L2) with a total supply of <strong>100 billion</strong>. It was launched as a 100% fair launch via Clanker on Uniswap V4&thinsp;&mdash;&thinsp;no team allocation, no presale, no insiders. For the full breakdown, see the <a href="/tokenomics" class="doc-link">Tokenomics page</a>.</p>
+
+    <h3 class="sub-title">How Rewards Work</h3>
+    <p>Every action you take on SIZE. earns you $SIZE tokens. Rewards are distributed proportionally to your activity each day. The more you use the platform, the more you earn.</p>
+
+    <h3 class="sub-title">Activity Weights</h3>
+    <p>Not all actions are weighted equally. Higher-impact actions earn more:</p>
+
+    <table class="earn-table">
+      <tr><th>Action</th><th style="text-align:right">Weight</th></tr>
+      <tr><td>Verify your size</td><td>5x</td></tr>
+      <tr><td>Refer a user</td><td>4x</td></tr>
+      <tr><td>Receive an upvote</td><td>3x</td></tr>
+      <tr><td>Create a post</td><td>2x</td></tr>
+      <tr><td>Daily login</td><td>1x</td></tr>
+      <tr><td>Send a message</td><td>1x</td></tr>
+    </table>
+
+    <h3 class="sub-title">Connecting Your Wallet</h3>
+    <p>To receive on-chain $SIZE tokens, connect a Base-compatible wallet from your Settings page. Supported wallets include MetaMask, Coinbase Wallet, and any WalletConnect-compatible wallet. Your in-app balance can be withdrawn to your connected wallet at any time.</p>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════ -->
+<!-- SECTION 06 — STAKING                            -->
+<!-- ════════════════════════════════════════════════ -->
+<div class="container">
+  <div class="section">
+    <span class="section-number">06</span>
+    <h2 class="section-title">Staking</h2>
+    <p class="section-subtitle">Stake $SIZE to earn a share of all trading fees.</p>
+
+    <h3 class="sub-title">How to Stake</h3>
+    <p>Navigate to the <a href="https://wheresizematters.com/staking" class="doc-link">Staking page</a> in the app. Connect your wallet, choose an amount, and confirm the transaction. Staking is fully on-chain via <span class="inline-code">SizeStaking.sol</span>. You can unstake at any time.</p>
+
+    <h3 class="sub-title">Staking Tiers</h3>
+    <p>Your tier is determined by the amount of $SIZE you stake. Higher tiers earn a multiplied share of the 75% fee pool distributed to stakers daily.</p>
+
+    <div class="tier-grid">
+      <div class="tier-card green">
+        <div class="tier-card-name">Grower</div>
+        <div class="tier-card-row">
+          <span class="tier-card-label">Min Stake</span>
+          <span class="tier-card-value">100K</span>
+        </div>
+        <div class="tier-card-row">
+          <span class="tier-card-label">Boost</span>
+          <span class="tier-card-value">1x</span>
+        </div>
+      </div>
+      <div class="tier-card blue">
+        <div class="tier-card-name">Shower</div>
+        <div class="tier-card-row">
+          <span class="tier-card-label">Min Stake</span>
+          <span class="tier-card-value">1M</span>
+        </div>
+        <div class="tier-card-row">
+          <span class="tier-card-label">Boost</span>
+          <span class="tier-card-value">2x</span>
+        </div>
+      </div>
+      <div class="tier-card orange">
+        <div class="tier-card-name">Shlong</div>
+        <div class="tier-card-row">
+          <span class="tier-card-label">Min Stake</span>
+          <span class="tier-card-value">10M</span>
+        </div>
+        <div class="tier-card-row">
+          <span class="tier-card-label">Boost</span>
+          <span class="tier-card-value">5x</span>
+        </div>
+      </div>
+      <div class="tier-card purple">
+        <div class="tier-card-name">Whale</div>
+        <div class="tier-card-row">
+          <span class="tier-card-label">Min Stake</span>
+          <span class="tier-card-value">100M</span>
+        </div>
+        <div class="tier-card-row">
+          <span class="tier-card-label">Boost</span>
+          <span class="tier-card-value">12x</span>
+        </div>
+      </div>
+    </div>
+
+    <h3 class="sub-title">Daily Fee Distribution</h3>
+    <p>Fees from all $SIZE trades on Uniswap V4 are collected and distributed once daily. 75% goes to stakers (proportional to effective stake), 25% goes to the protocol. Your effective stake is calculated as:</p>
+
+    <div class="formula-block">
+      effective_stake = tokens_staked &times; tier_boost
+    </div>
+
+    <p>APY is variable and driven entirely by trading volume. No emissions, no team unlocks&thinsp;&mdash;&thinsp;staker yield is a pure function of market activity.</p>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════ -->
+<!-- SECTION 07 — DICKCOINS                          -->
+<!-- ════════════════════════════════════════════════ -->
+<div class="container">
+  <div class="section">
+    <span class="section-number">07</span>
+    <h2 class="section-title">DickCoins</h2>
+    <p class="section-subtitle">Your own personal memecoin. One tap to launch.</p>
+
+    <h3 class="sub-title">What are DickCoins</h3>
+    <p>DickCoins are personal memecoins that any verified user can launch. Each DickCoin is a standard ERC-20 deployed to Uniswap V4 via <strong>Clanker</strong>&thinsp;&mdash;&thinsp;the same audited infrastructure powering Base-native token launches.</p>
+
+    <h3 class="sub-title">How to Launch</h3>
+    <p>Launching is a one-tap process: choose a name, ticker, and image. The Clanker API handles deployment, pool creation, and liquidity in a single transaction. A <strong>Circle Jerk</strong> community auto-spawns for every new DickCoin.</p>
+
+    <h3 class="sub-title">Fee Split</h3>
+    <p>Every trade of your DickCoin generates LP fees, split between you and the protocol:</p>
+
+    <div class="fee-bar-wrap">
+      <div class="fee-bar">
+        <div class="fee-segment purple" style="width:90%">90% &mdash; Creator</div>
+        <div class="fee-segment dark" style="width:10%">10% &mdash; Protocol</div>
+      </div>
+      <div class="fee-labels">
+        <span class="fee-label">ETH fees direct to your wallet</span>
+        <span class="fee-label">ETH &rarr; protocol treasury</span>
+      </div>
+    </div>
+
+    <h3 class="sub-title">Autostaking</h3>
+    <p>Once your DickCoin accumulates <strong>0.5 ETH</strong> in cumulative trading fees, autostaking activates. DickCoin holders automatically begin earning yield from the coin's trading activity.</p>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════ -->
+<!-- SECTION 08 — CIRCLE JERKS                       -->
+<!-- ════════════════════════════════════════════════ -->
+<div class="container">
+  <div class="section">
+    <span class="section-number">08</span>
+    <h2 class="section-title">Circle Jerks</h2>
+    <p class="section-subtitle">Token-gated group chats with five-tier role access.</p>
+
+    <h3 class="sub-title">What are Circle Jerks</h3>
+    <p>Circle Jerks are token-gated group chats that auto-spawn with every DickCoin launch. Your role in the community is determined by how many tokens you hold&thinsp;&mdash;&thinsp;enforced server-side on every message in real time. Zero balance = gate screen with a buy CTA.</p>
+
+    <h3 class="sub-title">Default Tiers</h3>
+
+    <div class="cj-tiers">
+      <div class="cj-row w100">
+        <div class="cj-accent purple"></div>
+        <div class="cj-badge purple">5</div>
+        <div class="cj-info">
+          <div class="cj-name">Daddy</div>
+          <div class="cj-desc">Creator / top holder</div>
+        </div>
+        <span class="cj-pill">Full + VIP write</span>
+      </div>
+      <div class="cj-row w90">
+        <div class="cj-accent red"></div>
+        <div class="cj-badge red">4</div>
+        <div class="cj-info">
+          <div class="cj-name">Finisher</div>
+          <div class="cj-desc">Top 10% holders</div>
+        </div>
+        <span class="cj-pill">Full + VIP write</span>
+      </div>
+      <div class="cj-row w80">
+        <div class="cj-accent orange"></div>
+        <div class="cj-badge orange">3</div>
+        <div class="cj-info">
+          <div class="cj-name">Edger</div>
+          <div class="cj-desc">Top 25% holders</div>
+        </div>
+        <span class="cj-pill">Full chat</span>
+      </div>
+      <div class="cj-row w70">
+        <div class="cj-accent blue"></div>
+        <div class="cj-badge blue">2</div>
+        <div class="cj-info">
+          <div class="cj-name">Stroker</div>
+          <div class="cj-desc">Any holder</div>
+        </div>
+        <span class="cj-pill">Chat access</span>
+      </div>
+      <div class="cj-row w60">
+        <div class="cj-accent gray"></div>
+        <div class="cj-badge gray">1</div>
+        <div class="cj-info">
+          <div class="cj-name">Cuck</div>
+          <div class="cj-desc">Minimum balance</div>
+        </div>
+        <span class="cj-pill">Read-only</span>
+      </div>
+    </div>
+
+    <h3 class="sub-title">Customizable Roles</h3>
+    <p>Creators can fully customize their Circle Jerk. Rename any tier, set custom token thresholds for each role, and define who gets access to what.</p>
+
+    <h3 class="sub-title">Two Channels</h3>
+    <p>Every Circle Jerk has two channels by default:</p>
+    <p><strong>General</strong>&thinsp;&mdash;&thinsp;Stroker and above can write. Cucks are read-only.</p>
+    <p><strong>VIP</strong>&thinsp;&mdash;&thinsp;Finisher and above can write. All tiers can read. This is the high-signal alpha channel.</p>
+    <p>Both channel names are customizable by the creator.</p>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════ -->
+<!-- SECTION 09 — PREMIUM                            -->
+<!-- ════════════════════════════════════════════════ -->
+<div class="container">
+  <div class="section">
+    <span class="section-number">09</span>
+    <h2 class="section-title">Premium</h2>
+    <p class="section-subtitle">Unlock the full SIZE. experience.</p>
+
+    <h3 class="sub-title">Pricing</h3>
+    <table class="earn-table">
+      <tr><th>Plan</th><th style="text-align:right">Price</th></tr>
+      <tr><td>Monthly</td><td>$4.99/mo</td></tr>
+      <tr><td>Annual</td><td>$29.99/yr</td></tr>
+      <tr><td>$SIZE Redemption</td><td>250,000 $SIZE</td></tr>
+    </table>
+
+    <h3 class="sub-title">What You Get</h3>
+    <p><strong>Exact measurements</strong>&thinsp;&mdash;&thinsp;See precise sizes instead of tier labels only. Displayed with a holographic verified badge.</p>
+    <p><strong>Verified badge</strong>&thinsp;&mdash;&thinsp;A premium checkmark on your profile visible to all users.</p>
+    <p><strong>Media uploads</strong>&thinsp;&mdash;&thinsp;Attach images to posts and DMs.</p>
+    <p><strong>Priority feed placement</strong>&thinsp;&mdash;&thinsp;Your posts are boosted in the algorithmic feed.</p>
+    <p><strong>Bio links</strong>&thinsp;&mdash;&thinsp;Add clickable links to your profile.</p>
+
+    <div class="callout">
+      Premium can also be redeemed with $SIZE tokens instead of paying with a credit card. Head to Settings &rarr; Premium to choose your method.
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════ -->
+<!-- SECTION 10 — FAQ                                -->
+<!-- ════════════════════════════════════════════════ -->
+<div class="container">
+  <div class="section">
+    <span class="section-number">10</span>
+    <h2 class="section-title">FAQ</h2>
+    <p class="section-subtitle">Common questions, straight answers.</p>
+
+    <div class="faq-item">
+      <div class="faq-q">Is this real?</div>
+      <p class="faq-a">Yes. SIZE. is live at <a href="https://wheresizematters.com" class="doc-link">wheresizematters.com</a>. The app is a production PWA on Base with real users, real tokens, and real staking.</p>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-q">Is my data safe?</div>
+      <p class="faq-a">Verification photos are deleted immediately after AI review. They are never stored permanently, shared with third parties, or used for any purpose beyond measurement verification.</p>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-q">What chain is $SIZE on?</div>
+      <p class="faq-a">Base&thinsp;&mdash;&thinsp;an Ethereum Layer 2 built by Coinbase. Low fees, fast transactions, full EVM compatibility.</p>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-q">How do I earn $SIZE?</div>
+      <p class="faq-a">Use the app. Every action earns proportional rewards&thinsp;&mdash;&thinsp;logging in, posting, receiving upvotes, sending messages, referring users, and verifying your size. The more active you are, the more you earn.</p>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-q">Can I delete my account?</div>
+      <p class="faq-a">Yes. Go to Settings &rarr; Account &rarr; Delete Account. All your data, posts, and profile information will be permanently removed.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════ -->
+<!-- CTA SECTION                                     -->
+<!-- ════════════════════════════════════════════════ -->
+<section class="cta-section">
+  <h2 class="cta-title">Ready to Size Up?</h2>
+  <p class="cta-sub">Join the only SocialFi protocol where your size is your identity.</p>
+  <div class="cta-buttons">
+    <a href="https://wheresizematters.com" class="btn-primary">Launch App</a>
+    <a href="/whitepaper.html" class="btn-ghost">Read Whitepaper</a>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════ -->
+<!-- FOOTER                                          -->
+<!-- ════════════════════════════════════════════════ -->
+<footer class="footer">
+  <div class="container">
+    <div class="footer-links">
+      <a href="https://wheresizematters.com">App</a>
+      <a href="https://x.com/wheresize">@wheresize</a>
+      <a href="/whitepaper.html">Whitepaper</a>
+      <a href="/tokenomics">Tokenomics</a>
+    </div>
+    <p class="footer-disclaimer">This document is for informational purposes only. It does not constitute financial advice, an offer to sell, or a solicitation to buy any tokens. $SIZE is a community token with no guaranteed returns. DYOR.</p>
+  </div>
+</footer>
+
+<!-- ════════════════════════════════════════════════ -->
+<!-- MINIMAL JS — Scroll state for header            -->
+<!-- ════════════════════════════════════════════════ -->
+<script>
+  (function() {
+    var header = document.getElementById('header');
+    var scrolled = false;
+    window.addEventListener('scroll', function() {
+      var s = window.scrollY > 20;
+      if (s !== scrolled) {
+        scrolled = s;
+        if (scrolled) {
+          header.classList.add('scrolled');
+        } else {
+          header.classList.remove('scrolled');
+        }
+      }
+    }, { passive: true });
+  })();
+</script>
+
+</body>
+</html>

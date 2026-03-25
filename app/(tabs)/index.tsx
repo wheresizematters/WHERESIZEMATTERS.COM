@@ -638,9 +638,9 @@ export default function FeedScreen() {
 
   useEffect(() => { loadPosts(); }, [loadPosts]);
 
-  // Realtime: reload feed when any new post is inserted
+  // Auto-refresh feed every 15 seconds
   useEffect(() => {
-    if (!SUPABASE_READY) return;
+    const interval = setInterval(loadPosts, 15000); return () => clearInterval(interval);
   }, [loadPosts]);
 
   // Pull-to-refresh via touch events
