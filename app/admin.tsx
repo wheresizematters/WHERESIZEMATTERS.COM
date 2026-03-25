@@ -86,7 +86,7 @@ export default function AdminScreen() {
     setReviewingId(null);
 
     if (error) {
-      Alert.alert('Error', error);
+      typeof window !== 'undefined' ? window.alert(error) : null;
       return;
     }
     // Remove from list

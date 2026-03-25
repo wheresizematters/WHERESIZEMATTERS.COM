@@ -110,7 +110,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       { method: 'POST', body: { email, password } },
     );
     if (data?.error) return { error: data.error };
-    if (data.error) return { error: data.error };
     setToken(data.token);
     // Hard redirect to force full reload with token in localStorage
     if (typeof window !== 'undefined') {
@@ -131,7 +130,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       { method: 'POST', body: { email, password, username, sizeInches, ageRange, girthInches } },
     );
     if (data?.error) return { error: data.error };
-    if (data.error) return { error: data.error };
     setToken(data.token);
     if (typeof window !== 'undefined') {
       window.location.href = '/earn';

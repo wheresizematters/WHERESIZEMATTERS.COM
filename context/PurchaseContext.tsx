@@ -28,7 +28,7 @@ export function PurchaseProvider({ children }: { children: React.ReactNode }) {
         const API = getApiUrl();
         const interval = setInterval(async () => {
           const token = getToken();
-          if (!API || !token) return;
+          if (!token) return;
           const res = await fetch(`${API}/api/v1/auth/me`, {
             headers: { Authorization: `Bearer ${token}` },
           });

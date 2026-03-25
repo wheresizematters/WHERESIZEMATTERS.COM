@@ -12,7 +12,7 @@ import AuthContainer from '@/components/AuthContainer';
 
 const AGE_RANGES = ['18–24', '25–34', '35–44', '45–54', '55+'];
 
-type OAuthProvider = 'google' | 'x';
+type OAuthProvider = 'x';
 const SOCIAL_PROVIDERS: { provider: OAuthProvider; label: string; icon: any; bg: string; color: string }[] = [
   { provider: 'x', label: 'Sign up with X', icon: 'logo-twitter', bg: '#000', color: '#fff' },
 ];

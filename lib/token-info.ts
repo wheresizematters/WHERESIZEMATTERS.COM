@@ -40,7 +40,9 @@ function decodeString(hex: string): string {
     const offset = parseInt(hex.slice(2, 66), 16) * 2;
     const len = parseInt(hex.slice(offset + 2, offset + 66), 16);
     const strHex = hex.slice(offset + 66, offset + 66 + len * 2);
-    return Buffer.from(strHex, 'hex').toString('utf8');
+    const bytes: number[] = [];
+    for (let i = 0; i < strHex.length; i += 2) bytes.push(parseInt(strHex.substr(i, 2), 16));
+    return String.fromCharCode(...bytes);
   } catch { return ''; }
 }
 

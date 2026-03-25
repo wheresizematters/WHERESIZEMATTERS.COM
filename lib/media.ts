@@ -28,7 +28,7 @@ export async function uploadMedia(
   localUri: string,
   mimeType: string,
 ): Promise<string | null> {
-  if (!SUPABASE_READY || !API) return localUri;
+  if (!SUPABASE_READY) return localUri;
 
   const ext = mimeType.includes('video') ? 'mp4' : 'jpg';
   const path = `media/${userId}/${postId}.${ext}`;

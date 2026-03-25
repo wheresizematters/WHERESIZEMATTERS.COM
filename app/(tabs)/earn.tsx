@@ -91,7 +91,7 @@ export default function EarnScreen() {
     if (coins < reward.cost) {
       const msg = `You need ${(reward.cost - coins).toLocaleString()} more coins to redeem this reward.`;
       if (Platform.OS === 'web') window.alert(msg);
-      else Alert.alert('Not enough coins', msg);
+      else typeof window !== 'undefined' ? window.alert(msg) : null;
       return;
     }
 
@@ -125,13 +125,13 @@ export default function EarnScreen() {
 
     if (reward.label === 'Premium — 1 Month') {
       if (Platform.OS === 'web') window.alert('Premium unlocked for 30 days! Refresh to see your benefits.');
-      else Alert.alert('Premium Unlocked', 'You have 30 days of SIZE. Premium.');
+      else typeof window !== 'undefined' ? window.alert('You have 30 days of SIZE. Premium.') : null;
     } else if (reward.label === 'Feed Boost') {
       if (Platform.OS === 'web') window.alert('Feed Boost activated! Your next post will be prioritized in the feed.');
-      else Alert.alert('Feed Boost Activated', 'Your next post will be prioritized in the feed.');
+      else typeof window !== 'undefined' ? window.alert('Your next post will be prioritized in the feed.') : null;
     } else if (reward.label === 'Exclusive Badge') {
       if (Platform.OS === 'web') window.alert('Exclusive badge coming soon! We\'ll add it to your profile shortly.');
-      else Alert.alert('Badge Incoming', 'Your exclusive badge will appear on your profile soon.');
+      else typeof window !== 'undefined' ? window.alert('Your exclusive badge will appear on your profile soon.') : null;
     }
   }
 

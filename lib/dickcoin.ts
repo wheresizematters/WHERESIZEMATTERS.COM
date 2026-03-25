@@ -86,7 +86,7 @@ export interface DickCoinHolder {
 // ── API helpers ────────────────────────────────────────────────────
 
 async function apiFetch<T>(path: string, authToken?: string): Promise<T | null> {
-  if (!API_BASE) return null;
+  // API_BASE can be empty for same-origin
   const token = authToken ?? getToken();
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
   if (token) headers['Authorization'] = `Bearer ${token}`;
@@ -98,7 +98,7 @@ async function apiFetch<T>(path: string, authToken?: string): Promise<T | null> 
 }
 
 async function apiPost<T>(path: string, body: any, authToken?: string): Promise<T | null> {
-  if (!API_BASE) return null;
+  // API_BASE can be empty for same-origin
   const token = authToken ?? getToken();
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
   if (token) headers['Authorization'] = `Bearer ${token}`;

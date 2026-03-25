@@ -53,7 +53,7 @@ export default function InviteScreen() {
       if (Platform.OS === 'web') {
         window.alert('Could not connect. Please try again.');
       } else {
-        Alert.alert('Error', 'Could not connect. Please try again.');
+        typeof window !== 'undefined' ? window.alert('Could not connect. Please try again.') : null;
       }
     } finally {
       setAdding(false);

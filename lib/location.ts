@@ -21,7 +21,7 @@ export async function requestAndSaveLocation(userId: string): Promise<UserLocati
         const { lat, lng } = fuzzyCoords(pos.coords.latitude, pos.coords.longitude);
         const API = getApiUrl();
         const token = getToken();
-        if (SUPABASE_READY && API && token) {
+        if (SUPABASE_READY && token) {
           await fetch(`${API}/api/v1/profiles/me`, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },

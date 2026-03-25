@@ -10,7 +10,7 @@ import { COLORS, SIZES, RADIUS } from '@/constants/theme';
 import AuthContainer from '@/components/AuthContainer';
 import { setToken } from '@/lib/supabase';
 
-type OAuthProvider = 'google' | 'x';
+type OAuthProvider = 'x';
 
 const SOCIAL_PROVIDERS: { provider: OAuthProvider; label: string; icon: any; bg: string; color: string }[] = [
   { provider: 'x', label: 'Continue with X', icon: 'logo-twitter', bg: '#000', color: '#fff' },

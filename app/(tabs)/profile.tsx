@@ -85,7 +85,7 @@ function SizeBar({ size, maxSize, label, color, isYou }: { size: number; maxSize
 async function pickAndUploadImage(bucket: 'avatars' | 'headers', userId: string): Promise<string | null> {
   const API = getApiUrl();
   const token = getToken();
-  if (!API || !token) return null;
+  if (!token) return null;
 
   async function uploadToS3(blob: Blob, ext: string): Promise<string | null> {
     const path = `${bucket}/${userId}/photo.${ext}`;

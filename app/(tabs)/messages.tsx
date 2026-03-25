@@ -93,7 +93,7 @@ function NewChatModal({ visible, onClose, myId }: {
       if (Platform.OS === 'web') {
         window.alert(`Could not start conversation: ${error}`);
       } else {
-        Alert.alert('Error', `Could not start conversation: ${error}`);
+        typeof window !== 'undefined' ? window.alert(`Could not start conversation: ${error}`) : null;
       }
       return;
     }

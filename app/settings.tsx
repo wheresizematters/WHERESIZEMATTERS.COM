@@ -57,7 +57,7 @@ export default function SettingsScreen() {
 
   async function saveSize() {
     const inches = parseFloat(newSize);
-    if (isNaN(inches) || inches <= 0 || inches > 16) { Alert.alert('Invalid size'); return; }
+    if (isNaN(inches) || inches <= 0 || inches > 16) { typeof window !== 'undefined' ? window.alert('Invalid size') : null; return; }
     setSaving(true);
     await updateProfile({ size_inches: inches });
     setSaving(false);
@@ -73,7 +73,7 @@ export default function SettingsScreen() {
       return;
     }
     const inches = parseFloat(newGirth);
-    if (isNaN(inches) || inches <= 0 || inches > 12) { Alert.alert('Invalid girth'); return; }
+    if (isNaN(inches) || inches <= 0 || inches > 12) { typeof window !== 'undefined' ? window.alert('Invalid girth') : null; return; }
     setSaving(true);
     await updateProfile({ girth_inches: inches });
     setSaving(false);
@@ -204,9 +204,9 @@ export default function SettingsScreen() {
         {/* About */}
         <Text style={styles.section}>ABOUT</Text>
         <View style={styles.card}>
-          <SettingsRow icon="document-text-outline" label="Privacy Policy" onPress={() => Alert.alert('Privacy Policy', 'Coming soon.')} />
+          <SettingsRow icon="document-text-outline" label="Privacy Policy" onPress={() => typeof window !== 'undefined' ? window.alert('Coming soon.') : null} />
           <View style={styles.divider} />
-          <SettingsRow icon="shield-outline" label="Terms of Service" onPress={() => Alert.alert('Terms', 'Coming soon.')} />
+          <SettingsRow icon="shield-outline" label="Terms of Service" onPress={() => typeof window !== 'undefined' ? window.alert('Coming soon.') : null} />
           <View style={styles.divider} />
           <SettingsRow icon="information-circle-outline" label="Version" value="1.0.0" />
         </View>
@@ -230,7 +230,7 @@ export default function SettingsScreen() {
             danger
             onPress={() => Alert.alert('Delete Account', 'This is permanent and cannot be undone.', [
               { text: 'Cancel', style: 'cancel' },
-              { text: 'Delete', style: 'destructive', onPress: () => Alert.alert('Contact support@sizeapp.com to delete your account.') },
+              { text: 'Delete', style: 'destructive', onPress: () => typeof window !== 'undefined' ? window.alert('Contact support@sizeapp.com to delete your account.') : null },
             ])}
           />
         </View>

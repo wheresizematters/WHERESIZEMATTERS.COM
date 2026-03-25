@@ -218,7 +218,7 @@ export default function LeaderboardScreen() {
       if (Platform.OS === 'web') {
         window.alert('Location access denied. Please enable it in your browser settings.');
       } else {
-        Alert.alert('Location denied', 'Enable location access in your device settings to use this feature.');
+        typeof window !== 'undefined' ? window.alert('Enable location access in your device settings to use this feature.') : null;
       }
       return;
     }

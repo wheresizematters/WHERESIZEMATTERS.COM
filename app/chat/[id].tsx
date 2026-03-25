@@ -225,7 +225,7 @@ export default function ChatScreen() {
         if (Platform.OS === 'web') {
           window.alert(`Upload failed: ${uploadErr}`);
         } else {
-          Alert.alert('Upload failed', uploadErr);
+          typeof window !== 'undefined' ? window.alert(uploadErr) : null;
         }
         return;
       }
