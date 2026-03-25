@@ -1,8 +1,8 @@
 import { getToken, getApiUrl } from './supabase';
 import { Post, LeaderboardEntry, Conversation, Message, VerificationRequest, Profile, Comment } from './types';
 
-const API = getApiUrl();
-const READY = API.length > 0;
+const API = getApiUrl(); // empty string = same-origin (nginx proxies /api/ to backend)
+const READY = true; // always ready — either via env var or same-origin proxy
 
 // ── Core fetch helpers ────────────────────────────────────────────
 

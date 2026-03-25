@@ -13,8 +13,18 @@ type OAuthProvider = 'google' | 'x';
 
 const SOCIAL_PROVIDERS: { provider: OAuthProvider; label: string; icon: any; bg: string; color: string }[] = [
   { provider: 'x', label: 'Continue with X', icon: 'logo-twitter', bg: '#000', color: '#fff' },
-  { provider: 'google', label: 'Continue with Google', icon: 'logo-google', bg: '#fff', color: '#444' },
 ];
+
+// Wallet connect
+async function connectWalletLogin(): Promise<{ address: string } | null> {
+  const eth = (window as any)?.ethereum;
+  if (!eth) { window.alert('Install MetaMask or Coinbase Wallet to connect.'); return null; }
+  try {
+    const accounts: string[] = await eth.request({ method: 'eth_requestAccounts' });
+    if (!accounts[0]) return null;
+    return { address: accounts[0] };
+  } catch { return null; }
+}
 
 export default function LoginScreen() {
   const { signIn, signInWithOAuth } = useAuth();
@@ -54,8 +64,39 @@ export default function LoginScreen() {
           <Text style={styles.tagline}>Know where you stand.</Text>
         </View>
 
-        {/* Social login */}
+        {/* Wallet + Social login */}
         <View style={styles.socialGroup}>
+          <TouchableOpacity
+            style={[styles.socialBtn, { backgroundColor: '#E8500A' }]}
+            onPress={async () => {
+              setError('');
+              const wallet = await connectWalletLogin();
+              if (!wallet) return;
+              setLoading(true);
+              try {
+                const res = await fetch('/api/v1/auth/wallet', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ walletAddress: wallet.address }),
+                });
+                const data = await res.json();
+                if (data.token) {
+                  const { setToken } = require('@/lib/supabase');
+                  setToken(data.token);
+                  window.location.reload();
+                } else {
+                  setError(data.error ?? 'Wallet login failed');
+                }
+              } catch { setError('Connection failed'); }
+              setLoading(false);
+            }}
+            disabled={loading}
+            activeOpacity={0.85}
+          >
+            <Ionicons name="wallet" size={18} color="#fff" />
+            <Text style={[styles.socialBtnText, { color: '#fff' }]}>Connect Wallet</Text>
+          </TouchableOpacity>
+
           {SOCIAL_PROVIDERS.map(({ provider, label, icon, bg, color }) => (
             <TouchableOpacity
               key={provider}

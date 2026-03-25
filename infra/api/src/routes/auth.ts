@@ -258,6 +258,46 @@ r.get("/oauth/google/callback", async (req: Request, res: Response) => {
   }
 });
 
+// ── POST /wallet — login/signup with crypto wallet ──────────────────
+r.post("/wallet", async (req: Request, res: Response) => {
+  try {
+    const { walletAddress } = req.body;
+    if (!walletAddress || !/^0x[0-9a-fA-F]{40}$/.test(walletAddress)) {
+      res.status(400).json({ error: "Valid wallet address required" });
+      return;
+    }
+
+    const addr = walletAddress.toLowerCase();
+
+    // Find existing profile by wallet
+    let profile = await getProfileByOAuth("wallet", addr);
+
+    if (!profile) {
+      // Create new profile with wallet
+      const username = `user_${addr.slice(2, 8)}`;
+      profile = await createOAuthProfile({
+        authProvider: "wallet",
+        oauthProviderId: addr,
+        username,
+        avatarUrl: null,
+      });
+      // Also set wallet_address for staking/token features
+      await updateProfile(profile.id, { wallet_address: addr } as any);
+    }
+
+    const token = signToken({
+      userId: profile.id,
+      email: profile.email ?? "",
+      username: profile.username,
+    });
+
+    res.json({ token, profile: sanitizeProfile(profile) });
+  } catch (err: any) {
+    console.error("Wallet auth error:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 // ── POST /oauth/x ──────────────────────────────────────────────────
 r.post("/oauth/x", async (req: Request, res: Response) => {
   try {
