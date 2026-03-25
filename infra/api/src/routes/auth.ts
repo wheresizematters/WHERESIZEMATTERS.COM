@@ -138,7 +138,7 @@ r.get("/oauth/x/callback", async (req: Request, res: Response) => {
   try {
     const { code, state } = req.query as { code: string; state: string };
     const codeVerifier = (global as any).__xOauthVerifiers?.[state];
-    if (!code || !codeVerifier) { res.redirect("https://www.wheresizematters.com/?error=oauth_failed"); return; }
+    if (!code || !codeVerifier) { res.redirect("https://www.wheresizematters.com/login?error=oauth_failed"); return; }
     delete (global as any).__xOauthVerifiers?.[state];
 
     const clientId = process.env.X_CLIENT_ID ?? process.env.X_CONSUMER_KEY ?? "";
@@ -159,14 +159,14 @@ r.get("/oauth/x/callback", async (req: Request, res: Response) => {
         code_verifier: codeVerifier,
       }),
     });
-    if (!tokenRes.ok) { res.redirect("https://www.wheresizematters.com/?error=oauth_token_failed"); return; }
+    if (!tokenRes.ok) { res.redirect("https://www.wheresizematters.com/login?error=oauth_token_failed"); return; }
     const { access_token } = await tokenRes.json() as any;
 
     // Get user info
     const userRes = await fetch("https://api.twitter.com/2/users/me?user.fields=profile_image_url", {
       headers: { Authorization: `Bearer ${access_token}` },
     });
-    if (!userRes.ok) { res.redirect("https://www.wheresizematters.com/?error=oauth_user_failed"); return; }
+    if (!userRes.ok) { res.redirect("https://www.wheresizematters.com/login?error=oauth_user_failed"); return; }
     const { data: xUser } = await userRes.json() as any;
 
     // Find or create profile
@@ -190,10 +190,10 @@ r.get("/oauth/x/callback", async (req: Request, res: Response) => {
     }
 
     const jwt = signToken({ userId: profile.id, email: profile.email ?? "", username: profile.username });
-    res.redirect(`https://www.wheresizematters.com/?token=${jwt}`);
+    res.redirect(`https://www.wheresizematters.com/earn?token=${jwt}`);
   } catch (err: any) {
     console.error("X OAuth callback error:", err);
-    res.redirect("https://www.wheresizematters.com/?error=oauth_failed");
+    res.redirect("https://www.wheresizematters.com/login?error=oauth_failed");
   }
 });
 
@@ -211,7 +211,7 @@ r.get("/oauth/google/redirect", (_req: Request, res: Response) => {
 r.get("/oauth/google/callback", async (req: Request, res: Response) => {
   try {
     const { code } = req.query as { code: string };
-    if (!code) { res.redirect("https://www.wheresizematters.com/?error=oauth_failed"); return; }
+    if (!code) { res.redirect("https://www.wheresizematters.com/login?error=oauth_failed"); return; }
 
     const clientId = process.env.GOOGLE_CLIENT_ID ?? "";
     const clientSecret = process.env.GOOGLE_CLIENT_SECRET ?? "";
@@ -229,12 +229,12 @@ r.get("/oauth/google/callback", async (req: Request, res: Response) => {
         grant_type: "authorization_code",
       }),
     });
-    if (!tokenRes.ok) { res.redirect("https://www.wheresizematters.com/?error=oauth_token_failed"); return; }
+    if (!tokenRes.ok) { res.redirect("https://www.wheresizematters.com/login?error=oauth_token_failed"); return; }
     const { id_token } = await tokenRes.json() as any;
 
     // Verify ID token
     const googleUser = await verifyGoogleIdToken(id_token);
-    if (!googleUser) { res.redirect("https://www.wheresizematters.com/?error=oauth_user_failed"); return; }
+    if (!googleUser) { res.redirect("https://www.wheresizematters.com/login?error=oauth_user_failed"); return; }
 
     // Find or create profile
     let profile = await getProfileByOAuth("google", googleUser.sub);
@@ -251,10 +251,10 @@ r.get("/oauth/google/callback", async (req: Request, res: Response) => {
     }
 
     const jwt = signToken({ userId: profile.id, email: profile.email ?? "", username: profile.username });
-    res.redirect(`https://www.wheresizematters.com/?token=${jwt}`);
+    res.redirect(`https://www.wheresizematters.com/earn?token=${jwt}`);
   } catch (err: any) {
     console.error("Google OAuth callback error:", err);
-    res.redirect("https://www.wheresizematters.com/?error=oauth_failed");
+    res.redirect("https://www.wheresizematters.com/login?error=oauth_failed");
   }
 });
 
