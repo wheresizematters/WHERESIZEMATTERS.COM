@@ -128,6 +128,16 @@ export default function LoginScreen() {
             </TouchableOpacity>
           </Link>
         </View>
+
+        <View style={styles.legalRow}>
+          <TouchableOpacity onPress={() => { if (typeof window !== 'undefined') window.open('/privacy', '_blank'); }}>
+            <Text style={styles.legalLink}>Privacy Policy</Text>
+          </TouchableOpacity>
+          <Text style={styles.legalDot}> · </Text>
+          <TouchableOpacity onPress={() => { if (typeof window !== 'undefined') window.open('/terms', '_blank'); }}>
+            <Text style={styles.legalLink}>Terms of Service</Text>
+          </TouchableOpacity>
+        </View>
       </View>
       </AuthContainer>
     </KeyboardAvoidingView>
@@ -168,4 +178,7 @@ const styles = StyleSheet.create({
   footer: { flexDirection: 'row', justifyContent: 'center', marginTop: 32 },
   footerText: { color: COLORS.muted, fontSize: SIZES.md },
   footerLink: { color: COLORS.gold, fontSize: SIZES.md, fontWeight: '700' },
+  legalRow: { flexDirection: 'row', justifyContent: 'center', marginTop: 16 },
+  legalLink: { color: COLORS.muted, fontSize: SIZES.xs },
+  legalDot: { color: COLORS.mutedDark, fontSize: SIZES.xs },
 });
