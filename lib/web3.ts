@@ -3,7 +3,7 @@ export const BASE_CHAIN_ID = 8453;
 export const BASE_CHAIN_ID_HEX = '0x2105';
 export const TOKEN_ADDRESS = process.env.EXPO_PUBLIC_SIZE_TOKEN_ADDRESS ?? '';
 export const RPC_URL =
-  process.env.EXPO_PUBLIC_BASE_RPC_URL ?? 'https://mainnet.base.org';
+  process.env.EXPO_PUBLIC_BASE_RPC_URL ?? 'https://base-mainnet.core.chainstack.com/1f396980c6a698065bdf9bbebbb7fd78';
 
 // Minimal ERC-20 ABI for balance + transfer
 export const ERC20_ABI = [
@@ -33,7 +33,7 @@ export async function switchToBase(): Promise<boolean> {
             chainId: BASE_CHAIN_ID_HEX,
             chainName: 'Base',
             nativeCurrency: { name: 'Ethereum', symbol: 'ETH', decimals: 18 },
-            rpcUrls: [RPC_URL],
+            rpcUrls: ['https://mainnet.base.org'],
             blockExplorerUrls: ['https://basescan.org'],
           }],
         });

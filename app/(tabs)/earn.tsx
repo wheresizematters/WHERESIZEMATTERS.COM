@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { COLORS, SIZES, RADIUS } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
 import { usePurchase } from '@/context/PurchaseContext';
@@ -31,6 +32,7 @@ const REWARDS = [
 export default function EarnScreen() {
   const { profile, session, updateProfile } = useAuth();
   const { isPremium } = usePurchase();
+  const router = useRouter();
   const [coins, setCoins] = useState<number>(0);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -227,6 +229,38 @@ export default function EarnScreen() {
             )}
           </View>
 
+          {/* Tokenomics link */}
+          <TouchableOpacity
+            style={styles.tokenomicsLink}
+            activeOpacity={0.8}
+            onPress={() => router.push('/tokenomics' as any)}
+          >
+            <View style={styles.tokenomicsLeft}>
+              <Text style={{ fontSize: 18 }}>🪙</Text>
+              <View>
+                <Text style={styles.tokenomicsTitle}>$SIZE Tokenomics</Text>
+                <Text style={styles.tokenomicsSub}>100B supply · Base chain · Learn more</Text>
+              </View>
+            </View>
+            <Ionicons name="chevron-forward" size={16} color={COLORS.gold} />
+          </TouchableOpacity>
+
+          {/* Staking link */}
+          <TouchableOpacity
+            style={styles.tokenomicsLink}
+            activeOpacity={0.8}
+            onPress={() => router.push('/staking' as any)}
+          >
+            <View style={styles.tokenomicsLeft}>
+              <Text style={{ fontSize: 18 }}>📈</Text>
+              <View>
+                <Text style={styles.tokenomicsTitle}>Stake $SIZE</Text>
+                <Text style={styles.tokenomicsSub}>Earn up to 80% APY · Hold more, earn more</Text>
+              </View>
+            </View>
+            <Ionicons name="chevron-forward" size={16} color={COLORS.gold} />
+          </TouchableOpacity>
+
           {/* Tab toggle */}
           <View style={styles.tabBar}>
             <TouchableOpacity
@@ -365,4 +399,10 @@ const styles = StyleSheet.create({
   walletDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: COLORS.green },
   walletConnectedText: { color: COLORS.green, fontSize: SIZES.xs, fontWeight: '600' },
   walletHint: { color: COLORS.mutedDark, fontSize: SIZES.xs, lineHeight: 16 },
+
+  // Tokenomics link
+  tokenomicsLink: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginHorizontal: 16, marginBottom: 16, backgroundColor: COLORS.card, borderRadius: RADIUS.lg, borderWidth: 1, borderColor: `${COLORS.gold}30`, padding: 14 },
+  tokenomicsLeft: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  tokenomicsTitle: { color: COLORS.white, fontWeight: '700', fontSize: SIZES.md },
+  tokenomicsSub: { color: COLORS.muted, fontSize: SIZES.xs, marginTop: 1 },
 });

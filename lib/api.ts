@@ -2,75 +2,74 @@ import { supabase, SUPABASE_READY } from './supabase';
 import { MOCK_POSTS, MOCK_LEADERBOARD } from './mockData';
 import { Post, LeaderboardEntry, Conversation, Message, VerificationRequest, Profile, Comment } from './types';
 
+// ── API Base ─────────────────────────────────────────────────────────
+
+const API_BASE = process.env.EXPO_PUBLIC_API_URL ?? '';
+const API_READY = API_BASE.length > 0;
+
+async function getAuthToken(): Promise<string | null> {
+  if (!SUPABASE_READY) return null;
+  const { data } = await supabase.auth.getSession();
+  return data.session?.access_token ?? null;
+}
+
+async function api<T = any>(
+  path: string,
+  opts?: { method?: string; body?: any },
+): Promise<T | null> {
+  if (!API_READY) return null;
+  const token = await getAuthToken();
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+
+  try {
+    const res = await fetch(`${API_BASE}${path}`, {
+      method: opts?.method ?? 'GET',
+      headers,
+      body: opts?.body ? JSON.stringify(opts.body) : undefined,
+    });
+    if (!res.ok) return null;
+    return res.json();
+  } catch {
+    return null;
+  }
+}
+
+async function apiPost<T = any>(path: string, body: any): Promise<T | null> {
+  return api<T>(path, { method: 'POST', body });
+}
+
+async function apiPatch<T = any>(path: string, body: any): Promise<T | null> {
+  return api<T>(path, { method: 'PATCH', body });
+}
+
+async function apiDelete<T = any>(path: string): Promise<T | null> {
+  return api<T>(path, { method: 'DELETE' });
+}
+
 // ── Coins ─────────────────────────────────────────────────────────────────────
 
 export async function awardCoins(userId: string, amount: number): Promise<void> {
-  if (!SUPABASE_READY) return;
-  await supabase.rpc('award_coins', { p_user_id: userId, p_amount: amount });
+  await apiPost(`/api/v1/profiles/${userId}/coins`, { amount });
 }
 
-/** Awards daily login bonus (20 coins) once per calendar day. */
 export async function maybeAwardDailyLoginCoins(userId: string): Promise<boolean> {
-  if (!SUPABASE_READY) return false;
-  const { data } = await supabase
-    .from('profiles')
-    .select('last_daily_coin_at')
-    .eq('id', userId)
-    .single();
-  const last = data?.last_daily_coin_at;
-  const today = new Date().toDateString();
-  if (last && new Date(last).toDateString() === today) return false;
-  await supabase.from('profiles').update({ last_daily_coin_at: new Date().toISOString() }).eq('id', userId);
-  await awardCoins(userId, 20);
+  // Handled server-side now — just call the profile endpoint
+  // The backend awards coins on profile fetch if daily threshold met
+  await api(`/api/v1/profiles/me`);
   return true;
 }
 
-/** Awards post coins (10) once per calendar day. */
 export async function maybeAwardPostCoins(userId: string): Promise<void> {
-  if (!SUPABASE_READY) return;
-  const { data } = await supabase
-    .from('profiles')
-    .select('last_post_coin_at')
-    .eq('id', userId)
-    .single();
-  const last = data?.last_post_coin_at;
-  const today = new Date().toDateString();
-  if (last && new Date(last).toDateString() === today) return;
-  await supabase.from('profiles').update({ last_post_coin_at: new Date().toISOString() }).eq('id', userId);
-  await awardCoins(userId, 10);
+  // Handled server-side when creating a post
 }
 
 // ── Feed ──────────────────────────────────────────────────────────────────────
 
 export async function fetchPosts(userId?: string): Promise<Post[]> {
-  if (!SUPABASE_READY) return MOCK_POSTS;
-
-  const { data, error } = await supabase
-    .from('posts')
-    .select(`
-      id, type, title, content, tag, media_url, media_type, comment_count, score, created_at,
-      author:profiles(id, username, size_inches, is_verified),
-      poll_options(id, text, vote_count)
-    `)
-    .order('created_at', { ascending: false })
-    .limit(50);
-
-  if (error || !data) { console.error('fetchPosts error:', error?.message); return []; }
-
-  let posts = data as unknown as Post[];
-
-  if (userId) {
-    const { data: votes } = await supabase
-      .from('post_votes')
-      .select('post_id, vote')
-      .eq('user_id', userId);
-    if (votes) {
-      const voteMap = new Map(votes.map(v => [v.post_id, v.vote as 1 | -1]));
-      posts = posts.map(p => ({ ...p, user_vote: voteMap.get(p.id) ?? 0 }));
-    }
-  }
-
-  return posts;
+  if (!API_READY) return MOCK_POSTS;
+  const posts = await api<Post[]>('/api/v1/posts');
+  return posts ?? MOCK_POSTS;
 }
 
 export async function voteOnPost(
@@ -78,25 +77,13 @@ export async function voteOnPost(
   userId: string,
   vote: 1 | -1 | 0,
 ): Promise<{ error: string | null }> {
-  if (!SUPABASE_READY) return { error: null };
-  const { error } = await supabase.rpc('vote_on_post', { p_post_id: postId, p_user_id: userId, p_vote: vote });
-  return { error: error?.message ?? null };
+  const result = await apiPost<{ error: string | null }>(`/api/v1/posts/${postId}/vote`, { vote });
+  return result ?? { error: null };
 }
 
 export async function voteOnPoll(pollOptionId: string, userId: string): Promise<{ error: string | null }> {
-  if (!SUPABASE_READY) return { error: null };
-  // Prevent duplicate votes
-  const { data: existing } = await supabase
-    .from('votes')
-    .select('id')
-    .eq('poll_option_id', pollOptionId)
-    .eq('user_id', userId)
-    .maybeSingle();
-  if (existing) return { error: null }; // Already voted — idempotent
-  const { error } = await supabase.from('votes').insert({ poll_option_id: pollOptionId, user_id: userId });
-  if (error) return { error: error.message };
-  await supabase.rpc('increment_vote_count', { option_id: pollOptionId });
-  return { error: null };
+  const result = await apiPost<{ error: string | null }>(`/api/v1/posts/poll/${pollOptionId}/vote`, {});
+  return result ?? { error: null };
 }
 
 export async function createPost(
@@ -108,26 +95,10 @@ export async function createPost(
   tag?: string,
   title?: string,
 ): Promise<{ error: string | null }> {
-  if (!SUPABASE_READY) return { error: 'Supabase not configured' };
-
-  const { data: post, error } = await supabase
-    .from('posts')
-    .insert({ user_id: userId, type, title: title ?? null, content, media_url: mediaUrl ?? null, tag: tag ?? null })
-    .select()
-    .single();
-
-  if (error) return { error: error.message };
-
-  if (type === 'poll' && pollOptions?.length) {
-    const options = pollOptions.map(text => ({ post_id: post.id, text }));
-    const { error: optErr } = await supabase.from('poll_options').insert(options);
-    if (optErr) return { error: optErr.message };
-  }
-
-  // Award daily post coins (fire-and-forget)
-  maybeAwardPostCoins(userId).catch(() => {});
-
-  return { error: null };
+  const result = await apiPost<{ error: string | null }>('/api/v1/posts', {
+    type, content, pollOptions, mediaUrl, tag, title,
+  });
+  return result ?? { error: 'API unavailable' };
 }
 
 // ── Leaderboard ───────────────────────────────────────────────────────────────
@@ -136,118 +107,60 @@ export async function fetchLeaderboard(filter?: {
   country?: string;
   ageRange?: string;
 }): Promise<LeaderboardEntry[]> {
-  if (!SUPABASE_READY) return MOCK_LEADERBOARD;
-
-  let query = supabase
-    .from('leaderboard')
-    .select('rank, id, username, size_inches, is_verified, country, age_range')
-    .eq('is_verified', true)
-    .limit(100);
-
-  if (filter?.country) query = query.eq('country', filter.country);
-  if (filter?.ageRange) query = query.eq('age_range', filter.ageRange);
-
-  const { data, error } = await query;
-  if (error || !data) return MOCK_LEADERBOARD;
-  return data as LeaderboardEntry[];
+  if (!API_READY) return MOCK_LEADERBOARD;
+  const params = new URLSearchParams();
+  if (filter?.country) params.set('country', filter.country);
+  if (filter?.ageRange) params.set('ageRange', filter.ageRange);
+  const qs = params.toString();
+  const data = await api<LeaderboardEntry[]>(`/api/v1/profiles/leaderboard${qs ? `?${qs}` : ''}`);
+  return data ?? MOCK_LEADERBOARD;
 }
 
 // ── Compare ───────────────────────────────────────────────────────────────────
 
 export async function searchUsers(query: string) {
-  // Require at least 2 chars to limit enumeration exposure
   if (query.trim().length < 2) return [];
-
-  if (!SUPABASE_READY) {
+  if (!API_READY) {
     return MOCK_LEADERBOARD.filter(u =>
       u.username.toLowerCase().includes(query.toLowerCase())
     ).slice(0, 5);
   }
-
-  const { data } = await supabase
-    .from('profiles')
-    .select('id, username, size_inches, is_verified')
-    .ilike('username', `%${query.trim()}%`)
-    .limit(5);
-
+  const data = await api(`/api/v1/profiles/search?q=${encodeURIComponent(query.trim())}`);
   return data ?? [];
 }
 
 export async function fetchUserPercentile(sizeInches: number): Promise<number> {
-  if (!SUPABASE_READY) return 72;
-
-  const { count: total } = await supabase
-    .from('profiles')
-    .select('*', { count: 'exact', head: true });
-
-  const { count: smaller } = await supabase
-    .from('profiles')
-    .select('*', { count: 'exact', head: true })
-    .lt('size_inches', sizeInches);
-
-  if (!total || smaller === null) return 0;
-  return Math.round((smaller / total) * 100);
+  if (!API_READY) return 72;
+  const data = await api<{ percentile: number }>(`/api/v1/profiles/percentile/${sizeInches}`);
+  return data?.percentile ?? 0;
 }
 
 // ── Profile ───────────────────────────────────────────────────────────────────
 
 export async function fetchPublicProfile(userId: string): Promise<Profile | null> {
-  if (!SUPABASE_READY) {
+  if (!API_READY) {
     const mock = MOCK_LEADERBOARD.find(u => u.id === userId);
     if (!mock) return null;
     return { id: mock.id, username: mock.username, size_inches: mock.size_inches, is_verified: mock.is_verified, has_set_size: true, country: mock.country, created_at: new Date().toISOString() };
   }
-
-  const { data } = await supabase
-    .from('profiles')
-    .select('id, username, size_inches, girth_inches, is_verified, has_set_size, country, age_range, bio, website, avatar_url, header_url, created_at')
-    .eq('id', userId)
-    .single();
-
-  return data ?? null;
+  return api<Profile>(`/api/v1/profiles/${userId}`);
 }
 
 export async function fetchUserRank(userId: string): Promise<number> {
-  if (!SUPABASE_READY) return 247;
-
-  const { data } = await supabase
-    .from('leaderboard')
-    .select('rank')
-    .eq('id', userId)
-    .single();
-
+  if (!API_READY) return 247;
+  const data = await api<{ rank: number }>(`/api/v1/profiles/${userId}/rank`);
   return data?.rank ?? 0;
 }
 
 export async function fetchPost(postId: string): Promise<Post | null> {
-  if (!SUPABASE_READY) return MOCK_POSTS.find(p => p.id === postId) ?? null;
-
-  const { data } = await supabase
-    .from('posts')
-    .select(`
-      id, type, title, content, tag, media_url, media_type, comment_count, score, created_at,
-      author:profiles(id, username, size_inches, is_verified),
-      poll_options(id, text, vote_count)
-    `)
-    .eq('id', postId)
-    .single();
-
-  return data as unknown as Post ?? null;
+  if (!API_READY) return MOCK_POSTS.find(p => p.id === postId) ?? null;
+  return api<Post>(`/api/v1/posts/${postId}`);
 }
 
 export async function fetchComments(postId: string): Promise<Comment[]> {
-  if (!SUPABASE_READY) return [];
-
-  const { data } = await supabase
-    .from('comments')
-    .select(`
-      id, post_id, user_id, content, created_at,
-      author:profiles(id, username, size_inches, is_verified)
-    `)
-    .eq('post_id', postId)
-    .order('created_at', { ascending: true });
-
-  return (data ?? []) as unknown as Comment[];
+  if (!API_READY) return [];
+  const data = await api<Comment[]>(`/api/v1/posts/${postId}/comments`);
+  return data ?? [];
 }
 
 export async function createComment(
@@ -255,51 +168,26 @@ export async function createComment(
   userId: string,
   content: string,
 ): Promise<{ error: string | null }> {
-  if (!SUPABASE_READY) return { error: 'Supabase not configured' };
-
-  const { error } = await supabase
-    .from('comments')
-    .insert({ post_id: postId, user_id: userId, content });
-
-  return { error: error?.message ?? null };
+  const result = await apiPost<{ error: string | null }>(`/api/v1/posts/${postId}/comments`, { content });
+  return result ?? { error: 'API unavailable' };
 }
 
 export async function fetchUserPosts(userId: string): Promise<Post[]> {
-  if (!SUPABASE_READY) return MOCK_POSTS.filter(p => p.author.id === userId);
-
-  const { data } = await supabase
-    .from('posts')
-    .select(`
-      id, type, title, content, tag, media_url, media_type, comment_count, score, created_at,
-      author:profiles(id, username, size_inches, is_verified),
-      poll_options(id, text, vote_count)
-    `)
-    .eq('user_id', userId)
-    .order('created_at', { ascending: false })
-    .limit(50);
-
-  return (data ?? []) as unknown as Post[];
+  if (!API_READY) return MOCK_POSTS.filter(p => p.author.id === userId);
+  const data = await api<Post[]>(`/api/v1/posts/user/${userId}`);
+  return data ?? [];
 }
 
 export async function fetchUserPostCount(userId: string): Promise<number> {
-  if (!SUPABASE_READY) return 14;
-
-  const { count } = await supabase
-    .from('posts')
-    .select('*', { count: 'exact', head: true })
-    .eq('user_id', userId);
-
-  return count ?? 0;
+  if (!API_READY) return 14;
+  const data = await api<{ count: number }>(`/api/v1/posts/user/${userId}/count`);
+  return data?.count ?? 0;
 }
 
 export async function fetchTotalUserCount(): Promise<number> {
-  if (!SUPABASE_READY) return 12842;
-
-  const { count } = await supabase
-    .from('profiles')
-    .select('*', { count: 'exact', head: true });
-
-  return count ?? 0;
+  if (!API_READY) return 12842;
+  const data = await api<{ count: number }>('/api/v1/profiles/count');
+  return data?.count ?? 0;
 }
 
 // ── Nearby Leaderboard ────────────────────────────────────────────────────────
@@ -320,14 +208,14 @@ export async function fetchLeaderboardByRadius(
   lng: number,
   radiusMiles: number,
 ): Promise<NearbyEntry[]> {
+  // TODO: Implement geospatial query on AWS backend
+  // For now, fall back to Supabase RPC if available
   if (!SUPABASE_READY) return [];
-
   const { data, error } = await supabase.rpc('leaderboard_by_radius', {
     center_lat: lat,
     center_lng: lng,
     radius_miles: radiusMiles,
   });
-
   if (error || !data) return [];
   return data as NearbyEntry[];
 }
@@ -335,53 +223,21 @@ export async function fetchLeaderboardByRadius(
 // ── Messaging ─────────────────────────────────────────────────────────────────
 
 export async function fetchConversations(userId: string): Promise<Conversation[]> {
-  if (!SUPABASE_READY) return [];
-
-  const { data } = await supabase
-    .from('conversations')
-    .select(`
-      id, user_1_id, user_2_id, last_message_at, last_message_preview,
-      user_1_last_read, user_2_last_read,
-      user1:profiles!conversations_user_1_id_fkey(id, username, size_inches, is_verified),
-      user2:profiles!conversations_user_2_id_fkey(id, username, size_inches, is_verified)
-    `)
-    .or(`user_1_id.eq.${userId},user_2_id.eq.${userId}`)
-    .order('last_message_at', { ascending: false });
-
-  return (data ?? []) as unknown as Conversation[];
+  if (!API_READY) return [];
+  const data = await api<Conversation[]>('/api/v1/messaging/conversations');
+  return data ?? [];
 }
 
 export async function markConversationRead(
   conversationId: string,
   userId: string,
 ): Promise<void> {
-  if (!SUPABASE_READY) return;
-
-  const { data: conv } = await supabase
-    .from('conversations')
-    .select('user_1_id')
-    .eq('id', conversationId)
-    .single();
-
-  if (!conv) return;
-
-  const field = conv.user_1_id === userId ? 'user_1_last_read' : 'user_2_last_read';
-  await supabase
-    .from('conversations')
-    .update({ [field]: new Date().toISOString() })
-    .eq('id', conversationId);
+  await apiPost(`/api/v1/messaging/conversations/${conversationId}/read`, {});
 }
 
 export async function fetchMessages(conversationId: string): Promise<Message[]> {
-  if (!SUPABASE_READY) return [];
-
-  const { data } = await supabase
-    .from('messages')
-    .select('id, conversation_id, sender_id, content, media_url, media_type, viewed_at, created_at')
-    .eq('conversation_id', conversationId)
-    .order('created_at', { ascending: false })
-    .limit(60);
-
+  if (!API_READY) return [];
+  const data = await api<Message[]>(`/api/v1/messaging/conversations/${conversationId}/messages`);
   return data ?? [];
 }
 
@@ -392,72 +248,52 @@ export async function sendMessage(
   mediaPath?: string,
   mediaType?: 'image' | 'video',
 ): Promise<{ error: string | null }> {
-  if (!SUPABASE_READY) return { error: 'Supabase not configured' };
-
-  const { error } = await supabase
-    .from('messages')
-    .insert({
-      conversation_id: conversationId,
-      sender_id: senderId,
-      content,
-      media_url: mediaPath ?? null,
-      media_type: mediaType ?? null,
-    });
-
-  return { error: error?.message ?? null };
+  const result = await apiPost<{ error: string | null }>(
+    `/api/v1/messaging/conversations/${conversationId}/messages`,
+    { content, mediaUrl: mediaPath, mediaType },
+  );
+  return result ?? { error: 'API unavailable' };
 }
 
+// Storage operations stay on Supabase
 export async function uploadMessageMedia(
   conversationId: string,
   localUri: string,
   mimeType: string,
 ): Promise<{ path: string | null; error: string | null }> {
-  if (!SUPABASE_READY) return { path: null, error: 'Supabase not configured' };
-
+  if (!SUPABASE_READY) return { path: null, error: 'Storage not configured' };
   const ext = mimeType.includes('video') ? 'mp4' : 'jpg';
   const path = `${conversationId}/${Date.now()}.${ext}`;
-
   const response = await fetch(localUri);
   const blob = await response.blob();
-
   const { error } = await supabase.storage
     .from('message-media')
     .upload(path, blob, { contentType: mimeType });
-
   if (error) return { path: null, error: error.message };
   return { path, error: null };
 }
 
 export async function getMessageMediaUrl(path: string): Promise<string | null> {
   if (!SUPABASE_READY) return null;
-
   const { data } = await supabase.storage
     .from('message-media')
-    .createSignedUrl(path, 300); // 5-minute signed URL — hard to share/save
-
+    .createSignedUrl(path, 300);
   return data?.signedUrl ?? null;
 }
 
 export async function markMediaViewed(messageId: string): Promise<void> {
-  if (!SUPABASE_READY) return;
-
-  await supabase
-    .from('messages')
-    .update({ viewed_at: new Date().toISOString() })
-    .eq('id', messageId);
+  // TODO: Route through API when message media tracking moves to AWS
 }
 
-// ── Verification ──────────────────────────────────────────────────────────────
+// ── Verification (stays on Supabase — edge functions + storage) ───────────────
 
 export async function fetchMyVerificationRequest(userId: string): Promise<VerificationRequest | null> {
   if (!SUPABASE_READY) return null;
-
   const { data } = await supabase
     .from('verification_requests')
     .select('*')
     .eq('user_id', userId)
     .maybeSingle();
-
   return data ?? null;
 }
 
@@ -466,20 +302,15 @@ export async function submitVerificationPhoto(
   localUri: string,
   reportedSize: number,
 ): Promise<{ imagePath: string | null; error: string | null }> {
-  if (!SUPABASE_READY) return { imagePath: null, error: 'Supabase not configured' };
-
+  if (!SUPABASE_READY) return { imagePath: null, error: 'Storage not configured' };
   const timestamp = Date.now();
   const ext = localUri.split('.').pop() ?? 'jpg';
   const imagePath = `${userId}/${timestamp}.${ext}`;
-
-  // Fetch the file as a blob
   const response = await fetch(localUri);
   const blob = await response.blob();
-
   const { error } = await supabase.storage
     .from('verifications')
     .upload(imagePath, blob, { contentType: blob.type || 'image/jpeg', upsert: true });
-
   if (error) return { imagePath: null, error: error.message };
   return { imagePath, error: null };
 }
@@ -490,34 +321,28 @@ export async function runVerification(
   reportedGirth?: number | null,
 ): Promise<{ status: 'auto_verified' | 'pending'; reason?: string; error?: string }> {
   if (!SUPABASE_READY) return { status: 'pending', reason: 'demo_mode' };
-
   const { data, error } = await supabase.functions.invoke('verify-size', {
     body: { imagePath, reportedSize, reportedGirth: reportedGirth ?? null },
   });
-
   if (error) return { status: 'pending', error: error.message };
   return data;
 }
 
 export async function fetchPendingVerifications(): Promise<VerificationRequest[]> {
   if (!SUPABASE_READY) return [];
-
   const { data } = await supabase
     .from('verification_requests')
     .select('*, profile:profiles(username, size_inches)')
     .eq('status', 'pending')
     .order('created_at', { ascending: true });
-
   return (data ?? []) as unknown as VerificationRequest[];
 }
 
 export async function getVerificationSignedUrl(imagePath: string): Promise<string | null> {
   if (!SUPABASE_READY) return null;
-
   const { data } = await supabase.storage
     .from('verifications')
     .createSignedUrl(imagePath, 120);
-
   return data?.signedUrl ?? null;
 }
 
@@ -525,66 +350,148 @@ export async function adminReviewVerification(
   requestId: string,
   action: 'approve' | 'reject',
 ): Promise<{ error: string | null }> {
-  if (!SUPABASE_READY) return { error: 'Supabase not configured' };
-
+  if (!SUPABASE_READY) return { error: 'Not configured' };
   const { error } = await supabase.functions.invoke('admin-review', {
     body: { requestId, action },
   });
-
   return { error: error?.message ?? null };
 }
 
 // ── Friends / Follows ─────────────────────────────────────────────────────────
 
 export async function followUser(followerId: string, followingId: string): Promise<void> {
-  if (!SUPABASE_READY || followerId === followingId) return;
-  // Mutual follow: both directions
-  await supabase.from('follows').upsert([
-    { follower_id: followerId, following_id: followingId },
-    { follower_id: followingId, following_id: followerId },
-  ]);
+  if (followerId === followingId) return;
+  await apiPost(`/api/v1/users/${followingId}/follow`, {});
 }
 
 export async function isFollowing(followerId: string, followingId: string): Promise<boolean> {
-  if (!SUPABASE_READY) return false;
-  const { data } = await supabase
-    .from('follows')
-    .select('follower_id')
-    .eq('follower_id', followerId)
-    .eq('following_id', followingId)
-    .maybeSingle();
-  return !!data;
+  if (!API_READY) return false;
+  const data = await api<{ following: boolean }>(`/api/v1/users/${followingId}/is-following`);
+  return data?.following ?? false;
 }
 
-// Always stores user_1_id < user_2_id to enforce uniqueness
 export async function getOrCreateConversation(
   myId: string,
   otherId: string,
 ): Promise<{ id: string | null; error: string | null }> {
-  if (!SUPABASE_READY) return { id: null, error: 'Supabase not configured' };
+  const result = await apiPost<{ id: string | null; error: string | null }>(
+    '/api/v1/messaging/conversations',
+    { otherId },
+  );
+  return result ?? { id: null, error: 'API unavailable' };
+}
 
-  const [user_1_id, user_2_id] = myId < otherId ? [myId, otherId] : [otherId, myId];
+// ── Group Chats (new) ─────────────────────────────────────────────────────────
 
-  // Use maybeSingle() to avoid throwing when 0 rows exist
-  const { data: existing, error: selectErr } = await supabase
-    .from('conversations')
-    .select('id')
-    .eq('user_1_id', user_1_id)
-    .eq('user_2_id', user_2_id)
-    .maybeSingle();
+export async function fetchGroups(): Promise<any[]> {
+  const data = await api<any[]>('/api/v1/messaging/groups');
+  return data ?? [];
+}
 
-  if (existing) return { id: existing.id, error: null };
+export async function createGroup(
+  name: string,
+  description: string,
+  isPrivate?: boolean,
+  memberIds?: string[],
+): Promise<{ id: string; error: string | null }> {
+  const result = await apiPost<{ id: string; error: string | null }>('/api/v1/messaging/groups', {
+    name, description, isPrivate, memberIds,
+  });
+  return result ?? { id: '', error: 'API unavailable' };
+}
 
-  const { data: created, error: insertErr } = await supabase
-    .from('conversations')
-    .insert({ user_1_id, user_2_id })
-    .select('id')
-    .single();
+export async function fetchGroupMessages(groupId: string): Promise<any[]> {
+  const data = await api<any[]>(`/api/v1/messaging/groups/${groupId}/messages`);
+  return data ?? [];
+}
 
-  if (insertErr) return { id: null, error: insertErr.message };
+export async function sendGroupMessage(
+  groupId: string,
+  content: string,
+  mediaUrl?: string,
+  mediaType?: 'image' | 'video',
+): Promise<{ error: string | null }> {
+  const result = await apiPost<{ error: string | null }>(
+    `/api/v1/messaging/groups/${groupId}/messages`,
+    { content, mediaUrl, mediaType },
+  );
+  return result ?? { error: 'API unavailable' };
+}
 
-  // Award message coins to the initiator for starting a new conversation
-  awardCoins(myId, 5).catch(() => {});
+export async function fetchGroupMembers(groupId: string): Promise<any[]> {
+  const data = await api<any[]>(`/api/v1/messaging/groups/${groupId}/members`);
+  return data ?? [];
+}
 
-  return { id: created?.id ?? null, error: null };
+export async function addGroupMember(groupId: string, userId: string): Promise<{ error: string | null }> {
+  const result = await apiPost<{ error: string | null }>(`/api/v1/messaging/groups/${groupId}/members`, { userId });
+  return result ?? { error: 'API unavailable' };
+}
+
+export async function removeGroupMember(groupId: string, userId: string): Promise<{ error: string | null }> {
+  const result = await apiDelete<{ error: string | null }>(`/api/v1/messaging/groups/${groupId}/members/${userId}`);
+  return result ?? { error: 'API unavailable' };
+}
+
+// ── Communities (new) ─────────────────────────────────────────────────────────
+
+export async function fetchCommunities(): Promise<any[]> {
+  const data = await api<any[]>('/api/v1/communities');
+  return data ?? [];
+}
+
+export async function fetchMyCommunities(): Promise<any[]> {
+  const data = await api<any[]>('/api/v1/communities/my');
+  return data ?? [];
+}
+
+export async function fetchCommunity(communityId: string): Promise<any | null> {
+  return api(`/api/v1/communities/${communityId}`);
+}
+
+export async function fetchCommunityBySlug(slug: string): Promise<any | null> {
+  return api(`/api/v1/communities/slug/${slug}`);
+}
+
+export async function createCommunity(
+  name: string,
+  description: string,
+  opts?: { isPrivate?: boolean; slug?: string; tags?: string[]; rules?: string[]; minTier?: number; minSize?: number },
+): Promise<{ id: string; error: string | null }> {
+  const result = await apiPost<{ id: string; error: string | null }>('/api/v1/communities', {
+    name, description, ...opts,
+  });
+  return result ?? { id: '', error: 'API unavailable' };
+}
+
+export async function joinCommunity(communityId: string): Promise<{ error: string | null }> {
+  const result = await apiPost<{ error: string | null }>(`/api/v1/communities/${communityId}/join`, {});
+  return result ?? { error: 'API unavailable' };
+}
+
+export async function leaveCommunity(communityId: string): Promise<void> {
+  await apiPost(`/api/v1/communities/${communityId}/leave`, {});
+}
+
+export async function fetchCommunityPosts(communityId: string): Promise<any[]> {
+  const data = await api<any[]>(`/api/v1/communities/${communityId}/posts`);
+  return data ?? [];
+}
+
+export async function createCommunityPost(
+  communityId: string,
+  title: string,
+  content: string,
+  mediaUrl?: string,
+  tag?: string,
+): Promise<{ id: string; error: string | null }> {
+  const result = await apiPost<{ id: string; error: string | null }>(`/api/v1/communities/${communityId}/posts`, {
+    title, content, mediaUrl, tag,
+  });
+  return result ?? { id: '', error: 'API unavailable' };
+}
+
+export async function fetchCommunityMembers(communityId: string): Promise<any[]> {
+  const data = await api<any[]>(`/api/v1/communities/${communityId}/members`);
+  return data ?? [];
 }

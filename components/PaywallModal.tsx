@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import {
   View, Text, StyleSheet, Modal, TouchableOpacity,
-  ScrollView, ActivityIndicator, Alert, Platform,
+  ScrollView, ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SIZES, RADIUS } from '@/constants/theme';
@@ -22,48 +22,19 @@ interface Props {
 }
 
 export default function PaywallModal({ visible, onClose, trigger }: Props) {
-  const { offerings, purchase, purchaseWeb, restore } = usePurchase();
+  const { purchaseWeb } = usePurchase();
   const [selected, setSelected] = useState<'monthly' | 'annual'>('annual');
   const [loading, setLoading] = useState(false);
-  const [restoring, setRestoring] = useState(false);
-
-  const isWeb = Platform.OS === 'web';
-  const monthlyPkg = offerings?.availablePackages?.find((p: any) => p.packageType === 'MONTHLY');
-  const annualPkg  = offerings?.availablePackages?.find((p: any) => p.packageType === 'ANNUAL');
 
   async function handlePurchase() {
     setLoading(true);
     try {
-      if (isWeb) {
-        // Redirects to Stripe Checkout — page will navigate away
-        await purchaseWeb(selected);
-      } else {
-        const pkg = selected === 'monthly' ? monthlyPkg : annualPkg;
-        if (!pkg) {
-          Alert.alert('Not available', 'Purchases are not available right now.');
-          return;
-        }
-        const { error } = await purchase(pkg);
-        if (error) Alert.alert('Purchase failed', error);
-        else onClose();
-      }
+      await purchaseWeb(selected);
     } catch (e: any) {
-      Alert.alert('Error', e.message ?? 'Something went wrong');
+      window.alert(e.message ?? 'Something went wrong');
     } finally {
       setLoading(false);
     }
-  }
-
-  async function handleRestore() {
-    if (isWeb) {
-      Alert.alert('Restore', 'To restore a web subscription, please log in with the same account you used to subscribe.');
-      return;
-    }
-    setRestoring(true);
-    const { error } = await restore();
-    setRestoring(false);
-    if (error) Alert.alert('Error', error);
-    else Alert.alert('Restored', 'Your subscription has been restored.');
   }
 
   return (
@@ -136,17 +107,8 @@ export default function PaywallModal({ visible, onClose, trigger }: Props) {
           </TouchableOpacity>
 
           <Text style={styles.legal}>
-            {isWeb
-              ? 'Secure payment via Stripe. Subscriptions auto-renew. Cancel anytime in your account settings.'
-              : 'Subscriptions auto-renew. Cancel anytime in your App Store or Google Play settings.'}
+            Secure payment via Stripe. Subscriptions auto-renew. Cancel anytime in your account settings.
           </Text>
-
-          <TouchableOpacity style={styles.restoreBtn} onPress={handleRestore} disabled={restoring}>
-            {restoring
-              ? <ActivityIndicator size="small" color={COLORS.muted} />
-              : <Text style={styles.restoreText}>Restore Purchases</Text>
-            }
-          </TouchableOpacity>
         </ScrollView>
       </View>
     </Modal>
@@ -194,6 +156,4 @@ const styles = StyleSheet.create({
   ctaBtnDisabled: { opacity: 0.6 },
   ctaText: { color: COLORS.bg, fontWeight: '900', fontSize: SIZES.base, letterSpacing: 1 },
   legal: { color: COLORS.mutedDark, fontSize: SIZES.xs, textAlign: 'center', lineHeight: 18, marginBottom: 16 },
-  restoreBtn: { alignItems: 'center', paddingVertical: 8 },
-  restoreText: { color: COLORS.muted, fontSize: SIZES.sm },
 });

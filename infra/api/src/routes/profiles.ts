@@ -1,0 +1,56 @@
+import { Router } from "express";
+import { requireAuth, optionalAuth } from "../middleware/auth";
+import * as svc from "../services/profiles";
+
+const r = Router();
+
+r.get("/me", requireAuth, async (req, res) => {
+  const profile = await svc.getProfile(req.userId!);
+  res.json(profile);
+});
+
+r.patch("/me", requireAuth, async (req, res) => {
+  const updated = await svc.updateProfile(req.userId!, req.body);
+  res.json(updated);
+});
+
+r.get("/leaderboard", async (req, res) => {
+  const { country, ageRange } = req.query as any;
+  const entries = await svc.getLeaderboard({ country, ageRange });
+  res.json(entries);
+});
+
+r.get("/search", async (req, res) => {
+  const { q } = req.query as any;
+  const results = await svc.searchUsers(q ?? "");
+  res.json(results);
+});
+
+r.get("/count", async (_req, res) => {
+  const count = await svc.getTotalUserCount();
+  res.json({ count });
+});
+
+r.get("/percentile/:size", async (req, res) => {
+  const pct = await svc.getUserPercentile(parseFloat(req.params.size));
+  res.json({ percentile: pct });
+});
+
+r.get("/:userId", async (req, res) => {
+  const profile = await svc.getProfile(req.params.userId);
+  if (!profile) return res.status(404).json({ error: "Not found" });
+  res.json(profile);
+});
+
+r.get("/:userId/rank", async (req, res) => {
+  const rank = await svc.getUserRank(req.params.userId);
+  res.json({ rank });
+});
+
+r.post("/:userId/coins", requireAuth, async (req, res) => {
+  const { amount } = req.body;
+  await svc.awardCoins(req.params.userId, amount);
+  res.json({ success: true });
+});
+
+export default r;

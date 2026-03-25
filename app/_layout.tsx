@@ -96,6 +96,9 @@ function RootLayoutNav() {
       <Stack.Screen name="verify" options={{ presentation: 'card', animation: 'slide_from_bottom' }} />
       <Stack.Screen name="admin" options={{ presentation: 'card', animation: 'slide_from_right' }} />
       <Stack.Screen name="invite/[userId]" options={{ presentation: 'card', animation: 'fade' }} />
+      <Stack.Screen name="tokenomics" options={{ presentation: 'card', animation: 'slide_from_right' }} />
+      <Stack.Screen name="whitepaper" options={{ presentation: 'card', animation: 'slide_from_right' }} />
+      <Stack.Screen name="staking" options={{ presentation: 'card', animation: 'slide_from_right' }} />
       <Stack.Screen name="setup-size" options={{ presentation: 'fullScreenModal', animation: 'fade' }} />
     </Stack>
   );
