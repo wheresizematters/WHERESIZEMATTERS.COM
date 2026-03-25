@@ -214,29 +214,42 @@ export default function EarnScreen() {
             </View>
           </View>
 
-          {/* Buy $SIZE — embedded Uniswap swap widget */}
+          {/* $SIZE Token — chart + trade */}
           <View style={styles.section}>
-            <Text style={styles.sectionLabel}>BUY $SIZE</Text>
-            <View style={styles.buyCard}>
-              <View style={styles.buyHeader}>
-                <Ionicons name="swap-horizontal" size={22} color={COLORS.gold} />
-                <Text style={styles.buyTitle}>Swap ETH for $SIZE</Text>
+            <Text style={styles.sectionLabel}>$SIZE TOKEN</Text>
+            <TouchableOpacity
+              style={styles.tokenCard}
+              activeOpacity={0.85}
+              onPress={() => { if (typeof window !== 'undefined') window.location.href = '/coin/0xacfe6019ed1a7dc6f7b508c02d1b04ec88cc21bf'; }}
+            >
+              <View style={styles.tokenCardHeader}>
+                <Ionicons name="analytics" size={20} color={COLORS.gold} />
+                <Text style={styles.tokenCardTitle}>View Chart + Trade</Text>
+                <Ionicons name="chevron-forward" size={16} color={COLORS.muted} />
               </View>
-              {typeof window !== 'undefined' && (
-                <View style={styles.swapEmbed}>
-                  <iframe
-                    src={`https://app.uniswap.org/#/swap?outputCurrency=${process.env.EXPO_PUBLIC_SIZE_TOKEN_ADDRESS ?? '0x4200000000000000000000000000000000000006'}&chain=base&theme=dark`}
-                    style={{
-                      width: '100%',
-                      height: 440,
-                      border: 'none',
-                      borderRadius: 16,
-                      backgroundColor: '#141414',
-                    } as any}
-                    allow="clipboard-write"
-                  />
-                </View>
-              )}
+              <Text style={styles.tokenCardDesc}>Live price chart, swap widget, market data, and Circle Jerk community — all in one place.</Text>
+            </TouchableOpacity>
+
+            {/* Quick buy section */}
+            <View style={styles.quickBuyCard}>
+              <Text style={styles.quickBuyTitle}>Quick Buy $SIZE</Text>
+              <View style={styles.quickBuyRow}>
+                {['0.01', '0.05', '0.1', '0.5'].map(amt => (
+                  <TouchableOpacity
+                    key={amt}
+                    style={styles.quickBuyBtn}
+                    onPress={async () => {
+                      const eth = (window as any)?.ethereum;
+                      if (!eth) { window.alert('Connect a wallet to buy'); return; }
+                      if (window.confirm(`Buy $SIZE with ${amt} ETH? (1% fee to protocol)`)) {
+                        window.location.href = '/coin/0xacfe6019ed1a7dc6f7b508c02d1b04ec88cc21bf';
+                      }
+                    }}
+                  >
+                    <Text style={styles.quickBuyBtnText}>{amt} ETH</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
               <Text style={styles.buyFee}>1% of swaps via SIZE. goes to the protocol</Text>
             </View>
           </View>
@@ -403,7 +416,16 @@ const styles = StyleSheet.create({
   buyHeader: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   buyTitle: { color: COLORS.white, fontWeight: '800', fontSize: SIZES.md },
   buyDesc: { color: COLORS.muted, fontSize: SIZES.xs, lineHeight: 18 },
-  swapEmbed: { borderRadius: 16, overflow: 'hidden', marginVertical: 8 },
+  // Token card
+  tokenCard: { backgroundColor: COLORS.card, borderRadius: RADIUS.lg, borderWidth: 1, borderColor: `${COLORS.gold}30`, padding: 14, marginBottom: 8 },
+  tokenCardHeader: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  tokenCardTitle: { flex: 1, color: COLORS.white, fontWeight: '700', fontSize: SIZES.md },
+  tokenCardDesc: { color: COLORS.muted, fontSize: SIZES.xs, marginTop: 6, lineHeight: 16 },
+  quickBuyCard: { backgroundColor: COLORS.card, borderRadius: RADIUS.lg, borderWidth: 1, borderColor: COLORS.cardBorder, padding: 14, gap: 10 },
+  quickBuyTitle: { color: COLORS.white, fontWeight: '700', fontSize: SIZES.md },
+  quickBuyRow: { flexDirection: 'row', gap: 8 },
+  quickBuyBtn: { flex: 1, backgroundColor: `${COLORS.gold}15`, borderWidth: 1, borderColor: `${COLORS.gold}35`, borderRadius: RADIUS.md, paddingVertical: 12, alignItems: 'center' },
+  quickBuyBtnText: { color: COLORS.gold, fontWeight: '800', fontSize: SIZES.sm },
   buyFee: { color: COLORS.mutedDark, fontSize: 9, textAlign: 'center' as any },
 
   // Section
