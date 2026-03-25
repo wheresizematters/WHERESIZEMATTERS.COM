@@ -223,11 +223,22 @@ export default function PublicProfileScreen() {
 
           {profile.bio ? <Text style={styles.bioText}>{profile.bio}</Text> : null}
 
+          {(profile as any).x_handle ? (
+            <TouchableOpacity onPress={() => {
+              const url = `https://x.com/${(profile as any).x_handle}`;
+              if (typeof window !== 'undefined') window.open(url, '_blank');
+            }}>
+              <View style={styles.metaRow}>
+                <Ionicons name="logo-twitter" size={14} color="#1DA1F2" />
+                <Text style={[styles.metaLink, { color: '#1DA1F2' }]}>@{(profile as any).x_handle}</Text>
+              </View>
+            </TouchableOpacity>
+          ) : null}
+
           {profile.website ? (
             <TouchableOpacity onPress={() => {
               const u = profile.website!.startsWith('http') ? profile.website! : `https://${profile.website}`;
-              if (Platform.OS === 'web') window.open(u, '_blank');
-              else Linking.openURL(u);
+              if (typeof window !== 'undefined') window.open(u, '_blank');
             }}>
               <View style={styles.metaRow}>
                 <Ionicons name="link-outline" size={14} color={COLORS.gold} />

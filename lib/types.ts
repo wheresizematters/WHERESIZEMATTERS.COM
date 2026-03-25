@@ -19,6 +19,12 @@ export interface Profile {
   is_premium?: boolean;
   premium_expires_at?: string | null;
   wallet_address?: string | null;
+  // X (Twitter) identity
+  x_handle?: string | null;
+  x_avatar_url?: string | null;
+  x_name?: string | null;
+  x_verified?: boolean;
+  auth_provider?: string | null;
   created_at: string;
 }
 

@@ -89,14 +89,59 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await new Promise(r => setTimeout(r, 1200));
       const { data: retried } = await supabase.from('profiles').select('*').eq('id', userId).single();
       setProfile(retried ?? null);
+      if (retried) syncOAuthIdentity(userId, retried);
     } else {
       setProfile(data);
+      syncOAuthIdentity(userId, data);
     }
     setLoading(false);
     // Register for push notifications in the background — don't block auth flow
     registerPushToken(userId).catch(() => {});
     // Award daily login coins in the background
     maybeAwardDailyLoginCoins(userId).catch(() => {});
+  }
+
+  /** Extract X/Google identity from Supabase auth metadata and sync to profile */
+  async function syncOAuthIdentity(userId: string, currentProfile: any) {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const meta = user.user_metadata ?? {};
+      const provider = user.app_metadata?.provider;
+      const updates: Record<string, any> = {};
+
+      if (provider === 'twitter' || provider === 'x') {
+        const xHandle = meta.user_name ?? meta.preferred_username ?? null;
+        const xName = meta.full_name ?? meta.name ?? null;
+        const xAvatar = meta.avatar_url ?? meta.picture ?? null;
+
+        if (xHandle && xHandle !== currentProfile.x_handle) updates.x_handle = xHandle;
+        if (xName && xName !== currentProfile.x_name) updates.x_name = xName;
+        if (xAvatar && xAvatar !== currentProfile.x_avatar_url) updates.x_avatar_url = xAvatar;
+        if (!currentProfile.auth_provider) updates.auth_provider = 'x';
+        // Use X avatar as profile avatar if user hasn't set a custom one
+        if (xAvatar && !currentProfile.avatar_url) updates.avatar_url = xAvatar;
+        // Use X display name as username if still default
+        if (xHandle && currentProfile.username === userId.slice(0, 8)) updates.username = xHandle;
+      } else if (provider === 'google') {
+        const gAvatar = meta.avatar_url ?? meta.picture ?? null;
+        const gName = meta.full_name ?? meta.name ?? null;
+        if (!currentProfile.auth_provider) updates.auth_provider = 'google';
+        if (gAvatar && !currentProfile.avatar_url) updates.avatar_url = gAvatar;
+        if (gName && currentProfile.username === userId.slice(0, 8)) updates.username = gName.split(' ')[0];
+      }
+
+      if (Object.keys(updates).length > 0) {
+        const { data: updated } = await supabase
+          .from('profiles')
+          .update(updates)
+          .eq('id', userId)
+          .select()
+          .single();
+        if (updated) setProfile(updated);
+      }
+    } catch {}
   }
 
   async function signIn(email: string, password: string) {
