@@ -4,12 +4,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SIZES } from '@/constants/theme';
 
 const TABS = [
-  { label: 'Feed',        href: '/',            icon: 'home-outline' as const,           iconActive: 'home' as const },
-  { label: 'Leaderboard', href: '/leaderboard', icon: 'trophy-outline' as const,         iconActive: 'trophy' as const },
-  { label: 'Earn',        href: '/earn',        icon: 'flash-outline' as const,          iconActive: 'flash' as const },
-  { label: '$SIZE',       href: '/tokenomics',  icon: 'logo-usd' as const,              iconActive: 'logo-usd' as const },
-  { label: 'Messages',    href: '/messages',    icon: 'chatbubbles-outline' as const,    iconActive: 'chatbubbles' as const },
-  { label: 'Profile',     href: '/profile',     icon: 'person-outline' as const,         iconActive: 'person' as const },
+  { label: 'Feed',        href: '/(tabs)',              icon: 'home-outline' as const,           iconActive: 'home' as const,        match: '/' },
+  { label: 'Leaderboard', href: '/(tabs)/leaderboard',  icon: 'trophy-outline' as const,         iconActive: 'trophy' as const,      match: '/leaderboard' },
+  { label: 'Earn',        href: '/(tabs)/earn',          icon: 'flash-outline' as const,          iconActive: 'flash' as const,       match: '/earn' },
+  { label: '$SIZE',       href: '/tokenomics',            icon: 'logo-usd' as const,              iconActive: 'logo-usd' as const,    match: '/tokenomics' },
+  { label: 'Messages',    href: '/(tabs)/messages',      icon: 'chatbubbles-outline' as const,    iconActive: 'chatbubbles' as const, match: '/messages' },
+  { label: 'Profile',     href: '/(tabs)/profile',       icon: 'person-outline' as const,         iconActive: 'person' as const,      match: '/profile' },
 ];
 
 export default function WebNavbar() {
@@ -27,7 +27,7 @@ export default function WebNavbar() {
 
         <View style={styles.tabs}>
           {TABS.map(tab => {
-            const active = pathname === tab.href || (tab.href !== '/' && pathname.startsWith(tab.href + '/'));
+            const active = pathname === tab.match || (tab.match !== '/' && pathname.startsWith(tab.match + '/'));
             return (
               <TouchableOpacity
                 key={tab.href}

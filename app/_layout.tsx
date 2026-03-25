@@ -21,10 +21,10 @@ function SplashScreen() {
   useEffect(() => {
     Animated.sequence([
       Animated.parallel([
-        Animated.timing(logoOpacity, { toValue: 1, duration: 700, useNativeDriver: true }),
-        Animated.spring(logoScale, { toValue: 1, friction: 5, tension: 40, useNativeDriver: true }),
+        Animated.timing(logoOpacity, { toValue: 1, duration: 700, useNativeDriver: false }),
+        Animated.spring(logoScale, { toValue: 1, friction: 5, tension: 40, useNativeDriver: false }),
       ]),
-      Animated.timing(taglineOpacity, { toValue: 1, duration: 500, delay: 150, useNativeDriver: true }),
+      Animated.timing(taglineOpacity, { toValue: 1, duration: 500, delay: 150, useNativeDriver: false }),
     ]).start();
   }, []);
 
