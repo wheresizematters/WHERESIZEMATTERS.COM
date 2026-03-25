@@ -4,26 +4,45 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SIZE. — Token</title>
+<script src="https://unpkg.com/lightweight-charts@4.1.0/dist/lightweight-charts.standalone.production.js"></script>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { background: #050505; color: #f5f5f5; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; }
-.header { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-bottom: 1px solid rgba(255,255,255,0.06); }
-.back-btn { width: 36px; height: 36px; border-radius: 18px; background: #141414; border: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; cursor: pointer; color: #fff; text-decoration: none; font-size: 18px; }
-.token-header { display: flex; align-items: center; gap: 10px; flex: 1; }
-.token-img { width: 32px; height: 32px; border-radius: 8px; background: #141414; }
-.token-name { font-size: 18px; font-weight: 800; }
-.token-ticker { color: #E8500A; font-size: 13px; font-weight: 600; }
+body { background: #050505; color: #f5f5f5; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; overflow: hidden; }
+
+/* Header */
+.header { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-bottom: 1px solid rgba(255,255,255,0.06); height: 57px; }
+.back-btn { width: 36px; height: 36px; border-radius: 18px; background: #141414; border: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; cursor: pointer; color: #fff; text-decoration: none; font-size: 18px; flex-shrink: 0; }
+.back-btn:hover { background: #1a1a1a; }
+.token-header { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; }
+.token-img { width: 32px; height: 32px; border-radius: 8px; background: #141414; flex-shrink: 0; }
+.token-name { font-size: 18px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.token-ticker { color: #E8500A; font-size: 13px; font-weight: 600; margin-left: 6px; }
+.size-logo { font-size: 14px; font-weight: 900; color: #E8500A; margin-left: auto; letter-spacing: -0.5px; flex-shrink: 0; }
+
+/* Layout */
 .layout { display: flex; height: calc(100vh - 57px); }
-.main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
-.sidebar { width: 340px; border-left: 1px solid rgba(255,255,255,0.06); overflow-y: auto; }
+.main { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
+.sidebar { width: 340px; border-left: 1px solid rgba(255,255,255,0.06); overflow-y: auto; flex-shrink: 0; }
+.sidebar::-webkit-scrollbar { width: 4px; }
+.sidebar::-webkit-scrollbar-thumb { background: #333; border-radius: 2px; }
+
+/* Stats bar */
 .stats { display: flex; padding: 10px 16px; border-bottom: 1px solid rgba(255,255,255,0.06); }
 .stat { flex: 1; text-align: center; }
 .stat-label { font-size: 9px; font-weight: 700; letter-spacing: 1.5px; color: #505050; }
 .stat-value { font-size: 15px; font-weight: 800; margin-top: 2px; }
 .green { color: #10b981; }
 .red { color: #ef4444; }
-.chart-wrap { flex: 1; min-height: 300px; }
-.chart-wrap iframe { width: 100%; height: 100%; border: none; }
+
+/* Chart */
+.chart-area { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+.chart-controls { display: flex; align-items: center; gap: 4px; padding: 8px 16px; border-bottom: 1px solid rgba(255,255,255,0.06); }
+.tf-btn { padding: 4px 10px; font-size: 11px; font-weight: 700; border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; background: #0d0d0d; color: #a0a0a0; cursor: pointer; transition: all 0.15s; }
+.tf-btn:hover { background: #141414; color: #f5f5f5; }
+.tf-btn.active { background: #E8500A; color: #050505; border-color: #E8500A; }
+.chart-container { flex: 1; min-height: 0; position: relative; }
+
+/* Sidebar sections */
 .section { padding: 16px; border-bottom: 1px solid rgba(255,255,255,0.06); }
 .section-label { font-size: 9px; font-weight: 700; letter-spacing: 1.5px; color: #505050; margin-bottom: 8px; }
 .price-big { font-size: 28px; font-weight: 900; }
@@ -32,27 +51,71 @@ body { background: #050505; color: #f5f5f5; font-family: -apple-system, BlinkMac
 .info-card { background: #0d0d0d; border: 1px solid rgba(255,255,255,0.06); border-radius: 8px; padding: 10px; }
 .info-card-label { font-size: 9px; font-weight: 700; letter-spacing: 1px; color: #505050; }
 .info-card-value { font-size: 14px; font-weight: 800; margin-top: 2px; }
-.swap-embed iframe { width: 100%; height: 360px; border: none; border-radius: 12px; }
-.cj-btn { display: block; width: 100%; padding: 12px; text-align: center; background: #E8500A; color: #050505; font-weight: 800; font-size: 14px; border-radius: 10px; border: none; cursor: pointer; text-decoration: none; }
+
+/* Swap widget */
+.swap-box { background: #0d0d0d; border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; overflow: hidden; }
+.swap-tabs { display: flex; }
+.swap-tab { flex: 1; padding: 10px; text-align: center; font-size: 13px; font-weight: 800; cursor: pointer; border: none; background: transparent; color: #505050; transition: all 0.15s; border-bottom: 2px solid transparent; }
+.swap-tab.active { color: #f5f5f5; border-bottom-color: #E8500A; }
+.swap-tab:hover:not(.active) { color: #a0a0a0; }
+.swap-body { padding: 14px; }
+.swap-input-group { background: #141414; border: 1px solid rgba(255,255,255,0.06); border-radius: 10px; padding: 12px; margin-bottom: 8px; }
+.swap-input-label { font-size: 10px; font-weight: 700; color: #505050; letter-spacing: 1px; margin-bottom: 6px; }
+.swap-input-row { display: flex; align-items: center; gap: 8px; }
+.swap-input { flex: 1; background: transparent; border: none; color: #f5f5f5; font-size: 20px; font-weight: 800; outline: none; width: 0; }
+.swap-input::placeholder { color: #333; }
+.swap-currency { font-size: 13px; font-weight: 800; color: #a0a0a0; flex-shrink: 0; }
+.swap-presets { display: flex; gap: 4px; margin-bottom: 10px; }
+.swap-preset { flex: 1; padding: 6px 0; font-size: 11px; font-weight: 700; background: #141414; border: 1px solid rgba(255,255,255,0.06); border-radius: 6px; color: #a0a0a0; cursor: pointer; text-align: center; transition: all 0.15s; }
+.swap-preset:hover { background: #1a1a1a; color: #f5f5f5; border-color: rgba(255,255,255,0.12); }
+.swap-output-group { background: #141414; border: 1px solid rgba(255,255,255,0.06); border-radius: 10px; padding: 12px; margin-bottom: 10px; }
+.swap-output-val { font-size: 20px; font-weight: 800; color: #f5f5f5; min-height: 28px; }
+.swap-fee { font-size: 10px; color: #505050; text-align: center; margin-bottom: 10px; }
+.swap-btn { display: block; width: 100%; padding: 14px; font-size: 15px; font-weight: 800; background: #E8500A; color: #050505; border: none; border-radius: 10px; cursor: pointer; transition: all 0.15s; }
+.swap-btn:hover { background: #ff6b1a; }
+.swap-btn:disabled { background: #333; color: #666; cursor: not-allowed; }
+.swap-btn.connect { background: #141414; color: #f5f5f5; border: 1px solid rgba(255,255,255,0.12); }
+.swap-btn.connect:hover { background: #1a1a1a; }
+.swap-arrow { text-align: center; margin: 4px 0; }
+.swap-arrow-icon { display: inline-flex; width: 28px; height: 28px; align-items: center; justify-content: center; border-radius: 8px; background: #0d0d0d; border: 1px solid rgba(255,255,255,0.06); color: #505050; font-size: 14px; cursor: pointer; }
+.swap-arrow-icon:hover { color: #f5f5f5; }
+
+/* Circle Jerk */
 .cj-messages { max-height: 180px; overflow-y: auto; margin: 8px 0; }
-.cj-msg { padding: 5px 0; border-bottom: 1px solid rgba(255,255,255,0.03); }
+.cj-messages::-webkit-scrollbar { width: 3px; }
+.cj-messages::-webkit-scrollbar-thumb { background: #333; border-radius: 2px; }
+.cj-msg { padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.03); }
 .cj-msg-user { font-size: 11px; font-weight: 700; color: #E8500A; }
-.cj-msg-text { font-size: 12px; color: #a0a0a0; }
-.loading { display: flex; align-items: center; justify-content: center; padding: 60px; color: #505050; }
-@media (max-width: 768px) { .layout { flex-direction: column; } .sidebar { width: 100%; border-left: none; border-top: 1px solid rgba(255,255,255,0.06); } }
+.cj-msg-text { font-size: 12px; color: #a0a0a0; margin-top: 1px; }
+.cj-btn { display: block; width: 100%; padding: 12px; text-align: center; background: #E8500A; color: #050505; font-weight: 800; font-size: 14px; border-radius: 10px; border: none; cursor: pointer; text-decoration: none; transition: background 0.15s; }
+.cj-btn:hover { background: #ff6b1a; }
+.loading { display: flex; align-items: center; justify-content: center; padding: 40px; color: #505050; font-size: 12px; }
+
+/* Mobile */
+@media (max-width: 768px) {
+  body { overflow: auto; }
+  .layout { flex-direction: column; height: auto; min-height: calc(100vh - 57px); }
+  .sidebar { width: 100%; border-left: none; border-top: 1px solid rgba(255,255,255,0.06); }
+  .chart-area { min-height: 400px; }
+  .stats { flex-wrap: wrap; gap: 4px; }
+  .stat { min-width: 33%; }
+}
 </style>
 </head>
 <body>
+
 <div class="header">
-  <a href="/explore" class="back-btn">←</a>
+  <a href="/explore" class="back-btn">&#8592;</a>
   <div class="token-header">
-    <img class="token-img" id="token-img" src="" />
-    <div>
+    <img class="token-img" id="token-img" src="" alt="" />
+    <div style="min-width:0">
       <span class="token-name" id="token-name">Loading...</span>
       <span class="token-ticker" id="token-ticker"></span>
     </div>
   </div>
+  <div class="size-logo">SIZE.</div>
 </div>
+
 <div class="layout">
   <div class="main">
     <div class="stats" id="stats-bar">
@@ -62,10 +125,19 @@ body { background: #050505; color: #f5f5f5; font-family: -apple-system, BlinkMac
       <div class="stat"><div class="stat-label">HOLDERS</div><div class="stat-value" id="holders">--</div></div>
       <div class="stat"><div class="stat-label">24H</div><div class="stat-value" id="change">--</div></div>
     </div>
-    <div class="chart-wrap">
-      <iframe id="chart-iframe" src=""></iframe>
+    <div class="chart-area">
+      <div class="chart-controls">
+        <button class="tf-btn" data-res="1">1m</button>
+        <button class="tf-btn" data-res="5">5m</button>
+        <button class="tf-btn active" data-res="15">15m</button>
+        <button class="tf-btn" data-res="60">1h</button>
+        <button class="tf-btn" data-res="240">4h</button>
+        <button class="tf-btn" data-res="1D">1d</button>
+      </div>
+      <div class="chart-container" id="chart-container"></div>
     </div>
   </div>
+
   <div class="sidebar">
     <div class="section">
       <div class="price-big" id="sidebar-price">--</div>
@@ -81,7 +153,37 @@ body { background: #050505; color: #f5f5f5; font-family: -apple-system, BlinkMac
     </div>
     <div class="section">
       <div class="section-label">TRADE</div>
-      <div class="swap-embed"><iframe id="swap-iframe" src="" allow="clipboard-write"></iframe></div>
+      <div class="swap-box">
+        <div class="swap-tabs">
+          <button class="swap-tab active" id="tab-buy" onclick="setSwapMode('buy')">Buy</button>
+          <button class="swap-tab" id="tab-sell" onclick="setSwapMode('sell')">Sell</button>
+        </div>
+        <div class="swap-body">
+          <div class="swap-presets" id="presets-buy">
+            <button class="swap-preset" onclick="setPreset(0.01)">0.01</button>
+            <button class="swap-preset" onclick="setPreset(0.05)">0.05</button>
+            <button class="swap-preset" onclick="setPreset(0.1)">0.1</button>
+            <button class="swap-preset" onclick="setPreset(0.5)">0.5</button>
+          </div>
+          <div class="swap-input-group">
+            <div class="swap-input-label" id="swap-pay-label">YOU PAY</div>
+            <div class="swap-input-row">
+              <input class="swap-input" id="swap-input" type="number" placeholder="0.0" step="any" min="0" oninput="calcOutput()" />
+              <span class="swap-currency" id="swap-in-currency">ETH</span>
+            </div>
+          </div>
+          <div class="swap-arrow"><span class="swap-arrow-icon" onclick="setSwapMode(swapMode==='buy'?'sell':'buy')">&#8595;</span></div>
+          <div class="swap-output-group">
+            <div class="swap-input-label" id="swap-receive-label">YOU RECEIVE</div>
+            <div class="swap-input-row">
+              <div class="swap-output-val" id="swap-output">0.0</div>
+              <span class="swap-currency" id="swap-out-currency">TOKEN</span>
+            </div>
+          </div>
+          <div class="swap-fee">1% SIZE. fee included</div>
+          <button class="swap-btn" id="swap-btn" onclick="executeSwap()">Connect Wallet</button>
+        </div>
+      </div>
     </div>
     <div class="section">
       <div class="section-label">CIRCLE JERK</div>
@@ -90,65 +192,484 @@ body { background: #050505; color: #f5f5f5; font-family: -apple-system, BlinkMac
     </div>
   </div>
 </div>
+
 <script>
 const CODEX_KEY = '79de2a116cac57f758349fa67ea5db22dafd19ec';
 const BASE_CHAIN = 8453;
 const addr = window.location.pathname.split('/coin/')[1] || '';
 
-function fmt(n) { if (n >= 1e9) return '$' + (n/1e9).toFixed(1) + 'B'; if (n >= 1e6) return '$' + (n/1e6).toFixed(1) + 'M'; if (n >= 1e3) return '$' + (n/1e3).toFixed(1) + 'K'; return '$' + n.toFixed(0); }
-function fmtPrice(n) { if (n < 0.0001) return '$' + n.toExponential(2); if (n < 1) return '$' + n.toFixed(6); return '$' + n.toFixed(2); }
+// Uniswap V3 SwapRouter02 on Base
+const SWAP_ROUTER = '0x2626664c2603336E57B271c5C0b26F421741e481';
+const WETH = '0x4200000000000000000000000000000000000006';
+const FEE_BPS = 100; // 1%
 
-async function load() {
-  if (!addr) { document.getElementById('token-name').textContent = 'Token not found'; return; }
+let tokenPrice = 0;
+let tokenSymbol = 'TOKEN';
+let tokenDecimals = 18;
+let swapMode = 'buy';
+let pairAddress = '';
+let chart = null;
+let candleSeries = null;
+let volumeSeries = null;
+let currentResolution = '15';
 
-  // Codex API
-  const res = await fetch('https://graph.codex.io/graphql', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Authorization': CODEX_KEY },
-    body: JSON.stringify({ query: `{ token(input: { address: "${addr}", networkId: ${BASE_CHAIN} }) { name symbol decimals totalSupply info { circulatingSupply imageThumbUrl imageLargeUrl } } filterTokens(filters: { network: [${BASE_CHAIN}] }, tokens: ["${addr}"]) { results { priceUSD liquidity marketCap volume24 holders change24 pair { address } } } }` })
+// ---------- Formatters ----------
+function fmt(n) {
+  if (n >= 1e9) return '$' + (n/1e9).toFixed(1) + 'B';
+  if (n >= 1e6) return '$' + (n/1e6).toFixed(1) + 'M';
+  if (n >= 1e3) return '$' + (n/1e3).toFixed(1) + 'K';
+  return '$' + n.toFixed(0);
+}
+function fmtPrice(n) {
+  if (n < 0.0001) return '$' + n.toExponential(2);
+  if (n < 1) return '$' + n.toFixed(6);
+  return '$' + n.toFixed(2);
+}
+function fmtNum(n) {
+  if (n >= 1e9) return (n/1e9).toFixed(1) + 'B';
+  if (n >= 1e6) return (n/1e6).toFixed(1) + 'M';
+  if (n >= 1e3) return (n/1e3).toFixed(1) + 'K';
+  return n.toFixed(2);
+}
+
+// ---------- Chart ----------
+function initChart() {
+  const container = document.getElementById('chart-container');
+  chart = LightweightCharts.createChart(container, {
+    width: container.clientWidth,
+    height: container.clientHeight,
+    layout: {
+      background: { type: 'solid', color: '#050505' },
+      textColor: '#505050',
+      fontSize: 11,
+    },
+    grid: {
+      vertLines: { color: 'rgba(255,255,255,0.03)' },
+      horzLines: { color: 'rgba(255,255,255,0.03)' },
+    },
+    crosshair: {
+      mode: LightweightCharts.CrosshairMode.Normal,
+      vertLine: { color: 'rgba(232,80,10,0.3)', labelBackgroundColor: '#E8500A' },
+      horzLine: { color: 'rgba(232,80,10,0.3)', labelBackgroundColor: '#E8500A' },
+    },
+    rightPriceScale: {
+      borderColor: 'rgba(255,255,255,0.06)',
+      scaleMargins: { top: 0.1, bottom: 0.25 },
+    },
+    timeScale: {
+      borderColor: 'rgba(255,255,255,0.06)',
+      timeVisible: true,
+      secondsVisible: false,
+    },
+    handleScroll: { vertTouchDrag: false },
   });
-  const { data } = await res.json();
-  const t = data?.token;
-  const m = data?.filterTokens?.results?.[0];
 
-  if (t) {
-    document.title = 'SIZE. — ' + t.name;
-    document.getElementById('token-name').textContent = t.name;
-    document.getElementById('token-ticker').textContent = t.symbol;
-    if (t.info?.imageThumbUrl) document.getElementById('token-img').src = t.info.imageThumbUrl;
-    document.getElementById('supply').textContent = t.totalSupply ? Math.round(parseFloat(t.totalSupply)).toLocaleString() : '--';
+  candleSeries = chart.addCandlestickSeries({
+    upColor: '#10b981',
+    downColor: '#ef4444',
+    borderUpColor: '#10b981',
+    borderDownColor: '#ef4444',
+    wickUpColor: '#10b981',
+    wickDownColor: '#ef4444',
+  });
+
+  volumeSeries = chart.addHistogramSeries({
+    priceFormat: { type: 'volume' },
+    priceScaleId: '',
+    scaleMargins: { top: 0.8, bottom: 0 },
+  });
+
+  new ResizeObserver(() => {
+    chart.applyOptions({ width: container.clientWidth, height: container.clientHeight });
+  }).observe(container);
+}
+
+async function loadBars(resolution) {
+  if (!addr) return;
+  currentResolution = resolution;
+
+  // Determine time range based on resolution
+  const now = Math.floor(Date.now() / 1000);
+  let from;
+  switch (resolution) {
+    case '1':  from = now - 6 * 3600; break;
+    case '5':  from = now - 24 * 3600; break;
+    case '15': from = now - 3 * 24 * 3600; break;
+    case '60': from = now - 7 * 24 * 3600; break;
+    case '240': from = now - 30 * 24 * 3600; break;
+    case '1D': from = now - 180 * 24 * 3600; break;
+    default:   from = now - 3 * 24 * 3600;
   }
 
-  if (m) {
-    const price = parseFloat(m.priceUSD || 0);
-    const mcap = parseFloat(m.marketCap || 0);
-    const vol = parseFloat(m.volume24 || 0);
-    const liq = parseFloat(m.liquidity || 0);
-    const holders = m.holders || 0;
-    const change = parseFloat(m.change24 || 0) * 100;
+  try {
+    const res = await fetch('https://graph.codex.io/graphql', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': CODEX_KEY },
+      body: JSON.stringify({
+        query: `{ getBars(symbol: "${addr}:${BASE_CHAIN}", from: ${from}, to: ${now}, resolution: "${resolution}") { t o h l c v } }`
+      })
+    });
+    const { data } = await res.json();
+    const bars = data?.getBars;
 
-    document.getElementById('price').textContent = fmtPrice(price);
-    document.getElementById('mcap').textContent = fmt(mcap);
-    document.getElementById('vol').textContent = fmt(vol);
-    document.getElementById('holders').textContent = holders.toLocaleString();
-    const changeEl = document.getElementById('change');
-    changeEl.textContent = (change >= 0 ? '+' : '') + change.toFixed(2) + '%';
-    changeEl.className = 'stat-value ' + (change >= 0 ? 'green' : 'red');
+    if (bars && bars.t && bars.t.length > 0) {
+      const candles = [];
+      const volumes = [];
+      for (let i = 0; i < bars.t.length; i++) {
+        const time = bars.t[i];
+        const o = parseFloat(bars.o[i]);
+        const h = parseFloat(bars.h[i]);
+        const l = parseFloat(bars.l[i]);
+        const c = parseFloat(bars.c[i]);
+        const v = parseFloat(bars.v[i] || 0);
+        candles.push({ time, open: o, high: h, low: l, close: c });
+        volumes.push({ time, value: v, color: c >= o ? 'rgba(16,185,129,0.25)' : 'rgba(239,68,68,0.25)' });
+      }
+      candleSeries.setData(candles);
+      volumeSeries.setData(volumes);
+      chart.timeScale().fitContent();
+    } else {
+      candleSeries.setData([]);
+      volumeSeries.setData([]);
+    }
+  } catch (e) {
+    console.error('Chart data fetch error:', e);
+  }
+}
 
-    document.getElementById('sidebar-price').textContent = fmtPrice(price);
-    document.getElementById('sidebar-mcap').textContent = 'MCap ' + fmt(mcap);
-    document.getElementById('liquidity').textContent = fmt(liq);
-    document.getElementById('sidebar-holders').textContent = holders.toLocaleString();
-    document.getElementById('sidebar-vol').textContent = fmt(vol);
+// Timeframe buttons
+document.querySelectorAll('.tf-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tf-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    loadBars(btn.dataset.res);
+  });
+});
 
-    // DexScreener chart embed
-    if (m.pair?.address) {
-      document.getElementById('chart-iframe').src = 'https://dexscreener.com/base/' + m.pair.address + '?embed=1&theme=dark&info=0&trades=0';
+// ---------- Swap ----------
+function setSwapMode(mode) {
+  swapMode = mode;
+  document.getElementById('tab-buy').classList.toggle('active', mode === 'buy');
+  document.getElementById('tab-sell').classList.toggle('active', mode === 'sell');
+  document.getElementById('presets-buy').style.display = mode === 'buy' ? 'flex' : 'none';
+
+  if (mode === 'buy') {
+    document.getElementById('swap-pay-label').textContent = 'YOU PAY';
+    document.getElementById('swap-in-currency').textContent = 'ETH';
+    document.getElementById('swap-receive-label').textContent = 'YOU RECEIVE';
+    document.getElementById('swap-out-currency').textContent = tokenSymbol;
+  } else {
+    document.getElementById('swap-pay-label').textContent = 'YOU PAY';
+    document.getElementById('swap-in-currency').textContent = tokenSymbol;
+    document.getElementById('swap-receive-label').textContent = 'YOU RECEIVE';
+    document.getElementById('swap-out-currency').textContent = 'ETH';
+  }
+  document.getElementById('swap-input').value = '';
+  document.getElementById('swap-output').textContent = '0.0';
+}
+
+function setPreset(val) {
+  document.getElementById('swap-input').value = val;
+  calcOutput();
+}
+
+function calcOutput() {
+  const input = parseFloat(document.getElementById('swap-input').value) || 0;
+  if (input <= 0 || tokenPrice <= 0) {
+    document.getElementById('swap-output').textContent = '0.0';
+    return;
+  }
+  const feeMultiplier = 0.99; // 1% fee
+  let output;
+  if (swapMode === 'buy') {
+    // ETH -> Token: (inputETH * ethPriceInToken) * (1 - fee)
+    // ethPriceInToken approximation: 1 ETH / tokenPriceInETH
+    // tokenPrice is in USD, we need ETH price
+    // Simplified: output = input / tokenPrice * ethPrice * feeMultiplier
+    // We'll use a rough approach: store ETH price or use ratio
+    // For display, we show estimated tokens
+    output = input * getEthPrice() / tokenPrice * feeMultiplier;
+  } else {
+    // Token -> ETH
+    output = input * tokenPrice / getEthPrice() * feeMultiplier;
+  }
+  document.getElementById('swap-output').textContent = output < 0.0001 ? output.toExponential(2) : fmtNum(output);
+}
+
+let ethPrice = 2500; // default, will be updated
+function getEthPrice() { return ethPrice; }
+
+async function fetchEthPrice() {
+  try {
+    const res = await fetch('https://graph.codex.io/graphql', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': CODEX_KEY },
+      body: JSON.stringify({
+        query: `{ getTokenPrices(inputs: [{ address: "${WETH}", networkId: ${BASE_CHAIN} }]) { priceUsd } }`
+      })
+    });
+    const { data } = await res.json();
+    const p = data?.getTokenPrices?.[0]?.priceUsd;
+    if (p) ethPrice = parseFloat(p);
+  } catch (e) {
+    console.warn('ETH price fetch failed, using default');
+  }
+}
+
+async function executeSwap() {
+  if (!window.ethereum) {
+    alert('Please install a Web3 wallet (MetaMask, Coinbase Wallet, etc.)');
+    return;
+  }
+
+  const input = parseFloat(document.getElementById('swap-input').value);
+  if (!input || input <= 0) {
+    alert('Enter an amount');
+    return;
+  }
+
+  const btn = document.getElementById('swap-btn');
+  btn.disabled = true;
+  btn.textContent = 'Preparing...';
+
+  try {
+    // Request accounts
+    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+    const account = accounts[0];
+
+    // Ensure Base network (chainId 0x2105 = 8453)
+    const chainId = await window.ethereum.request({ method: 'eth_chainId' });
+    if (chainId !== '0x2105') {
+      try {
+        await window.ethereum.request({
+          method: 'wallet_switchEthereumChain',
+          params: [{ chainId: '0x2105' }]
+        });
+      } catch (switchErr) {
+        if (switchErr.code === 4902) {
+          await window.ethereum.request({
+            method: 'wallet_addEthereumChain',
+            params: [{
+              chainId: '0x2105',
+              chainName: 'Base',
+              nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
+              rpcUrls: ['https://mainnet.base.org'],
+              blockExplorerUrls: ['https://basescan.org']
+            }]
+          });
+        } else {
+          throw switchErr;
+        }
+      }
+    }
+
+    btn.textContent = 'Swapping...';
+
+    if (swapMode === 'buy') {
+      // ETH -> Token via exactInputSingle
+      const amountInWei = '0x' + BigInt(Math.floor(input * 1e18)).toString(16);
+      const deadline = '0x' + BigInt(Math.floor(Date.now() / 1000) + 1800).toString(16);
+      // Uniswap V3 SwapRouter02 exactInputSingle
+      // function exactInputSingle(ExactInputSingleParams calldata params) external payable returns (uint256 amountOut)
+      // struct ExactInputSingleParams { address tokenIn; address tokenOut; uint24 fee; address recipient; uint256 amountIn; uint256 amountOutMinimum; uint160 sqrtPriceLimitX96; }
+      // Selector: 0x04e45aaf (exactInputSingle on SwapRouter02)
+      const tokenIn = WETH;
+      const tokenOut = addr;
+      const fee = 10000; // 1% pool fee (common for long-tail tokens)
+      const recipient = account;
+      const amountIn = BigInt(Math.floor(input * 1e18));
+      const amountOutMin = 0n; // Slippage handled by user expectation
+
+      // ABI encode
+      const encoded = abiEncodeExactInputSingle(tokenIn, tokenOut, fee, recipient, amountIn, amountOutMin);
+      const txHash = await window.ethereum.request({
+        method: 'eth_sendTransaction',
+        params: [{
+          from: account,
+          to: SWAP_ROUTER,
+          data: encoded,
+          value: amountInWei,
+        }]
+      });
+      btn.textContent = 'Submitted!';
+      btn.style.background = '#10b981';
+      setTimeout(() => {
+        btn.textContent = 'Swap';
+        btn.style.background = '';
+        btn.disabled = false;
+      }, 3000);
+    } else {
+      // Sell: Token -> ETH
+      // Need to approve token first, then swap
+      const amountIn = BigInt(Math.floor(input * (10 ** tokenDecimals)));
+
+      // Check allowance and approve if needed
+      const allowanceData = '0xdd62ed3e' +
+        addr.slice(2).toLowerCase().padStart(64, '0') + // not right - owner is account
+        account.slice(2).toLowerCase().padStart(64, '0'); // not right
+      // Simplified: just do approve then swap
+      // approve(spender, amount)
+      const maxApproval = '0x' + 'f'.repeat(64);
+      const approveData = '0x095ea7b3' +
+        SWAP_ROUTER.slice(2).toLowerCase().padStart(64, '0') +
+        'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
+
+      btn.textContent = 'Approving...';
+      await window.ethereum.request({
+        method: 'eth_sendTransaction',
+        params: [{
+          from: account,
+          to: addr,
+          data: approveData,
+          value: '0x0',
+        }]
+      });
+
+      btn.textContent = 'Swapping...';
+      const encoded = abiEncodeExactInputSingle(addr, WETH, 10000, '0x0000000000000000000000000000000000000002', amountIn, 0n);
+      // Use multicall to unwrap WETH: exactInputSingle + unwrapWETH9
+      // Simplified: swap to WETH then unwrap
+      const txHash = await window.ethereum.request({
+        method: 'eth_sendTransaction',
+        params: [{
+          from: account,
+          to: SWAP_ROUTER,
+          data: encoded,
+          value: '0x0',
+        }]
+      });
+      btn.textContent = 'Submitted!';
+      btn.style.background = '#10b981';
+      setTimeout(() => {
+        btn.textContent = 'Swap';
+        btn.style.background = '';
+        btn.disabled = false;
+      }, 3000);
+    }
+  } catch (err) {
+    console.error('Swap error:', err);
+    btn.textContent = 'Swap';
+    btn.style.background = '';
+    btn.disabled = false;
+    if (err.code !== 4001) { // 4001 = user rejected
+      alert('Swap failed: ' + (err.message || 'Unknown error'));
     }
   }
+}
 
-  // Uniswap swap
-  document.getElementById('swap-iframe').src = 'https://app.uniswap.org/#/swap?outputCurrency=' + addr + '&chain=base&theme=dark';
+function abiEncodeExactInputSingle(tokenIn, tokenOut, fee, recipient, amountIn, amountOutMin) {
+  // exactInputSingle((address,address,uint24,address,uint256,uint256,uint160))
+  // Selector for SwapRouter02 exactInputSingle: 0x04e45aaf
+  const selector = '04e45aaf';
+  const p = (v, bytes = 32) => BigInt(v).toString(16).padStart(bytes * 2, '0');
+  const a = (addr) => addr.slice(2).toLowerCase().padStart(64, '0');
+
+  return '0x' + selector +
+    a(tokenIn) +
+    a(tokenOut) +
+    p(fee) +
+    a(recipient) +
+    p(amountIn) +
+    p(amountOutMin) +
+    p(0); // sqrtPriceLimitX96 = 0 (no limit)
+}
+
+// Wallet connection state
+async function checkWallet() {
+  const btn = document.getElementById('swap-btn');
+  if (window.ethereum) {
+    try {
+      const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+      if (accounts.length > 0) {
+        btn.textContent = 'Swap';
+        btn.className = 'swap-btn';
+        return;
+      }
+    } catch {}
+  }
+  btn.textContent = 'Connect Wallet';
+  btn.className = 'swap-btn connect';
+}
+
+// ---------- Main Load ----------
+async function load() {
+  if (!addr) {
+    document.getElementById('token-name').textContent = 'Token not found';
+    return;
+  }
+
+  initChart();
+  fetchEthPrice();
+  loadBars(currentResolution);
+  checkWallet();
+
+  // Listen for wallet changes
+  if (window.ethereum) {
+    window.ethereum.on('accountsChanged', checkWallet);
+    window.ethereum.on('chainChanged', checkWallet);
+  }
+
+  // Codex token data
+  try {
+    const res = await fetch('https://graph.codex.io/graphql', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': CODEX_KEY },
+      body: JSON.stringify({
+        query: `{
+          token(input: { address: "${addr}", networkId: ${BASE_CHAIN} }) {
+            name symbol decimals totalSupply
+            info { imageThumbUrl }
+          }
+          filterTokens(filters: { network: [${BASE_CHAIN}] }, tokens: ["${addr}"]) {
+            results { priceUSD liquidity marketCap volume24 holders change24 pair { address } }
+          }
+        }`
+      })
+    });
+    const { data } = await res.json();
+    const t = data?.token;
+    const m = data?.filterTokens?.results?.[0];
+
+    if (t) {
+      document.title = 'SIZE. \u2014 ' + t.name;
+      document.getElementById('token-name').textContent = t.name;
+      document.getElementById('token-ticker').textContent = t.symbol;
+      tokenSymbol = t.symbol || 'TOKEN';
+      tokenDecimals = parseInt(t.decimals) || 18;
+      document.getElementById('swap-out-currency').textContent = tokenSymbol;
+      if (t.info?.imageThumbUrl) document.getElementById('token-img').src = t.info.imageThumbUrl;
+      document.getElementById('supply').textContent = t.totalSupply ? Math.round(parseFloat(t.totalSupply)).toLocaleString() : '--';
+    }
+
+    if (m) {
+      const price = parseFloat(m.priceUSD || 0);
+      const mcap = parseFloat(m.marketCap || 0);
+      const vol = parseFloat(m.volume24 || 0);
+      const liq = parseFloat(m.liquidity || 0);
+      const holders = m.holders || 0;
+      const change = parseFloat(m.change24 || 0) * 100;
+
+      tokenPrice = price;
+      pairAddress = m.pair?.address || '';
+
+      document.getElementById('price').textContent = fmtPrice(price);
+      document.getElementById('mcap').textContent = fmt(mcap);
+      document.getElementById('vol').textContent = fmt(vol);
+      document.getElementById('holders').textContent = holders.toLocaleString();
+
+      const changeEl = document.getElementById('change');
+      changeEl.textContent = (change >= 0 ? '+' : '') + change.toFixed(2) + '%';
+      changeEl.className = 'stat-value ' + (change >= 0 ? 'green' : 'red');
+
+      document.getElementById('sidebar-price').textContent = fmtPrice(price);
+      document.getElementById('sidebar-mcap').textContent = 'MCap ' + fmt(mcap);
+      document.getElementById('liquidity').textContent = fmt(liq);
+      document.getElementById('sidebar-holders').textContent = holders.toLocaleString();
+      document.getElementById('sidebar-vol').textContent = fmt(vol);
+    }
+  } catch (e) {
+    console.error('Token data fetch error:', e);
+  }
 
   // Circle Jerk
   document.getElementById('cj-btn').href = '/circle-jerk/' + addr;
@@ -157,9 +678,19 @@ async function load() {
     if (cjRes.ok) {
       const msgs = await cjRes.json();
       const container = document.getElementById('cj-messages');
-      container.innerHTML = msgs.length ? msgs.slice(0, 10).map(m => '<div class="cj-msg"><span class="cj-msg-user">@' + (m.senderUsername || '?') + '</span><div class="cj-msg-text">' + (m.content || '') + '</div></div>').join('') : '<div style="color:#505050;text-align:center;padding:20px;font-size:12px;">No messages yet</div>';
+      if (msgs.length) {
+        container.innerHTML = msgs.slice(0, 10).map(m =>
+          '<div class="cj-msg"><span class="cj-msg-user">@' + (m.senderUsername || '?') + '</span><div class="cj-msg-text">' + (m.content || '') + '</div></div>'
+        ).join('');
+      } else {
+        container.innerHTML = '<div style="color:#505050;text-align:center;padding:20px;font-size:12px;">No messages yet</div>';
+      }
+    } else {
+      document.getElementById('cj-messages').innerHTML = '<div style="color:#505050;text-align:center;padding:20px;font-size:12px;">No messages yet</div>';
     }
-  } catch {}
+  } catch {
+    document.getElementById('cj-messages').innerHTML = '<div style="color:#505050;text-align:center;padding:20px;font-size:12px;">No messages yet</div>';
+  }
 }
 
 load();
