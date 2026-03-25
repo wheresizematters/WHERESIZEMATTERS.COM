@@ -214,6 +214,32 @@ export default function EarnScreen() {
             </View>
           </View>
 
+          {/* Buy $SIZE */}
+          <View style={styles.section}>
+            <Text style={styles.sectionLabel}>BUY $SIZE</Text>
+            <View style={styles.buyCard}>
+              <View style={styles.buyHeader}>
+                <Ionicons name="swap-horizontal" size={22} color={COLORS.gold} />
+                <Text style={styles.buyTitle}>Swap ETH for $SIZE</Text>
+              </View>
+              <Text style={styles.buyDesc}>Buy $SIZE directly on Uniswap. 1% fee supports the protocol.</Text>
+              <TouchableOpacity
+                style={styles.buyBtn}
+                onPress={() => {
+                  const tokenAddr = process.env.EXPO_PUBLIC_SIZE_TOKEN_ADDRESS ?? '';
+                  const url = tokenAddr
+                    ? `https://app.uniswap.org/swap?outputCurrency=${tokenAddr}&chain=base&exactField=output`
+                    : `https://app.uniswap.org/swap?chain=base`;
+                  if (typeof window !== 'undefined') window.open(url, '_blank');
+                }}
+              >
+                <Ionicons name="open-outline" size={16} color={COLORS.bg} />
+                <Text style={styles.buyBtnText}>Buy on Uniswap</Text>
+              </TouchableOpacity>
+              <Text style={styles.buyFee}>1% of swaps via this link goes to SIZE. protocol</Text>
+            </View>
+          </View>
+
           {/* Launch DickCoin CTA */}
           <View style={styles.section}>
             <Text style={styles.sectionLabel}>CREATE</Text>
@@ -370,6 +396,15 @@ const styles = StyleSheet.create({
   walletDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: COLORS.green },
   walletConnectedText: { color: COLORS.green, fontSize: SIZES.xs, fontWeight: '600' },
   walletHint: { color: COLORS.mutedDark, fontSize: SIZES.xs, lineHeight: 16 },
+
+  // Buy $SIZE
+  buyCard: { backgroundColor: COLORS.card, borderRadius: RADIUS.lg, borderWidth: 1, borderColor: `${COLORS.gold}30`, padding: 16, gap: 10 },
+  buyHeader: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  buyTitle: { color: COLORS.white, fontWeight: '800', fontSize: SIZES.md },
+  buyDesc: { color: COLORS.muted, fontSize: SIZES.xs, lineHeight: 18 },
+  buyBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: COLORS.gold, borderRadius: RADIUS.md, paddingVertical: 14 },
+  buyBtnText: { color: COLORS.bg, fontWeight: '900', fontSize: SIZES.sm },
+  buyFee: { color: COLORS.mutedDark, fontSize: 9, textAlign: 'center' as any },
 
   // Section
   section: { paddingHorizontal: 16, marginBottom: 16 },
