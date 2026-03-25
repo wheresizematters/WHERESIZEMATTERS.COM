@@ -92,7 +92,8 @@ export default function LoginScreen() {
                 const data = await res.json();
                 if (data.token) {
                   setToken(data.token);
-                  window.location.reload();
+                  // Redirect into the app — any SPA route triggers auth check
+                  setTimeout(() => { window.location.href = '/earn'; }, 100);
                 } else {
                   setError(data.error ?? 'Wallet login failed');
                 }
