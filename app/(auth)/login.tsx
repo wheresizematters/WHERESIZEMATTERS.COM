@@ -8,6 +8,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/context/AuthContext';
 import { COLORS, SIZES, RADIUS } from '@/constants/theme';
 import AuthContainer from '@/components/AuthContainer';
+import { setToken } from '@/lib/supabase';
 
 type OAuthProvider = 'google' | 'x';
 
@@ -81,7 +82,6 @@ export default function LoginScreen() {
                 });
                 const data = await res.json();
                 if (data.token) {
-                  const { setToken } = require('@/lib/supabase');
                   setToken(data.token);
                   window.location.reload();
                 } else {
