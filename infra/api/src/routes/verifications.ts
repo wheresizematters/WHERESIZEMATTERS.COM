@@ -49,29 +49,34 @@ r.post("/token-verify", requireAuth, async (req: Request, res: Response) => {
     const { walletAddress } = req.body;
     if (!walletAddress) return res.status(400).json({ error: "Wallet address required" });
 
-    // In production, this would:
-    // 1. Fetch $SIZE token price from Uniswap V4 pool via Chainstack RPC
-    // 2. Calculate how many $SIZE tokens = $10 USD
-    // 3. Check user's on-chain $SIZE balance >= required amount
-    // 4. Execute ERC-20 transfer from user to protocol wallet
-    //    (user signs the tx on frontend, backend verifies the tx hash)
-    // 5. Mark as verified after tx confirmation
+    // Token verification costs $20 worth of $SIZE (2x cash price)
+    // 50% is burned (removed from circulation permanently)
+    // 50% is sold to ETH and sent to protocol treasury
+    //
+    // In production:
+    // 1. Fetch $SIZE/ETH price from Uniswap V4 pool
+    // 2. Calculate tokens = $20 USD at current price
+    // 3. User signs ERC-20 transfer on frontend
+    // 4. 50% sent to burn address (0x000...dead)
+    // 5. 50% sent to protocol wallet (sold for ETH via swap)
+    // 6. Backend verifies tx hash, marks verified
 
-    // For now: check $SIZE coin balance (off-chain) as proxy
-    const VERIFICATION_COST_COINS = 10000; // placeholder until on-chain pricing
+    // Off-chain proxy: deduct coins at 2x rate
+    const VERIFICATION_COST_COINS = 20000; // $20 worth (2x the $10 cash price)
     if ((profile.size_coins ?? 0) < VERIFICATION_COST_COINS) {
       return res.status(400).json({
-        error: `Insufficient $SIZE. Need ${VERIFICATION_COST_COINS.toLocaleString()} coins (~$10 worth). You have ${(profile.size_coins ?? 0).toLocaleString()}.`,
+        error: `Insufficient $SIZE. Need ${VERIFICATION_COST_COINS.toLocaleString()} coins (~$20 worth). You have ${(profile.size_coins ?? 0).toLocaleString()}. Token verification is 2x cash price — 50% burned, 50% to protocol.`,
       });
     }
 
-    // Deduct coins and verify
+    // Deduct coins: 50% burned (gone forever), 50% to protocol
+    // In production the burn happens on-chain to a dead address
     await updateProfile(req.userId!, {
       size_coins: (profile.size_coins ?? 0) - VERIFICATION_COST_COINS,
       is_verified: true,
     } as any);
 
-    res.json({ status: "verified", message: "Verified! $SIZE burned and sent to protocol." });
+    res.json({ status: "verified", message: "Verified! $20 of $SIZE — 50% burned, 50% to protocol." });
   } catch (err: any) {
     console.error("Token verify error:", err);
     res.status(500).json({ error: "Internal server error" });

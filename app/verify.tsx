@@ -187,23 +187,72 @@ export default function VerifyScreen() {
         {/* ── Instructions ── */}
         {step === 'instructions' && (
           <>
-            {!isPremium ? (
-              <View style={s.centered}>
+              {/* Payment options for verification */}
+              <View style={s.heroSection}>
                 <View style={s.iconCircle}>
-                  <Ionicons name="shield-checkmark" size={48} color={COLORS.gold} />
+                  <Ionicons name="shield-checkmark-outline" size={40} color={COLORS.gold} />
                 </View>
-                <Text style={s.resultTitle}>Premium Required</Text>
-                <Text style={s.resultSub}>
-                  Verification is a premium feature. Upgrade to get your verified badge.
+                <Text style={s.heroTitle}>Get Verified</Text>
+                <Text style={s.heroSub}>
+                  Choose how to verify your size. AI photo verification or pay to skip.
                 </Text>
-                <TouchableOpacity style={s.primaryBtn} onPress={() => setShowPaywall(true)}>
-                  <Text style={s.primaryBtnText}>Unlock Verification</Text>
+              </View>
+
+              {/* Payment cards */}
+              <Text style={s.sectionLabel}>PAY TO VERIFY</Text>
+              <View style={s.payCards}>
+                <TouchableOpacity
+                  style={s.payCard}
+                  onPress={() => {
+                    const { stripeCheckout } = require('@/lib/purchases');
+                    stripeCheckout('monthly', session?.user.id ?? '');
+                  }}
+                >
+                  <Text style={s.payCardPrice}>$10</Text>
+                  <Text style={s.payCardMethod}>Pay with Card</Text>
+                  <Text style={s.payCardDesc}>via Stripe</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={s.secondaryBtn} onPress={() => { if (typeof window !== 'undefined' && window.history.length > 1) { router.back(); } else { router.push('/(tabs)' as any); } }}>
-                  <Text style={s.secondaryBtnText}>Go Back</Text>
+
+                <TouchableOpacity
+                  style={[s.payCard, s.payCardToken]}
+                  onPress={async () => {
+                    if (!profile?.wallet_address) {
+                      window.alert('Connect your wallet first (go to Grow tab)');
+                      return;
+                    }
+                    try {
+                      const res = await fetch('/api/v1/verifications/token-verify', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
+                        body: JSON.stringify({ walletAddress: profile.wallet_address }),
+                      });
+                      const data = await res.json();
+                      if (data.error) {
+                        window.alert(data.error);
+                      } else if (data.status === 'verified') {
+                        await updateProfile({ is_verified: true });
+                        setStep('result_verified');
+                      }
+                    } catch {
+                      window.alert('Failed to verify with tokens');
+                    }
+                  }}
+                >
+                  <Text style={s.payCardPrice}>$20</Text>
+                  <Text style={s.payCardMethod}>Pay with $SIZE</Text>
+                  <Text style={s.payCardDesc}>50% burned / 50% to protocol</Text>
+                  <Text style={s.payCardNote}>2x premium — supports the ecosystem</Text>
                 </TouchableOpacity>
               </View>
-            ) : (
+
+              {/* Divider */}
+              <View style={s.orDivider}>
+                <View style={s.orLine} />
+                <Text style={s.orText}>or verify for free with AI</Text>
+                <View style={s.orLine} />
+              </View>
+
+              {/* AI verification flow */}
               <>
                 <View style={s.heroSection}>
                   <View style={s.iconCircle}>
@@ -259,51 +308,7 @@ export default function VerifyScreen() {
                   <Text style={s.secondaryBtnText}>Choose from Library</Text>
                 </TouchableOpacity>
 
-                {/* Token verification option */}
-                <View style={s.dividerRow}>
-                  <View style={s.dividerLine} />
-                  <Text style={s.dividerLabel}>or verify with $SIZE</Text>
-                  <View style={s.dividerLine} />
-                </View>
-
-                <View style={s.tokenVerifyCard}>
-                  <Text style={s.tokenVerifyTitle}>Burn $10 of $SIZE to Verify</Text>
-                  <Text style={s.tokenVerifyDesc}>
-                    Skip the photo — burn $10 worth of $SIZE tokens to get instantly verified. The tokens are sent to the protocol treasury.
-                  </Text>
-                  <TouchableOpacity
-                    style={s.tokenVerifyBtn}
-                    onPress={async () => {
-                      if (!profile?.wallet_address) {
-                        window.alert('Connect your wallet first (go to Grow tab)');
-                        return;
-                      }
-                      try {
-                        const res = await fetch('/api/v1/verifications/token-verify', {
-                          method: 'POST',
-                          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
-                          body: JSON.stringify({ walletAddress: profile.wallet_address }),
-                        });
-                        const data = await res.json();
-                        if (data.error) {
-                          window.alert(data.error);
-                        } else if (data.status === 'verified') {
-                          await updateProfile({ is_verified: true });
-                          setStep('result_verified');
-                        } else {
-                          window.alert(data.message ?? 'Verification pending');
-                        }
-                      } catch {
-                        window.alert('Failed to verify with tokens');
-                      }
-                    }}
-                  >
-                    <Ionicons name="flash" size={16} color={COLORS.bg} />
-                    <Text style={s.tokenVerifyBtnText}>Verify with $SIZE</Text>
-                  </TouchableOpacity>
-                </View>
               </>
-            )}
           </>
         )}
 
@@ -423,6 +428,18 @@ export default function VerifyScreen() {
 }
 
 const s = StyleSheet.create({
+  // Payment cards
+  payCards: { flexDirection: 'row', gap: 10, marginBottom: 20 },
+  payCard: { flex: 1, backgroundColor: COLORS.card, borderRadius: RADIUS.lg, borderWidth: 1, borderColor: COLORS.cardBorder, padding: 16, alignItems: 'center', gap: 4 },
+  payCardToken: { borderColor: `${COLORS.gold}40`, backgroundColor: `${COLORS.gold}08` },
+  payCardPrice: { fontSize: SIZES.xxl, fontWeight: '900', color: COLORS.gold },
+  payCardMethod: { fontSize: SIZES.sm, fontWeight: '700', color: COLORS.white },
+  payCardDesc: { fontSize: SIZES.xs, color: COLORS.muted },
+  payCardNote: { fontSize: 9, color: COLORS.gold, fontWeight: '600', marginTop: 4, textAlign: 'center' as any },
+  orDivider: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 20 },
+  orLine: { flex: 1, height: 1, backgroundColor: COLORS.cardBorder },
+  orText: { color: COLORS.muted, fontSize: SIZES.xs, fontWeight: '600' },
+
   // Token verify
   dividerRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginVertical: 20 },
   dividerLine: { flex: 1, height: 1, backgroundColor: COLORS.cardBorder },
