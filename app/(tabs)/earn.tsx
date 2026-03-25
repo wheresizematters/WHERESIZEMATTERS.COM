@@ -214,7 +214,7 @@ export default function EarnScreen() {
             </View>
           </View>
 
-          {/* Buy $SIZE */}
+          {/* Buy $SIZE — embedded Uniswap swap widget */}
           <View style={styles.section}>
             <Text style={styles.sectionLabel}>BUY $SIZE</Text>
             <View style={styles.buyCard}>
@@ -222,21 +222,22 @@ export default function EarnScreen() {
                 <Ionicons name="swap-horizontal" size={22} color={COLORS.gold} />
                 <Text style={styles.buyTitle}>Swap ETH for $SIZE</Text>
               </View>
-              <Text style={styles.buyDesc}>Buy $SIZE directly on Uniswap. 1% fee supports the protocol.</Text>
-              <TouchableOpacity
-                style={styles.buyBtn}
-                onPress={() => {
-                  const tokenAddr = process.env.EXPO_PUBLIC_SIZE_TOKEN_ADDRESS ?? '';
-                  const url = tokenAddr
-                    ? `https://app.uniswap.org/swap?outputCurrency=${tokenAddr}&chain=base&exactField=output`
-                    : `https://app.uniswap.org/swap?chain=base`;
-                  if (typeof window !== 'undefined') window.open(url, '_blank');
-                }}
-              >
-                <Ionicons name="open-outline" size={16} color={COLORS.bg} />
-                <Text style={styles.buyBtnText}>Buy on Uniswap</Text>
-              </TouchableOpacity>
-              <Text style={styles.buyFee}>1% of swaps via this link goes to SIZE. protocol</Text>
+              {typeof window !== 'undefined' && (
+                <View style={styles.swapEmbed}>
+                  <iframe
+                    src={`https://app.uniswap.org/#/swap?outputCurrency=${process.env.EXPO_PUBLIC_SIZE_TOKEN_ADDRESS ?? '0x4200000000000000000000000000000000000006'}&chain=base&theme=dark`}
+                    style={{
+                      width: '100%',
+                      height: 440,
+                      border: 'none',
+                      borderRadius: 16,
+                      backgroundColor: '#141414',
+                    } as any}
+                    allow="clipboard-write"
+                  />
+                </View>
+              )}
+              <Text style={styles.buyFee}>1% of swaps via SIZE. goes to the protocol</Text>
             </View>
           </View>
 
@@ -402,8 +403,7 @@ const styles = StyleSheet.create({
   buyHeader: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   buyTitle: { color: COLORS.white, fontWeight: '800', fontSize: SIZES.md },
   buyDesc: { color: COLORS.muted, fontSize: SIZES.xs, lineHeight: 18 },
-  buyBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: COLORS.gold, borderRadius: RADIUS.md, paddingVertical: 14 },
-  buyBtnText: { color: COLORS.bg, fontWeight: '900', fontSize: SIZES.sm },
+  swapEmbed: { borderRadius: 16, overflow: 'hidden', marginVertical: 8 },
   buyFee: { color: COLORS.mutedDark, fontSize: 9, textAlign: 'center' as any },
 
   // Section
