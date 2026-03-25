@@ -64,7 +64,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    // Check for existing token
+    // Check for OAuth callback token in URL FIRST
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const urlToken = params.get('token');
+      if (urlToken) {
+        setToken(urlToken);
+        window.history.replaceState({}, '', window.location.pathname);
+        fetchMe();
+        return;
+      }
+    }
+
+    // Check for existing token in localStorage
     const token = getToken();
     if (token) {
       fetchMe();
@@ -144,18 +156,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (session) fetchMe();
   }
 
-  // Check for OAuth callback token in URL
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const params = new URLSearchParams(window.location.search);
-    const token = params.get('token');
-    if (token) {
-      setToken(token);
-      // Clean URL
-      window.history.replaceState({}, '', window.location.pathname);
-      fetchMe();
-    }
-  }, []);
+  // OAuth token check moved to main useEffect above
 
   return (
     <AuthContext.Provider value={{
