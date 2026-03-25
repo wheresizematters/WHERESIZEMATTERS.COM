@@ -24,15 +24,15 @@
 - **Constructor:** `(address _sizeToken)`
 - **No admin needed** — permissionless
 
-## Wallets Needed
+## Wallet Addresses (Base Mainnet)
 
-| Wallet | Purpose | Funding |
+| Wallet | Address | Purpose |
 |--------|---------|---------|
-| **Protocol** | Team revenue — 8% of DickCoin fees + 25% of $SIZE trading fees | From fees |
-| **Gas** | Subsidizes user txns — 2% of DickCoin fees | From fees |
-| **Fee Collector Bot** | Claims Clanker LP fees, deposits to contracts | Small ETH for gas |
-| **Backend Bot** | Sets reward weights, finalizes epochs | Small ETH for gas |
-| **Deployer** | Deploys contracts, initial setup | ~0.01 ETH |
+| **Deployer** | `0xa1113d1a049fcc81bf9b93d8f8175f4e031eabad` | Deploys contracts |
+| **Protocol Treasury** | `0x117c1e5d49e545021c21a0e3ade73dc42fd8ccf0` | Team revenue — 25% $SIZE fees + 8% DickCoin fees |
+| **Gas Wallet** | `0x117c1e5d49e545021c21a0e3ade73dc42fd8ccf0` | Subsidizes user txns — 2% DickCoin fees |
+| **Fee Collector Bot** | `0xa8d00375c8b8accef44352d45ca1f65422624557` | Claims LP fees daily, deposits to contracts |
+| **Rewards Bot** | `0x2466b3f0e3891db3380b335b7d0a132dea0360d9` | Sets user weights, finalizes daily epochs |
 
 ## Reward Weight System
 

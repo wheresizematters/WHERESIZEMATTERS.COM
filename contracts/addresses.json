@@ -1,0 +1,9 @@
+{
+  "deployer": "0xa1113d1a049fcc81bf9b93d8f8175f4e031eabad",
+  "protocolTreasury": "0x117c1e5d49e545021c21a0e3ade73dc42fd8ccf0",
+  "gasWallet": "0x117c1e5d49e545021c21a0e3ade73dc42fd8ccf0",
+  "feeCollectorBot": "0xa8d00375c8b8accef44352d45ca1f65422624557",
+  "rewardsBot": "0x2466b3f0e3891db3380b335b7d0a132dea0360d9",
+  "chain": "base",
+  "chainId": 8453
+}
