@@ -75,7 +75,7 @@ export default function LaunchDickCoinScreen() {
       const API = getApiUrl();
       const authToken = getToken() ?? '';
 
-      if (imageUri && API !== undefined) {
+      if (imageUri) {
         const ext = imageUri.split('.').pop() ?? 'jpg';
         const path = `dickcoin-images/${session.user.id}/${Date.now()}.${ext}`;
         const urlRes = await fetch(`${API}/api/v1/storage/upload-url`, {
@@ -110,7 +110,8 @@ export default function LaunchDickCoinScreen() {
       setTxHash(result.txHash);
       setStep('success');
     } catch (err: any) {
-      setError(err?.message ?? 'Something went wrong');
+      console.error('Launch error:', err);
+      setError(err?.message ?? 'Connection failed — check your internet and try again');
       setStep('error');
     }
   }
