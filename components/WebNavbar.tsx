@@ -13,6 +13,7 @@ const TABS = [
   { label: 'Explore',     href: '/(tabs)/explore',         icon: 'planet-outline' as const,         iconActive: 'planet' as const,      match: '/explore' },
   { label: 'Circles',     href: '/(tabs)/communities',    icon: 'people-outline' as const,         iconActive: 'people' as const,      match: '/communities' },
   { label: 'Messages',    href: '/(tabs)/messages',      icon: 'chatbubbles-outline' as const,    iconActive: 'chatbubbles' as const, match: '/messages' },
+  { label: 'Launch', href: '/launch-dickcoin', icon: 'rocket-outline' as const, iconActive: 'rocket' as const, match: '/launch-dickcoin' },
   { label: 'Profile',     href: '/(tabs)/profile',       icon: 'person-outline' as const,         iconActive: 'person' as const,      match: '/profile' },
 ];
 
