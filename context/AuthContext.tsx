@@ -21,23 +21,28 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | null>(null);
 
 async function apiFetch<T = any>(path: string, opts?: { method?: string; body?: any }): Promise<T | null> {
-  // API can be empty string for same-origin requests (nginx proxies /api/)
+  const url = `${API}${path}`;
   const token = getToken();
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
   if (token) headers['Authorization'] = `Bearer ${token}`;
   try {
-    const res = await fetch(`${API}${path}`, {
+    console.log(`[SIZE API] ${opts?.method ?? 'GET'} ${url}`);
+    const res = await fetch(url, {
       method: opts?.method ?? 'GET',
       headers,
       body: opts?.body ? JSON.stringify(opts.body) : undefined,
     });
+    console.log(`[SIZE API] Response: ${res.status}`);
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
-      return { error: err.error ?? `Request failed (${res.status})` } as any;
+      const msg = err.error ?? `Request failed (${res.status})`;
+      console.error(`[SIZE API] Error: ${msg}`);
+      return { error: msg } as any;
     }
     return res.json();
-  } catch {
-    return null;
+  } catch (e: any) {
+    console.error(`[SIZE API] Fetch failed: ${url}`, e?.message ?? e);
+    return { error: `Connection failed: ${e?.message ?? 'unknown'}` } as any;
   }
 }
 
@@ -104,7 +109,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       '/api/v1/auth/login',
       { method: 'POST', body: { email, password } },
     );
-    if (!data) return { error: 'API unavailable' };
+    if (data?.error) return { error: data.error };
     if (data.error) return { error: data.error };
     setToken(data.token);
     // Hard redirect to force full reload with token in localStorage
@@ -125,7 +130,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       '/api/v1/auth/signup',
       { method: 'POST', body: { email, password, username, sizeInches, ageRange, girthInches } },
     );
-    if (!data) return { error: 'API unavailable' };
+    if (data?.error) return { error: data.error };
     if (data.error) return { error: data.error };
     setToken(data.token);
     if (typeof window !== 'undefined') {
