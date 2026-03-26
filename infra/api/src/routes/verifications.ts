@@ -11,8 +11,9 @@ r.get("/me", requireAuth, async (req, res) => {
 });
 
 r.post("/verify", requireAuth, async (req: Request, res: Response) => {
-  const { imagePath, reportedSize, reportedGirth } = req.body;
+  const { imagePath, reportedSize, reportedGirth, verifyType } = req.body;
   const VISION_URL = process.env.VISION_API_URL ?? "https://rqi1lteg1birca-8080.proxy.runpod.net";
+  const type = verifyType ?? "size"; // "size" | "face" | "bra"
 
   try {
     // Get a signed URL for the image
@@ -22,14 +23,30 @@ r.post("/verify", requireAuth, async (req: Request, res: Response) => {
     const bucket = process.env.S3_MEDIA_BUCKET ?? "size-media-845654871945";
     const signedUrl = await getSignedUrl(s3, new GetObjectCommand({ Bucket: bucket, Key: imagePath }), { expiresIn: 300 });
 
-    // Call the abliterated vision model on RunPod
-    const prompt = `Measure the penis in this photo. Look for a reference object (ruler, tape measure, credit card, dollar bill, phone) to calibrate scale.
+    // Build prompt based on verification type
+    let prompt = "";
+    if (type === "face") {
+      prompt = `This is a face verification photo. Confirm there is a real human face visible. Determine if this appears to be a real person (not a screenshot, not a photo of a photo).
+
+Return JSON only:
+{"verified": true|false, "gender": "male"|"female"|"unknown", "confidence": "high"|"medium"|"low", "notes": "<brief>"}`;
+    } else if (type === "bra") {
+      prompt = `Estimate the bra/cup size visible in this photo. Look for any reference objects for scale.
+
+Return JSON only:
+{"bra_size": "<like 34C>", "cup": "<letter>", "band": <number>, "confidence": "high"|"medium"|"low", "reference": "<what you used>"}
+
+If cannot determine, return:
+{"bra_size": null, "confidence": "low", "reference": "none"}`;
+    } else {
+      prompt = `Measure the penis in this photo. Look for a reference object (ruler, tape measure, credit card, dollar bill, phone) to calibrate scale.
 
 Return JSON only:
 {"size_inches": <number>, "confidence": "high"|"medium"|"low", "reference": "<what you used to measure>"}
 
 If no reference object or no penis visible, return:
 {"size_inches": null, "confidence": "low", "reference": "none"}`;
+    }
 
     const visionRes = await fetch(`${VISION_URL}/v1/vision`, {
       method: "POST",
@@ -49,28 +66,55 @@ If no reference object or no penis visible, return:
       } catch {}
 
       const confidence = analysis.confidence ?? "low";
-      const estimatedSize = analysis.size_inches ?? null;
-      const reference = analysis.reference ?? "none";
+      let autoVerify = false;
+      let profileUpdates: any = { is_verified: true };
+      let notes = "";
 
-      // Auto-verify: high/medium confidence + within 0.75 inch of claim
-      const withinTolerance = estimatedSize !== null && Math.abs(estimatedSize - reportedSize) <= 0.75;
-      const autoVerify = (confidence === "high" || confidence === "medium") && withinTolerance && reference !== "none";
+      if (type === "face") {
+        // Face verification — just confirm it's a real person
+        const verified = analysis.verified ?? false;
+        const gender = analysis.gender ?? "unknown";
+        autoVerify = verified && (confidence === "high" || confidence === "medium");
+        notes = `Face: ${verified ? 'real person' : 'not verified'} (${gender}, ${confidence})`;
+        if (gender === "female") profileUpdates.gender = "female";
+        else if (gender === "male") profileUpdates.gender = "male";
+
+      } else if (type === "bra") {
+        // Bra size verification
+        const braSize = analysis.bra_size ?? null;
+        autoVerify = braSize && (confidence === "high" || confidence === "medium");
+        notes = `Bra: ${braSize ?? '?'} (${confidence})`;
+        if (braSize) {
+          profileUpdates.gender = "female";
+          profileUpdates.bra_size = braSize;
+        }
+
+      } else {
+        // Size verification (default)
+        const estimatedSize = analysis.size_inches ?? null;
+        const reference = analysis.reference ?? "none";
+        const withinTolerance = estimatedSize !== null && Math.abs(estimatedSize - reportedSize) <= 0.75;
+        autoVerify = (confidence === "high" || confidence === "medium") && withinTolerance && reference !== "none";
+        notes = `AI measured ${estimatedSize ?? '?'}" (${confidence}, ref: ${reference}). Claimed: ${reportedSize}"`;
+        if (estimatedSize) profileUpdates.size_inches = estimatedSize;
+      }
 
       await svc.upsertVerificationRequest({
         user_id: req.userId!,
         image_path: imagePath,
-        reported_size: reportedSize,
-        ai_est_size: estimatedSize,
+        reported_size: reportedSize ?? 0,
+        ai_est_size: analysis.size_inches ?? null,
         ai_confidence: confidence,
-        ai_notes: `AI measured ${estimatedSize ?? '?'}" (${confidence} confidence, ref: ${reference}). Claimed: ${reportedSize}"`,
+        ai_notes: notes,
         status: autoVerify ? "auto_verified" : "pending",
       });
 
       if (autoVerify) {
-        await updateProfile(req.userId!, { is_verified: true, size_inches: estimatedSize } as any);
+        await updateProfile(req.userId!, profileUpdates);
+        const verifiedWhat = type === "face" ? "identity" : type === "bra" ? `bra size (${analysis.bra_size})` : `size (${analysis.size_inches}")`;
         return res.json({
           status: "auto_verified",
-          reason: `Verified at ${estimatedSize}" (${confidence} confidence)`,
+          reason: `Verified: ${verifiedWhat} (${confidence} confidence)`,
         });
       }
 

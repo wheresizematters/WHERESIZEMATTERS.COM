@@ -37,6 +37,7 @@ export default function VerifyScreen() {
   const [pendingSource, setPendingSource] = useState<'camera' | 'library'>('camera');
   const [errorMsg, setErrorMsg] = useState('');
   const [showPaywall, setShowPaywall] = useState(false);
+  const [verifyType, setVerifyType] = useState<'size' | 'face' | 'bra'>('size');
 
   useEffect(() => {
     if (!session?.user.id) return;
@@ -125,7 +126,7 @@ export default function VerifyScreen() {
       return;
     }
 
-    const result = await runVerification(imagePath, profile.size_inches, profile.girth_inches);
+    const result = await runVerification(imagePath, profile.size_inches, profile.girth_inches, verifyType);
 
     if (result.status === 'auto_verified') {
       await updateProfile({ is_verified: true });
@@ -187,15 +188,46 @@ export default function VerifyScreen() {
         {/* ── Instructions ── */}
         {step === 'instructions' && (
           <>
-              {/* Payment options for verification */}
+              {/* Hero */}
               <View style={s.heroSection}>
                 <View style={s.iconCircle}>
                   <Ionicons name="shield-checkmark-outline" size={40} color={COLORS.gold} />
                 </View>
                 <Text style={s.heroTitle}>Get Verified</Text>
                 <Text style={s.heroSub}>
-                  Choose how to verify your size. AI photo verification or pay to skip.
+                  Verify with AI, card, or $SIZE tokens. Choose what you want to verify.
                 </Text>
+              </View>
+
+              {/* Verification type selector */}
+              <Text style={s.sectionLabel}>WHAT ARE YOU VERIFYING?</Text>
+              <View style={s.typeRow}>
+                <TouchableOpacity
+                  style={[s.typeCard, verifyType === 'size' && s.typeCardActive]}
+                  onPress={() => setVerifyType('size')}
+                >
+                  <Ionicons name="resize" size={22} color={verifyType === 'size' ? COLORS.gold : COLORS.muted} />
+                  <Text style={[s.typeCardLabel, verifyType === 'size' && s.typeCardLabelActive]}>Size</Text>
+                  <Text style={s.typeCardDesc}>Verify your measurement</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[s.typeCard, verifyType === 'face' && s.typeCardActive]}
+                  onPress={() => setVerifyType('face')}
+                >
+                  <Ionicons name="person-circle" size={22} color={verifyType === 'face' ? COLORS.gold : COLORS.muted} />
+                  <Text style={[s.typeCardLabel, verifyType === 'face' && s.typeCardLabelActive]}>Face</Text>
+                  <Text style={s.typeCardDesc}>Verify your identity</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[s.typeCard, verifyType === 'bra' && s.typeCardActive]}
+                  onPress={() => setVerifyType('bra')}
+                >
+                  <Ionicons name="heart" size={22} color={verifyType === 'bra' ? COLORS.purple : COLORS.muted} />
+                  <Text style={[s.typeCardLabel, verifyType === 'bra' && { color: COLORS.purple }]}>Bra Size</Text>
+                  <Text style={s.typeCardDesc}>For the ladies</Text>
+                </TouchableOpacity>
               </View>
 
               {/* Payment cards */}
@@ -428,6 +460,14 @@ export default function VerifyScreen() {
 }
 
 const s = StyleSheet.create({
+  // Type selector
+  typeRow: { flexDirection: 'row', gap: 8, marginBottom: 20 },
+  typeCard: { flex: 1, backgroundColor: COLORS.card, borderRadius: RADIUS.lg, borderWidth: 1, borderColor: COLORS.cardBorder, padding: 12, alignItems: 'center', gap: 4 },
+  typeCardActive: { borderColor: `${COLORS.gold}60`, backgroundColor: `${COLORS.gold}10` },
+  typeCardLabel: { color: COLORS.muted, fontWeight: '700', fontSize: SIZES.sm },
+  typeCardLabelActive: { color: COLORS.gold },
+  typeCardDesc: { color: COLORS.mutedDark, fontSize: 9, textAlign: 'center' as any },
+
   // Payment cards
   payCards: { flexDirection: 'row', gap: 10, marginBottom: 20 },
   payCard: { flex: 1, backgroundColor: COLORS.card, borderRadius: RADIUS.lg, borderWidth: 1, borderColor: COLORS.cardBorder, padding: 16, alignItems: 'center', gap: 4 },
