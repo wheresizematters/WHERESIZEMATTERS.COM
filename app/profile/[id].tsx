@@ -81,7 +81,8 @@ export default function PublicProfileScreen() {
   const { session } = useAuth();
   const { isPremium } = usePurchase();
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [rank, setRank] = useState<number | null>(null);
+  const [rankResult, setRankResult] = useState<{ rank: number; provisional: boolean; totalVerified: number } | null>(null);
+  const rank = rankResult?.rank ?? null;
   const [postCount, setPostCount] = useState(0);
   const [totalUsers, setTotalUsers] = useState(0);
   const [userPosts, setUserPosts] = useState<Post[]>([]);
@@ -102,7 +103,7 @@ export default function PublicProfileScreen() {
         fetchTotalUserCount(),
       ]);
       setProfile(p);
-      setRank(r || null);
+      setRankResult(r.rank > 0 ? r : null);
       setPostCount(pc);
       setTotalUsers(tu);
       setLoading(false);
@@ -302,7 +303,7 @@ export default function PublicProfileScreen() {
         {/* Stats grid */}
         <View style={styles.statsGrid}>
           {[
-            { val: rank ? `#${rank.toLocaleString()}` : '—', lbl: 'Global Rank' },
+            { val: rank ? `#${rank.toLocaleString()}` : '—', lbl: rankResult?.provisional ? 'Provisional Rank' : 'Global Rank' },
             { val: percentile !== null ? `${percentile}th` : '—', lbl: 'Percentile' },
             { val: size >= WORLD_AVERAGE ? `+${(size - WORLD_AVERAGE).toFixed(1)}"` : `-${(WORLD_AVERAGE - size).toFixed(1)}"`, lbl: 'vs Avg' },
             { val: String(postCount), lbl: 'Posts' },

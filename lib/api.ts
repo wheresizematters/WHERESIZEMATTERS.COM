@@ -94,9 +94,15 @@ export async function fetchPublicProfile(userId: string): Promise<Profile | null
   return api<Profile>(`/api/v1/profiles/${userId}`);
 }
 
-export async function fetchUserRank(userId: string): Promise<number> {
-  const data = await api<{ rank: number }>(`/api/v1/profiles/${userId}/rank`);
-  return data?.rank ?? 0;
+export interface RankResult {
+  rank: number;
+  provisional: boolean;
+  totalVerified: number;
+}
+
+export async function fetchUserRank(userId: string): Promise<RankResult> {
+  const data = await api<RankResult>(`/api/v1/profiles/${userId}/rank`);
+  return data ?? { rank: 0, provisional: false, totalVerified: 0 };
 }
 
 export async function fetchPost(postId: string): Promise<Post | null> {
@@ -107,8 +113,10 @@ export async function fetchComments(postId: string): Promise<Comment[]> {
   return (await api<Comment[]>(`/api/v1/posts/${postId}/comments`)) ?? [];
 }
 
-export async function createComment(postId: string, userId: string, content: string): Promise<{ error: string | null }> {
-  return (await post(`/api/v1/posts/${postId}/comments`, { content })) ?? { error: 'API unavailable' };
+export async function createComment(postId: string, userId: string, content: string, mediaUrl?: string): Promise<{ error: string | null }> {
+  const body: any = { content };
+  if (mediaUrl) body.media_url = mediaUrl;
+  return (await post(`/api/v1/posts/${postId}/comments`, body)) ?? { error: 'API unavailable' };
 }
 
 export async function fetchUserPosts(userId: string): Promise<Post[]> {

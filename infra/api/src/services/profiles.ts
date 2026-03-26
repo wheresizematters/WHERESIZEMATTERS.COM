@@ -127,11 +127,63 @@ export async function getLeaderboard(filter?: {
   }));
 }
 
-export async function getUserRank(userId: string): Promise<number> {
+export async function getUserRank(userId: string): Promise<{ rank: number; provisional: boolean; totalVerified: number }> {
   const all = await scanAll<Profile>(T.profiles);
-  const sorted = all.filter((p) => p.is_verified).sort((a, b) => b.size_inches - a.size_inches);
-  const idx = sorted.findIndex((p) => p.id === userId);
-  return idx >= 0 ? idx + 1 : 0;
+  const user = all.find((p) => p.id === userId);
+  if (!user) return { rank: 0, provisional: false, totalVerified: 0 };
+
+  const verified = all.filter((p) => p.is_verified).sort((a, b) => b.size_inches - a.size_inches);
+  const totalVerified = verified.length;
+
+  if (user.is_verified) {
+    const idx = verified.findIndex((p) => p.id === userId);
+    return { rank: idx >= 0 ? idx + 1 : 0, provisional: false, totalVerified };
+  }
+
+  // Provisional rank: where they'd place among verified users
+  const provisionalIdx = verified.findIndex((p) => user.size_inches >= p.size_inches);
+  const provisionalRank = provisionalIdx >= 0 ? provisionalIdx + 1 : verified.length + 1;
+  return { rank: provisionalRank, provisional: true, totalVerified };
+}
+
+export async function getLeaderboardNearby(
+  lat: number, lng: number, radiusMiles: number
+): Promise<{ id: string; username: string; size_inches: number; is_verified: boolean; lat: number; lng: number; distance_miles: number; rank: number }[]> {
+  if (!lat || !lng || isNaN(lat) || isNaN(lng)) return [];
+  const all = await scanAll<Profile & { lat?: number; lng?: number }>(T.profiles);
+
+  // Only verified users with location data
+  const withLoc = all.filter(
+    (p) => p.is_verified && typeof p.lat === "number" && typeof p.lng === "number"
+  );
+
+  // Haversine distance
+  function haversine(lat1: number, lng1: number, lat2: number, lng2: number): number {
+    const R = 3959; // miles
+    const dLat = ((lat2 - lat1) * Math.PI) / 180;
+    const dLng = ((lng2 - lng1) * Math.PI) / 180;
+    const a =
+      Math.sin(dLat / 2) ** 2 +
+      Math.cos((lat1 * Math.PI) / 180) *
+        Math.cos((lat2 * Math.PI) / 180) *
+        Math.sin(dLng / 2) ** 2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  }
+
+  const nearby = withLoc
+    .map((p) => ({
+      id: p.id,
+      username: p.username,
+      size_inches: p.size_inches,
+      is_verified: p.is_verified,
+      lat: p.lat!,
+      lng: p.lng!,
+      distance_miles: haversine(lat, lng, p.lat!, p.lng!),
+    }))
+    .filter((p) => p.distance_miles <= radiusMiles)
+    .sort((a, b) => b.size_inches - a.size_inches);
+
+  return nearby.map((p, i) => ({ ...p, rank: i + 1 }));
 }
 
 export async function getUserPercentile(sizeInches: number): Promise<number> {

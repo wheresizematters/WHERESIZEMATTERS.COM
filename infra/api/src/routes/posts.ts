@@ -55,8 +55,8 @@ r.get("/:postId/comments", async (req, res) => {
 });
 
 r.post("/:postId/comments", requireAuth, async (req, res) => {
-  const { content } = req.body;
-  const result = await svc.createComment(req.params.postId, req.userId!, content);
+  const { content, media_url } = req.body;
+  const result = await svc.createComment(req.params.postId, req.userId!, content, media_url);
   res.json(result);
 });
 

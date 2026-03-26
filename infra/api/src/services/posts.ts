@@ -250,14 +250,17 @@ export async function createComment(
   postId: string,
   userId: string,
   content: string,
+  mediaUrl?: string,
 ): Promise<{ error: string | null }> {
-  await putItem(T.comments, {
+  const item: any = {
     id: uuid(),
     post_id: postId,
     user_id: userId,
     content,
     created_at: new Date().toISOString(),
-  });
+  };
+  if (mediaUrl) item.media_url = mediaUrl;
+  await putItem(T.comments, item);
 
   // Increment comment count
   const post = await getItem<Post>(T.posts, { id: postId });

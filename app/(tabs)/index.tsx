@@ -282,48 +282,91 @@ function DiscussionCard({ post, isPremium, myId, onVotePost }: {
   );
 }
 
-function DiscussionRow({ post, isPremium }: { post: Post; isPremium: boolean }) {
+function DiscussionRow({ post, isPremium, onVote }: { post: Post; isPremium: boolean; onVote?: (v: 1 | -1 | 0) => void }) {
   const router = useRouter();
   const meta = TAGS.find(t => t.label === post.tag);
   const tagColor = meta ? TAG_COLORS[meta.category] : COLORS.muted;
   const tier = getSizeTier(post.author.size_inches);
+  const score = post.score ?? 0;
+  const userVote = post.user_vote ?? 0;
+  const hasMedia = !!(post as any).media_url;
 
   return (
     <TouchableOpacity style={styles.discRow} onPress={() => router.push(`/post/${post.id}` as any)} activeOpacity={0.8}>
-      <View style={styles.discRowTop}>
-        {post.tag && (
-          <View style={[styles.tagChip, { borderColor: tagColor, backgroundColor: `${tagColor}18` }]}>
-            <Text style={[styles.tagChipText, { color: tagColor }]}>{post.tag}</Text>
-          </View>
-        )}
-        <Text style={styles.discRowTime}>{timeAgo(post.created_at)}</Text>
+      {/* Left: vote column */}
+      <View style={styles.discVoteCol}>
+        <TouchableOpacity
+          onPress={() => onVote?.(userVote === 1 ? 0 : 1)}
+          hitSlop={{ top: 6, bottom: 4, left: 8, right: 8 }}
+        >
+          <Ionicons name="arrow-up" size={18} color={userVote === 1 ? COLORS.gold : COLORS.mutedDark} />
+        </TouchableOpacity>
+        <Text style={[styles.discVoteScore, userVote === 1 && { color: COLORS.gold }, userVote === -1 && { color: '#60A5FA' }]}>
+          {score}
+        </Text>
+        <TouchableOpacity
+          onPress={() => onVote?.(userVote === -1 ? 0 : -1)}
+          hitSlop={{ top: 4, bottom: 6, left: 8, right: 8 }}
+        >
+          <Ionicons name="arrow-down" size={18} color={userVote === -1 ? '#60A5FA' : COLORS.mutedDark} />
+        </TouchableOpacity>
       </View>
-      {post.title
-        ? <Text style={styles.discRowTitle}>{post.title}</Text>
-        : <Text style={styles.discRowTitle} numberOfLines={2}>{post.content}</Text>
-      }
-      {post.title && (
-        <Text style={styles.discRowPreview} numberOfLines={2}>{post.content}</Text>
-      )}
-      <View style={styles.discRowFooter}>
-        <View style={[styles.discRowAvatar, { borderColor: tier.color }]}>
-          <Text style={[styles.discRowAvatarLetter, { color: tier.color }]}>
-            {post.author.username.charAt(0).toUpperCase()}
-          </Text>
+
+      {/* Right: content */}
+      <View style={styles.discContent}>
+        {/* Tag flair + time */}
+        <View style={styles.discRowTop}>
+          {post.tag && (
+            <View style={[styles.discFlair, { borderColor: tagColor, backgroundColor: `${tagColor}18` }]}>
+              <Text style={[styles.discFlairText, { color: tagColor }]}>{post.tag}</Text>
+            </View>
+          )}
+          <Text style={styles.discRowTime}>{timeAgo(post.created_at)}</Text>
         </View>
-        <Text style={styles.discRowAuthor}>@{post.author.username}</Text>
-        <View style={styles.discRowStats}>
-          <Ionicons name="chatbubble-outline" size={12} color={COLORS.muted} />
-          <Text style={styles.discRowStatText}>{post.comment_count}</Text>
+
+        {/* Title */}
+        <Text style={styles.discRowTitle} numberOfLines={2}>
+          {post.title || post.content}
+        </Text>
+
+        {/* Body preview */}
+        {post.title && (
+          <Text style={styles.discRowPreview} numberOfLines={2}>{post.content}</Text>
+        )}
+
+        {/* Footer: author + stats */}
+        <View style={styles.discRowFooter}>
+          <View style={[styles.discRowAvatar, { borderColor: tier.color }]}>
+            <Text style={[styles.discRowAvatarLetter, { color: tier.color }]}>
+              {post.author.username.charAt(0).toUpperCase()}
+            </Text>
+          </View>
+          <Text style={styles.discRowAuthor}>@{post.author.username}</Text>
+          {post.author.is_verified && (
+            <View style={styles.discVerifiedDot}>
+              <Text style={{ color: COLORS.bg, fontSize: 7, fontWeight: '900' }}>✓</Text>
+            </View>
+          )}
+          <View style={styles.discRowStats}>
+            <Ionicons name="chatbubble-outline" size={12} color={COLORS.muted} />
+            <Text style={styles.discRowStatText}>{post.comment_count}</Text>
+          </View>
+          {hasMedia && (
+            <View style={styles.discRowStats}>
+              <Ionicons name="image-outline" size={12} color={COLORS.muted} />
+            </View>
+          )}
         </View>
       </View>
     </TouchableOpacity>
   );
 }
 
-function DiscussionsList({ posts, isPremium }: { posts: Post[]; isPremium: boolean }) {
+function DiscussionsList({ posts, isPremium, onVotePost }: { posts: Post[]; isPremium: boolean; onVotePost: (postId: string, v: 1 | -1 | 0) => void }) {
   const [search, setSearch] = useState('');
+  const [sortBy, setSortBy] = useState<'hot' | 'new' | 'top'>('hot');
   const discussions = posts.filter(p => p.type === 'discussion');
+
   const filtered = search.trim()
     ? discussions.filter(p =>
         (p.title ?? p.content).toLowerCase().includes(search.toLowerCase()) ||
@@ -331,6 +374,17 @@ function DiscussionsList({ posts, isPremium }: { posts: Post[]; isPremium: boole
         p.author.username.toLowerCase().includes(search.toLowerCase())
       )
     : discussions;
+
+  const sorted = [...filtered].sort((a, b) => {
+    if (sortBy === 'new') return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+    if (sortBy === 'top') return (b.score ?? 0) - (a.score ?? 0);
+    // hot = score weighted by recency
+    const ageA = (Date.now() - new Date(a.created_at).getTime()) / 3600000;
+    const ageB = (Date.now() - new Date(b.created_at).getTime()) / 3600000;
+    const hotA = ((a.score ?? 0) + (a.comment_count ?? 0)) / Math.pow(ageA + 2, 1.5);
+    const hotB = ((b.score ?? 0) + (b.comment_count ?? 0)) / Math.pow(ageB + 2, 1.5);
+    return hotB - hotA;
+  });
 
   return (
     <View style={{ flex: 1 }}>
@@ -346,16 +400,41 @@ function DiscussionsList({ posts, isPremium }: { posts: Post[]; isPremium: boole
           clearButtonMode="while-editing"
         />
       </View>
+      {/* Sort tabs */}
+      <View style={styles.discSortBar}>
+        {(['hot', 'new', 'top'] as const).map(s => (
+          <TouchableOpacity
+            key={s}
+            style={[styles.discSortBtn, sortBy === s && styles.discSortBtnActive]}
+            onPress={() => setSortBy(s)}
+          >
+            <Ionicons
+              name={s === 'hot' ? 'flame-outline' : s === 'new' ? 'time-outline' : 'trending-up-outline'}
+              size={14}
+              color={sortBy === s ? COLORS.gold : COLORS.muted}
+            />
+            <Text style={[styles.discSortText, sortBy === s && styles.discSortTextActive]}>
+              {s.charAt(0).toUpperCase() + s.slice(1)}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
       <FlatList
-        data={filtered}
+        data={sorted}
         keyExtractor={item => item.id}
         contentContainerStyle={styles.discList}
         showsVerticalScrollIndicator={false}
-        renderItem={({ item }) => <DiscussionRow post={item} isPremium={isPremium} />}
+        renderItem={({ item }) => (
+          <DiscussionRow
+            post={item}
+            isPremium={isPremium}
+            onVote={(v) => onVotePost(item.id, v)}
+          />
+        )}
         ItemSeparatorComponent={() => <View style={styles.discSep} />}
         ListEmptyComponent={
           <View style={styles.empty}>
-            <Text style={styles.emptyText}>{search ? 'No results.' : 'No discussions yet.'}</Text>
+            <Text style={styles.emptyText}>{search ? 'No results.' : 'No discussions yet. Start one!'}</Text>
           </View>
         }
       />
@@ -389,7 +468,7 @@ function CreatePostModal({ visible, onClose, onPost, isPremium }: {
   const canPost = type === 'poll'
     ? content.trim().length > 0
     : type === 'discussion'
-      ? content.trim().length > 0 && title.trim().length > 0
+      ? content.trim().length > 0 && title.trim().length > 0 && !!selectedTag
       : content.trim().length > 0;
 
   async function handlePost() {
@@ -471,7 +550,7 @@ function CreatePostModal({ visible, onClose, onPost, isPremium }: {
             </Text>
 
             {/* Tag picker */}
-            <Text style={styles.fieldLabel}>TAG <Text style={styles.fieldLabelOptional}>(optional)</Text></Text>
+            <Text style={styles.fieldLabel}>TAG {type === 'discussion' ? <Text style={styles.fieldLabelRequired}>*</Text> : <Text style={styles.fieldLabelOptional}>(optional)</Text>}</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tagPickerRow}>
               {TAGS.map(t => {
                 const color = TAG_COLORS[t.category];
@@ -813,7 +892,7 @@ export default function FeedScreen() {
           <ActivityIndicator size="large" color={COLORS.gold} />
         </View>
       ) : activeFilter === 'DISCUSSIONS' ? (
-        <DiscussionsList posts={posts} isPremium={isPremium} />
+        <DiscussionsList posts={posts} isPremium={isPremium} onVotePost={handleVoteOnPost} />
       ) : (
         <>
           {/* Pull-to-refresh indicator (web only) */}
@@ -981,16 +1060,27 @@ const styles = StyleSheet.create({
   searchInput: { flex: 1, paddingVertical: 10, color: COLORS.white, fontSize: SIZES.md },
   discList: { paddingHorizontal: 14, paddingBottom: 100 },
   discSep: { height: 1, backgroundColor: COLORS.cardBorder },
-  discRow: { paddingVertical: 14, gap: 6 },
+  discSortBar: { flexDirection: 'row', paddingHorizontal: 14, gap: 8, marginBottom: 6 },
+  discSortBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 6, borderRadius: RADIUS.full, backgroundColor: COLORS.card, borderWidth: 1, borderColor: COLORS.cardBorder },
+  discSortBtnActive: { borderColor: `${COLORS.gold}50`, backgroundColor: `${COLORS.gold}15` },
+  discSortText: { color: COLORS.muted, fontSize: SIZES.xs, fontWeight: '700' },
+  discSortTextActive: { color: COLORS.gold },
+  discRow: { flexDirection: 'row', paddingVertical: 12, gap: 10 },
+  discVoteCol: { alignItems: 'center', gap: 2, width: 32, paddingTop: 2 },
+  discVoteScore: { color: COLORS.muted, fontSize: SIZES.sm, fontWeight: '800', textAlign: 'center' },
+  discContent: { flex: 1, gap: 4 },
   discRowTop: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  discFlair: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: RADIUS.full, borderWidth: 1 },
+  discFlairText: { fontSize: 10, fontWeight: '700', letterSpacing: 0.3 },
   discRowTime: { color: COLORS.muted, fontSize: SIZES.xs, marginLeft: 'auto' },
   discRowTitle: { color: COLORS.white, fontSize: SIZES.base, fontWeight: '800', lineHeight: 22 },
   discRowPreview: { color: COLORS.muted, fontSize: SIZES.sm, lineHeight: 18 },
-  discRowFooter: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4 },
-  discRowAvatar: { width: 20, height: 20, borderRadius: 10, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.bg },
-  discRowAvatarLetter: { fontSize: 9, fontWeight: '900' },
-  discRowAuthor: { color: COLORS.muted, fontSize: SIZES.xs, fontWeight: '600', flex: 1 },
-  discRowStats: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  discRowFooter: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 },
+  discRowAvatar: { width: 18, height: 18, borderRadius: 9, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.bg },
+  discRowAvatarLetter: { fontSize: 8, fontWeight: '900' },
+  discRowAuthor: { color: COLORS.muted, fontSize: SIZES.xs, fontWeight: '600' },
+  discVerifiedDot: { backgroundColor: COLORS.gold, borderRadius: RADIUS.full, width: 12, height: 12, alignItems: 'center', justifyContent: 'center' },
+  discRowStats: { flexDirection: 'row', alignItems: 'center', gap: 3, marginLeft: 4 },
   discRowStatText: { color: COLORS.muted, fontSize: SIZES.xs },
   // Modal
   modal: { flex: 1, backgroundColor: COLORS.bg },

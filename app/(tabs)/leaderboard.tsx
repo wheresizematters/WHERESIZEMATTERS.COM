@@ -7,7 +7,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { COLORS, SIZES, RADIUS, getSizeTier } from '@/constants/theme';
-import { fetchLeaderboard, fetchUserRank, fetchTotalUserCount, fetchLeaderboardByRadius, NearbyEntry } from '@/lib/api';
+import { fetchLeaderboard, fetchUserRank, fetchTotalUserCount, fetchLeaderboardByRadius, NearbyEntry, RankResult } from '@/lib/api';
 import PageContainer from '@/components/PageContainer';
 import { usePurchase } from '@/context/PurchaseContext';
 import { useAuth } from '@/context/AuthContext';
@@ -161,7 +161,7 @@ export default function LeaderboardScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [activeFilter, setActiveFilter] = useState('Global');
   const [showPaywall, setShowPaywall] = useState(false);
-  const [myRank, setMyRank] = useState<number | null>(null);
+  const [myRank, setMyRank] = useState<RankResult | null>(null);
   const [totalUsers, setTotalUsers] = useState<number>(0);
 
   // Mode: 'global' | 'nearby' | 'dickcoins'
@@ -192,8 +192,8 @@ export default function LeaderboardScreen() {
     setEntries(data);
     setTotalUsers(total);
     if (session?.user.id && session.user.id !== 'demo') {
-      const rank = await fetchUserRank(session.user.id);
-      setMyRank(rank || null);
+      const rankResult = await fetchUserRank(session.user.id);
+      setMyRank(rankResult.rank > 0 ? rankResult : null);
     }
     setLoading(false);
     setRefreshing(false);
@@ -387,10 +387,14 @@ export default function LeaderboardScreen() {
                   style={styles.heroCardInner}
                 >
                   <View style={styles.heroLeft}>
-                    <Text style={styles.heroLabel}>YOUR RANKING</Text>
+                    <Text style={styles.heroLabel}>
+                      {myRank?.provisional ? 'PROVISIONAL RANKING' : 'YOUR RANKING'}
+                    </Text>
                     <Text style={styles.heroRank} numberOfLines={1} adjustsFontSizeToFit>
-                      {myRank ? `#${myRank.toLocaleString()}` : '—'}
-                      {totalUsers > 0 && <Text style={styles.heroRankTotal}> / {totalUsers.toLocaleString()}</Text>}
+                      {myRank ? `#${myRank.rank.toLocaleString()}` : '—'}
+                      {myRank && myRank.totalVerified > 0 && (
+                        <Text style={styles.heroRankTotal}> / {myRank.totalVerified.toLocaleString()}</Text>
+                      )}
                     </Text>
                     <Text style={styles.heroUsername}>@{profile.username}</Text>
                     {profile.is_verified ? (
@@ -401,7 +405,7 @@ export default function LeaderboardScreen() {
                     ) : (
                       <TouchableOpacity onPress={() => router.push('/verify' as any)} style={styles.verifyHintBtn}>
                         <Ionicons name="shield-checkmark-outline" size={12} color={COLORS.gold} />
-                        <Text style={styles.unverifiedHint}>Get Verified →</Text>
+                        <Text style={styles.unverifiedHint}>Verify to lock in your rank →</Text>
                       </TouchableOpacity>
                     )}
                   </View>

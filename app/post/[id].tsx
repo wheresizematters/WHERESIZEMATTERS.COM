@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View, Text, FlatList, TouchableOpacity, StyleSheet,
   SafeAreaView, TextInput, KeyboardAvoidingView, Platform,
-  ActivityIndicator, Alert, Linking,
+  ActivityIndicator, Alert, Linking, Image,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -12,6 +12,7 @@ import { fetchPost, fetchComments, createComment, voteOnPoll, voteOnPost, delete
 import { useAuth } from '@/context/AuthContext';
 import { usePurchase } from '@/context/PurchaseContext';
 import { SUPABASE_READY } from '@/lib/supabase';
+import { pickMedia, uploadMedia } from '@/lib/media';
 import { Post, Comment } from '@/lib/types';
 import LockedMedia from '@/components/LockedMedia';
 import LinkPreview from '@/components/LinkPreview';
@@ -215,8 +216,33 @@ function PostDetail({ post, myId, isPremium, onVotePost }: {
 function CommentRow({ comment }: { comment: Comment }) {
   const router = useRouter();
   const tier = getSizeTier(comment.author.size_inches);
+  const [score, setScore] = useState((comment as any).score ?? 0);
+  const [userVote, setUserVote] = useState<0 | 1 | -1>((comment as any).user_vote ?? 0);
+  const linkUrl = extractFirstUrl(comment.content);
+
+  function handleVote(vote: 1 | -1 | 0) {
+    const delta = vote - userVote;
+    setScore((s: number) => s + delta);
+    setUserVote(vote as 0 | 1 | -1);
+    // TODO: wire up comment vote API when backend supports it
+  }
+
   return (
     <View style={styles.commentRow}>
+      {/* Vote column */}
+      <View style={styles.commentVoteCol}>
+        <TouchableOpacity onPress={() => handleVote(userVote === 1 ? 0 : 1)} hitSlop={{ top: 6, bottom: 4, left: 6, right: 6 }}>
+          <Ionicons name="arrow-up" size={16} color={userVote === 1 ? COLORS.gold : COLORS.mutedDark} />
+        </TouchableOpacity>
+        <Text style={[styles.commentVoteScore, userVote === 1 && { color: COLORS.gold }, userVote === -1 && { color: '#60A5FA' }]}>
+          {score}
+        </Text>
+        <TouchableOpacity onPress={() => handleVote(userVote === -1 ? 0 : -1)} hitSlop={{ top: 4, bottom: 6, left: 6, right: 6 }}>
+          <Ionicons name="arrow-down" size={16} color={userVote === -1 ? '#60A5FA' : COLORS.mutedDark} />
+        </TouchableOpacity>
+      </View>
+
+      {/* Avatar */}
       <TouchableOpacity onPress={() => router.push(`/profile/${comment.author.id}` as any)} activeOpacity={0.7}>
         <View style={[styles.commentAvatar, { borderColor: tier.color }]}>
           <Text style={[styles.commentAvatarText, { color: tier.color }]}>
@@ -224,6 +250,8 @@ function CommentRow({ comment }: { comment: Comment }) {
           </Text>
         </View>
       </TouchableOpacity>
+
+      {/* Body */}
       <View style={styles.commentBody}>
         <View style={styles.commentHeader}>
           <TouchableOpacity onPress={() => router.push(`/profile/${comment.author.id}` as any)} activeOpacity={0.7}>
@@ -236,7 +264,17 @@ function CommentRow({ comment }: { comment: Comment }) {
           )}
           <Text style={styles.commentTime}>{timeAgo(comment.created_at)}</Text>
         </View>
-        <Text style={styles.commentContent}>{comment.content}</Text>
+        <LinkedText text={comment.content} style={styles.commentContent} />
+        {/* Link preview */}
+        {linkUrl && <LinkPreview url={linkUrl} />}
+        {/* Comment media */}
+        {(comment as any).media_url && (
+          <Image
+            source={{ uri: (comment as any).media_url }}
+            style={styles.commentMedia}
+            resizeMode="cover"
+          />
+        )}
       </View>
     </View>
   );
@@ -255,6 +293,7 @@ export default function PostScreen() {
   const [loading, setLoading] = useState(true);
   const [text, setText] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [commentMedia, setCommentMedia] = useState<any | null>(null);
   const inputRef = useRef<TextInput>(null);
 
   async function handleVoteOnPost(vote: 1 | -1 | 0) {
@@ -279,18 +318,47 @@ export default function PostScreen() {
     if (!SUPABASE_READY) return;
   }, [postId]);
 
+  async function handlePickCommentMedia() {
+    const asset = await pickMedia();
+    if (asset) setCommentMedia(asset);
+  }
+
   async function handleSubmit() {
     const content = text.trim();
-    if (!content || submitting || !session) return;
+    if ((!content && !commentMedia) || submitting || !session) return;
     setSubmitting(true);
     setText('');
-    const { error } = await createComment(postId, myId, content);
+
+    let mediaUrl: string | undefined;
+    if (commentMedia) {
+      const commentId = Date.now().toString();
+      const url = await uploadMedia(session.user.id, `comment-${commentId}`, commentMedia.uri, commentMedia.mimeType ?? 'image/jpeg');
+      if (url) mediaUrl = url;
+    }
+
+    const { error } = await createComment(postId, myId, content || '', mediaUrl);
     setSubmitting(false);
+    setCommentMedia(null);
     if (error) {
       setText(content);
       window.alert(`Failed to post comment: ${error}`);
     } else {
-      window.alert('Comment posted! Pull down to refresh.');
+      // Optimistically add comment to list
+      const newComment: Comment = {
+        id: Date.now().toString(),
+        post_id: postId,
+        user_id: myId,
+        content: content || '',
+        author: {
+          id: myId,
+          username: (session.user as any).user_metadata?.username ?? (session.user as any).username ?? 'you',
+          size_inches: 0,
+          is_verified: false,
+        },
+        created_at: new Date().toISOString(),
+        ...(mediaUrl ? { media_url: mediaUrl } : {}),
+      } as any;
+      setComments(prev => [...prev, newComment]);
     }
   }
 
@@ -346,30 +414,44 @@ export default function PostScreen() {
 
         {/* Comment input */}
         {session && (
-          <View style={styles.inputBar}>
-            <TextInput
-              ref={inputRef}
-              style={styles.input}
-              placeholder="Add a comment..."
-              placeholderTextColor={COLORS.muted}
-              value={text}
-              onChangeText={setText}
-              multiline
-              maxLength={300}
-              returnKeyType="send"
-              onSubmitEditing={handleSubmit}
-              blurOnSubmit={false}
-            />
-            <TouchableOpacity
-              style={[styles.sendBtn, (!text.trim() || submitting) && styles.sendBtnDisabled]}
-              onPress={handleSubmit}
-              disabled={!text.trim() || submitting}
-            >
-              {submitting
-                ? <ActivityIndicator size="small" color={COLORS.bg} />
-                : <Ionicons name="arrow-up" size={18} color={COLORS.bg} />
-              }
-            </TouchableOpacity>
+          <View>
+            {/* Media preview */}
+            {commentMedia && (
+              <View style={styles.commentMediaPreview}>
+                <Image source={{ uri: commentMedia.uri }} style={styles.commentMediaThumb} resizeMode="cover" />
+                <TouchableOpacity style={styles.commentMediaRemove} onPress={() => setCommentMedia(null)}>
+                  <Ionicons name="close-circle" size={20} color={COLORS.white} />
+                </TouchableOpacity>
+              </View>
+            )}
+            <View style={styles.inputBar}>
+              <TouchableOpacity onPress={handlePickCommentMedia} style={styles.mediaBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 4 }}>
+                <Ionicons name="image-outline" size={20} color={commentMedia ? COLORS.gold : COLORS.muted} />
+              </TouchableOpacity>
+              <TextInput
+                ref={inputRef}
+                style={styles.input}
+                placeholder="Add a comment..."
+                placeholderTextColor={COLORS.muted}
+                value={text}
+                onChangeText={setText}
+                multiline
+                maxLength={500}
+                returnKeyType="send"
+                onSubmitEditing={handleSubmit}
+                blurOnSubmit={false}
+              />
+              <TouchableOpacity
+                style={[styles.sendBtn, (!text.trim() && !commentMedia || submitting) && styles.sendBtnDisabled]}
+                onPress={handleSubmit}
+                disabled={(!text.trim() && !commentMedia) || submitting}
+              >
+                {submitting
+                  ? <ActivityIndicator size="small" color={COLORS.bg} />
+                  : <Ionicons name="arrow-up" size={18} color={COLORS.bg} />
+                }
+              </TouchableOpacity>
+            </View>
           </View>
         )}
       </KeyboardAvoidingView>
@@ -430,8 +512,10 @@ const styles = StyleSheet.create({
   emptyText: { color: COLORS.muted, fontSize: SIZES.md },
 
   // Comment row
-  commentRow: { flexDirection: 'row', gap: 12, paddingHorizontal: 16, paddingVertical: 12 },
-  commentAvatar: { width: 36, height: 36, borderRadius: 18, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.card },
+  commentRow: { flexDirection: 'row', gap: 10, paddingHorizontal: 16, paddingVertical: 12 },
+  commentVoteCol: { alignItems: 'center', gap: 1, width: 24, paddingTop: 2 },
+  commentVoteScore: { color: COLORS.muted, fontSize: 11, fontWeight: '800', textAlign: 'center' },
+  commentAvatar: { width: 32, height: 32, borderRadius: 16, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.card },
   commentAvatarText: { fontSize: SIZES.sm, fontWeight: '800' },
   commentBody: { flex: 1 },
   commentHeader: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 },
@@ -440,10 +524,15 @@ const styles = StyleSheet.create({
   commentVerifiedText: { color: COLORS.bg, fontSize: 8, fontWeight: '900' },
   commentTime: { color: COLORS.muted, fontSize: SIZES.xs, marginLeft: 'auto' },
   commentContent: { color: COLORS.offWhite, fontSize: SIZES.md, lineHeight: 20 },
+  commentMedia: { width: '100%', height: 180, borderRadius: RADIUS.md, marginTop: 8, backgroundColor: COLORS.card },
 
   // Input bar
   inputBar: { flexDirection: 'row', alignItems: 'flex-end', paddingHorizontal: 12, paddingVertical: 10, borderTopWidth: 1, borderTopColor: COLORS.cardBorder, gap: 8 },
+  mediaBtn: { paddingBottom: Platform.OS === 'ios' ? 8 : 6 },
   input: { flex: 1, backgroundColor: COLORS.card, borderWidth: 1, borderColor: COLORS.cardBorder, borderRadius: RADIUS.full, paddingHorizontal: 16, paddingVertical: Platform.OS === 'ios' ? 10 : 8, color: COLORS.white, fontSize: SIZES.md, maxHeight: 100 },
   sendBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: COLORS.gold, alignItems: 'center', justifyContent: 'center' },
   sendBtnDisabled: { opacity: 0.4 },
+  commentMediaPreview: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingTop: 8, borderTopWidth: 1, borderTopColor: COLORS.cardBorder },
+  commentMediaThumb: { width: 60, height: 60, borderRadius: RADIUS.sm, backgroundColor: COLORS.card },
+  commentMediaRemove: { marginLeft: 8 },
 });

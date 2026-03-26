@@ -121,7 +121,8 @@ async function pickAndUploadImage(bucket: 'avatars' | 'headers', userId: string)
 export default function ProfileScreen() {
   const router = useRouter();
   const { profile, session, signOut, demoMode, refreshProfile, updateProfile } = useAuth();
-  const [rank, setRank] = useState<number | null>(null);
+  const [rankResult, setRankResult] = useState<{ rank: number; provisional: boolean; totalVerified: number } | null>(null);
+  const rank = rankResult?.rank ?? null;
   const [postCount, setPostCount] = useState(0);
   const [totalUsers, setTotalUsers] = useState(0);
   const [showSize, setShowSize] = useState(true);
@@ -146,7 +147,7 @@ export default function ProfileScreen() {
 
   useEffect(() => {
     if (!session?.user.id) return;
-    fetchUserRank(session.user.id).then(setRank).catch(() => {});
+    fetchUserRank(session.user.id).then(r => setRankResult(r.rank > 0 ? r : null)).catch(() => {});
     fetchUserPostCount(session.user.id).then(setPostCount).catch(() => {});
     fetchTotalUserCount().then(setTotalUsers).catch(() => {});
     fetchUserPercentile(size).then(setPercentile).catch(() => {});
@@ -343,7 +344,7 @@ export default function ProfileScreen() {
           {/* ── Stats grid ── */}
           <View style={styles.statsGrid}>
             {[
-              { val: rank ? `#${rank.toLocaleString()}` : '—', lbl: 'Global Rank' },
+              { val: rank ? `#${rank.toLocaleString()}` : '—', lbl: rankResult?.provisional ? 'Provisional Rank' : 'Global Rank' },
               { val: percentileVal !== null ? `${percentileVal}th` : '—', lbl: 'Percentile' },
               { val: size >= WORLD_AVERAGE ? `+${(size - WORLD_AVERAGE).toFixed(1)}"` : `-${(WORLD_AVERAGE - size).toFixed(1)}"`, lbl: 'vs Avg' },
               { val: String(postCount), lbl: 'Posts' },

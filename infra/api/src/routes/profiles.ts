@@ -20,6 +20,14 @@ r.get("/leaderboard", async (req, res) => {
   res.json(entries);
 });
 
+r.get("/leaderboard/nearby", async (req, res) => {
+  const { lat, lng, radius } = req.query as any;
+  const entries = await svc.getLeaderboardNearby(
+    parseFloat(lat), parseFloat(lng), parseFloat(radius ?? "25")
+  );
+  res.json(entries);
+});
+
 r.get("/search", async (req, res) => {
   const { q } = req.query as any;
   const results = await svc.searchUsers(q ?? "");
@@ -43,8 +51,8 @@ r.get("/:userId", async (req, res) => {
 });
 
 r.get("/:userId/rank", async (req, res) => {
-  const rank = await svc.getUserRank(req.params.userId);
-  res.json({ rank });
+  const result = await svc.getUserRank(req.params.userId);
+  res.json(result);
 });
 
 r.post("/:userId/coins", requireAuth, async (req, res) => {
