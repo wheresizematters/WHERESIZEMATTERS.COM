@@ -16,12 +16,32 @@ const SOCIAL_PROVIDERS: { provider: OAuthProvider; label: string; icon: any; bg:
   { provider: 'x', label: 'Continue with X', icon: 'logo-twitter', bg: '#000', color: '#fff' },
 ];
 
+// Detect mobile browser (not in-app wallet browser)
+function isMobileWithoutWallet(): boolean {
+  if (typeof navigator === 'undefined') return false;
+  const ua = navigator.userAgent;
+  const isMobile = /iPhone|iPad|iPod|Android/i.test(ua);
+  const hasWallet = !!(window as any)?.ethereum || !!(window as any)?.okxwallet || !!(window as any)?.phantom?.ethereum;
+  return isMobile && !hasWallet;
+}
+
 // Wallet connect
 async function connectWalletLogin(): Promise<{ address: string } | null> {
   // Support MetaMask, Coinbase Wallet, OKX, and other EIP-1193 wallets
   const eth = (window as any)?.ethereum ?? (window as any)?.okxwallet;
   if (!eth) {
-    window.alert('No wallet detected. Install MetaMask, Coinbase Wallet, or OKX Wallet.');
+    if (isMobileWithoutWallet()) {
+      window.alert(
+        'To connect your wallet on mobile, open this site inside your wallet app:\n\n' +
+        '• MetaMask → Browser tab → wheresizematters.com\n' +
+        '• OKX Wallet → Discover → enter URL\n' +
+        '• Phantom → Browse → enter URL\n' +
+        '• Coinbase Wallet → Browser → enter URL\n\n' +
+        'Mobile browsers can\'t access wallet extensions directly.'
+      );
+    } else {
+      window.alert('No wallet detected. Install MetaMask, Coinbase Wallet, or OKX Wallet browser extension.');
+    }
     return null;
   }
   try {

@@ -53,9 +53,21 @@ export default function EarnScreen() {
 
   async function connectWallet() {
     if (Platform.OS !== 'web') return;
-    const eth = (window as any).ethereum;
+    const eth = (window as any).ethereum ?? (window as any).okxwallet;
     if (!eth) {
-      window.alert('No wallet detected. Install MetaMask or Coinbase Wallet to connect.');
+      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+      if (isMobile) {
+        window.alert(
+          'To connect your wallet on mobile, open this site inside your wallet app:\n\n' +
+          '• MetaMask → Browser tab → wheresizematters.com\n' +
+          '• OKX Wallet → Discover → enter URL\n' +
+          '• Phantom → Browse → enter URL\n' +
+          '• Coinbase Wallet → Browser → enter URL\n\n' +
+          'Mobile browsers can\'t access wallet extensions directly.'
+        );
+      } else {
+        window.alert('No wallet detected. Install MetaMask, Coinbase Wallet, or OKX Wallet browser extension.');
+      }
       return;
     }
     setConnectingWallet(true);
