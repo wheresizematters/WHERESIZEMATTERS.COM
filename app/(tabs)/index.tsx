@@ -132,10 +132,11 @@ function SizeBadge({ inches, verified, isPremium }: { inches: number; verified: 
     );
   }
   const tier = getSizeTier(inches);
+  const shortLabel = tier.label === 'Below Average' ? 'Below Avg' : tier.label === 'Above Average' ? 'Above Avg' : tier.label;
   return (
-    <View style={[styles.badgeMuted, { borderColor: tier.color }]}>
+    <View style={[styles.badgeMuted, { borderColor: tier.color, backgroundColor: `${tier.color}15` }]}>
       <Text style={[styles.badgeText, { color: tier.color }]}>
-        {tier.emoji}{verified ? ' ✓' : ''}
+        {shortLabel}{verified ? ' ✓' : ''}
       </Text>
     </View>
   );
@@ -1025,9 +1026,9 @@ const styles = StyleSheet.create({
   authorMeta: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8 },
   authorUsername: { color: COLORS.muted, fontSize: SIZES.sm, fontWeight: '600' },
   postTime: { color: COLORS.muted, fontSize: SIZES.xs },
-  badge: { borderRadius: RADIUS.full, paddingHorizontal: 9, paddingVertical: 3 },
-  badgeMuted: { borderWidth: 1, borderRadius: RADIUS.full, paddingHorizontal: 8, paddingVertical: 2 },
-  badgeText: { fontSize: 10, fontWeight: '800', letterSpacing: 0.5, color: COLORS.white, textShadowColor: 'rgba(0,0,0,0.3)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 2 },
+  badge: { borderRadius: RADIUS.full, paddingHorizontal: 10, paddingVertical: 4 },
+  badgeMuted: { borderWidth: 1.5, borderRadius: RADIUS.full, paddingHorizontal: 10, paddingVertical: 4 },
+  badgeText: { fontSize: 13, fontWeight: '800', letterSpacing: 0.5, color: COLORS.white, textShadowColor: 'rgba(0,0,0,0.3)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 2 },
   // Content
   pollQuestion: { color: COLORS.white, fontSize: SIZES.base, fontWeight: '700', lineHeight: 22 },
   discussionText: { color: COLORS.offWhite, fontSize: SIZES.base, lineHeight: 24 },
