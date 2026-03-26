@@ -200,7 +200,7 @@ export default function VerifyScreen() {
               </View>
 
               {/* Verification type selector */}
-              <Text style={s.sectionLabel}>WHAT ARE YOU VERIFYING?</Text>
+              
               <View style={s.typeRow}>
                 <TouchableOpacity
                   style={[s.typeCard, verifyType === 'size' && s.typeCardActive]}
@@ -208,7 +208,7 @@ export default function VerifyScreen() {
                 >
                   <Ionicons name="resize" size={22} color={verifyType === 'size' ? COLORS.gold : COLORS.muted} />
                   <Text style={[s.typeCardLabel, verifyType === 'size' && s.typeCardLabelActive]}>Size</Text>
-                  <Text style={s.typeCardDesc}>Verify your measurement</Text>
+                  
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -217,7 +217,7 @@ export default function VerifyScreen() {
                 >
                   <Ionicons name="person-circle" size={22} color={verifyType === 'face' ? COLORS.gold : COLORS.muted} />
                   <Text style={[s.typeCardLabel, verifyType === 'face' && s.typeCardLabelActive]}>Face</Text>
-                  <Text style={s.typeCardDesc}>Verify your identity</Text>
+                  
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -225,8 +225,8 @@ export default function VerifyScreen() {
                   onPress={() => setVerifyType('bra')}
                 >
                   <Ionicons name="heart" size={22} color={verifyType === 'bra' ? COLORS.purple : COLORS.muted} />
-                  <Text style={[s.typeCardLabel, verifyType === 'bra' && { color: COLORS.purple }]}>Bra Size</Text>
-                  <Text style={s.typeCardDesc}>For the ladies</Text>
+                  <Text style={[s.typeCardLabel, verifyType === 'bra' && { color: COLORS.purple }]}>Other</Text>
+                  
                 </TouchableOpacity>
               </View>
 
