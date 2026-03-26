@@ -9,7 +9,9 @@ const STRIPE_LINK_ANNUAL  = 'https://buy.stripe.com/eVqbJ1bQ2aHn1Xpdzse3e01';
 
 export async function stripeCheckout(plan: 'monthly' | 'annual', userId: string) {
   const base = plan === 'annual' ? STRIPE_LINK_ANNUAL : STRIPE_LINK_MONTHLY;
-  window.location.href = `${base}?client_reference_id=${userId}`;
+  // client_reference_id lets the webhook identify the user
+  // Redirect back to /earn (SPA route, not landing page) after payment
+  window.location.href = `${base}?client_reference_id=${userId}&redirect_url=${encodeURIComponent('https://www.wheresizematters.com/earn?subscribed=1')}`;
 }
 
 export function isPremiumUser(premiumStatus: boolean): boolean {

@@ -14,6 +14,7 @@ import dickcoinRoutes from "./routes/dickcoins";
 import circleJerkRoutes from "./routes/circlejerks";
 import verificationRoutes from "./routes/verifications";
 import giftRoutes from "./routes/gifts";
+import stripeRoutes from "./routes/stripe";
 
 const app = express();
 const PORT = parseInt(process.env.PORT ?? "3000", 10);
@@ -46,6 +47,7 @@ app.use("/api/v1/dickcoins", dickcoinRoutes);
 app.use("/api/v1/circle-jerks", circleJerkRoutes);
 app.use("/api/v1/verifications", verificationRoutes);
 app.use("/api/v1/gifts", giftRoutes);
+app.use("/api/v1/stripe", stripeRoutes);
 
 app.listen(PORT, () => {
   console.log("=== SIZE. API ===");
