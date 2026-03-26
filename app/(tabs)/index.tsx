@@ -399,7 +399,7 @@ function CreatePostModal({ visible, onClose, onPost, isPremium }: {
     let mediaUrl: string | undefined;
     if (mediaAsset) {
       const url = await uploadMedia(session.user.id, postId, mediaAsset.uri, mediaAsset.mimeType ?? 'image/jpeg');
-      if (url) mediaUrl = url;
+      if (url) { mediaUrl = url; } else { window.alert("Image upload failed. Post will be created without the image."); }
     }
     const dbType = type === 'poll' ? 'poll' : 'discussion';
     const opts = type === 'poll' ? pollOptions.filter(o => o.trim()) : undefined;

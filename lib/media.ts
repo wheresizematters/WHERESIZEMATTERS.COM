@@ -28,7 +28,7 @@ export async function uploadMedia(
   localUri: string,
   mimeType: string,
 ): Promise<string | null> {
-  if (!SUPABASE_READY) return localUri;
+  if (!SUPABASE_READY) return null;
 
   const ext = mimeType.includes('video') ? 'mp4' : 'jpg';
   const path = `media/${userId}/${postId}.${ext}`;
@@ -41,7 +41,7 @@ export async function uploadMedia(
     method: 'POST', headers,
     body: JSON.stringify({ bucket: 'media', path, contentType: mimeType }),
   });
-  if (!urlRes.ok) return null;
+  if (!urlRes.ok) { console.error("Upload URL failed:", urlRes.status); return null; }
   const { uploadUrl, publicUrl } = await urlRes.json();
 
   // Upload to S3
@@ -51,6 +51,6 @@ export async function uploadMedia(
     method: 'PUT', body: blob,
     headers: { 'Content-Type': mimeType },
   });
-  if (!uploadRes.ok) return null;
+  if (!uploadRes.ok) { console.error("S3 upload failed:", uploadRes.status); return null; }
   return publicUrl;
 }
