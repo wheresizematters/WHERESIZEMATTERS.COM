@@ -7,6 +7,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SIZES, RADIUS } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
+import { useUnread } from '@/context/UnreadContext';
 import PageContainer from '@/components/PageContainer';
 import { getMyCircleJerks, getTrendingDickCoins, getTierInfo, DickCoin } from '@/lib/dickcoin';
 import { getToken } from '@/lib/supabase';
@@ -14,6 +15,7 @@ import { getToken } from '@/lib/supabase';
 export default function CommunitiesScreen() {
   const router = useRouter();
   const { session, profile } = useAuth();
+  const { hasUnread } = useUnread();
 
   const [tab, setTab] = useState<'mine' | 'trending'>('mine');
   const [myCoins, setMyCoins] = useState<DickCoin[]>([]);
@@ -44,17 +46,27 @@ export default function CommunitiesScreen() {
         <View style={styles.header}>
           <View style={styles.headerLeft}>
             <Text style={styles.logo}>SIZE.</Text>
-            <Text style={styles.title}>CIRCLE JERKS</Text>
+            <Text style={styles.title}>CIRCLES</Text>
           </View>
-          {profile?.is_verified && (
+          <View style={{ flexDirection: 'row', gap: 8 }}>
             <TouchableOpacity
-              style={styles.launchBtn}
-              onPress={() => router.push('/launch-dickcoin' as any)}
+              style={styles.dmBtn}
+              onPress={() => router.push('/(tabs)/messages' as any)}
             >
-              <Ionicons name="add" size={16} color={COLORS.bg} />
-              <Text style={styles.launchBtnText}>Launch</Text>
+              <Ionicons name="chatbubbles-outline" size={16} color={COLORS.gold} />
+              <Text style={styles.dmBtnText}>DMs</Text>
+              {hasUnread && <View style={styles.dmDot} />}
             </TouchableOpacity>
-          )}
+            {profile?.is_verified && (
+              <TouchableOpacity
+                style={styles.launchBtn}
+                onPress={() => router.push('/launch-dickcoin' as any)}
+              >
+                <Ionicons name="add" size={16} color={COLORS.bg} />
+                <Text style={styles.launchBtnText}>Launch</Text>
+              </TouchableOpacity>
+            )}
+          </View>
         </View>
 
         {/* Tab toggle */}
@@ -139,6 +151,9 @@ const styles = StyleSheet.create({
   headerLeft: { flexDirection: 'row', alignItems: 'baseline', gap: 8 },
   logo: { fontSize: 28, fontWeight: '900', color: COLORS.gold, letterSpacing: 4 },
   title: { fontSize: SIZES.base, fontWeight: '900', color: COLORS.white, letterSpacing: 2 },
+  dmBtn: { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: COLORS.card, borderRadius: RADIUS.md, paddingHorizontal: 12, paddingVertical: 8, borderWidth: 1, borderColor: COLORS.cardBorder, position: "relative" as any },
+  dmBtnText: { color: COLORS.gold, fontWeight: "700", fontSize: SIZES.sm },
+  dmDot: { position: "absolute" as any, top: -2, right: -2, width: 8, height: 8, borderRadius: 4, backgroundColor: COLORS.gold },
   launchBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: COLORS.gold, borderRadius: RADIUS.md, paddingHorizontal: 12, paddingVertical: 8 },
   launchBtnText: { color: COLORS.bg, fontWeight: '800', fontSize: SIZES.sm },
 

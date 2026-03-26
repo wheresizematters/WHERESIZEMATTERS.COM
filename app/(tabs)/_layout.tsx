@@ -66,10 +66,7 @@ export default function TabLayout() {
           name="communities"
           options={{ tabBarIcon: ({ focused }) => <TabIcon name="people" focused={focused} label="Circles" /> }}
         />
-        <Tabs.Screen
-          name="messages"
-          options={{ tabBarIcon: ({ focused }) => <TabIcon name="chatbubbles" focused={focused} label="DMs" badge={hasUnread} /> }}
-        />
+        <Tabs.Screen name="messages" options={{ href: null }} />
         <Tabs.Screen
           name="profile"
           options={{ tabBarIcon: ({ focused }) => <TabIcon name="person" focused={focused} label="Profile" /> }}

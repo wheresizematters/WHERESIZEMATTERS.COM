@@ -164,8 +164,9 @@ export default function LeaderboardScreen() {
   const [myRank, setMyRank] = useState<number | null>(null);
   const [totalUsers, setTotalUsers] = useState<number>(0);
 
-  // Mode: 'global' | 'nearby'
-  const [mode, setMode] = useState<'global' | 'nearby'>('global');
+  // Mode: 'global' | 'nearby' | 'dickcoins'
+  const [mode, setMode] = useState<'global' | 'nearby' | 'dickcoins'>('global');
+  const [dickCoins, setDickCoins] = useState<any[]>([]);
 
   // Nearby state
   const [location, setLocation] = useState<UserLocation | null>(null);
@@ -485,9 +486,23 @@ export default function LeaderboardScreen() {
             <Ionicons name="location-outline" size={14} color={mode === 'nearby' ? COLORS.gold : COLORS.muted} />
             <Text style={[styles.modeBtnText, mode === 'nearby' && styles.modeBtnTextActive]}>Nearby</Text>
           </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.modeBtn, mode === 'dickcoins' && styles.modeBtnActive]}
+            onPress={async () => {
+              setMode('dickcoins');
+              if (dickCoins.length === 0) {
+                const { getTrendingDickCoins } = require('@/lib/dickcoin');
+                const coins = await getTrendingDickCoins();
+                setDickCoins(coins);
+              }
+            }}
+          >
+            <Ionicons name="rocket-outline" size={14} color={mode === 'dickcoins' ? COLORS.gold : COLORS.muted} />
+            <Text style={[styles.modeBtnText, mode === 'dickcoins' && styles.modeBtnTextActive]}>DickCoins</Text>
+          </TouchableOpacity>
         </View>
 
-        {mode === 'global' ? renderGlobalContent() : renderNearbyContent()}
+        {mode === 'global' ? renderGlobalContent() : mode === 'nearby' ? renderNearbyContent() : (          <FlatList            data={dickCoins}            keyExtractor={c => c.contractAddress ?? c.id}            contentContainerStyle={styles.list}            renderItem={({ item, index }) => (              <TouchableOpacity style={styles.row} onPress={() => { if (typeof window !== 'undefined') window.location.href = '/coin/' + (item.contractAddress ?? item.id); }} activeOpacity={0.7}>                <View style={styles.rankNumWrap}><Text style={styles.rankNum}>#{index + 1}</Text></View>                <View style={styles.userInfo}>                  <Text style={styles.username}>{item.name} <Text style={{ color: COLORS.gold, fontSize: SIZES.xs }}>{item.ticker}</Text></Text>                  <Text style={styles.countryText}>by @{item.creatorUsername} u00b7 {item.holderCount ?? 0} holders</Text>                </View>              </TouchableOpacity>            )}            ListEmptyComponent={<View style={{ alignItems: 'center', paddingTop: 60 }}><Text style={{ color: COLORS.muted }}>No DickCoins launched yet</Text></View>}          />        )}
 
         <PaywallModal visible={showPaywall} onClose={() => setShowPaywall(false)} trigger="Unlock the full Top 100 leaderboard" />
       </PageContainer>
