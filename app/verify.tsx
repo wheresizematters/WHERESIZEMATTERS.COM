@@ -57,14 +57,12 @@ export default function VerifyScreen() {
   }
 
   async function confirmGirthAndProceed() {
-    const val = parseFloat(girthInput);
-    if (!girthInput.trim() || isNaN(val) || val <= 0 || val > 12) {
-      setGirthError('Please enter a valid girth measurement (required for verification)');
-      return;
-    }
     setGirthError('');
-    // Save girth to profile
-    await updateProfile({ girth_inches: val });
+    // Girth is optional — save if provided, skip if not
+    const val = parseFloat(girthInput);
+    if (girthInput.trim() && !isNaN(val) && val > 0 && val <= 12) {
+      await updateProfile({ girth_inches: val });
+    }
     if (pendingSource === 'camera') {
       await pickPhoto();
     } else {
@@ -353,11 +351,11 @@ export default function VerifyScreen() {
               </View>
               <Text style={s.heroTitle}>Enter Your Girth</Text>
               <Text style={s.heroSub}>
-                Girth measurement is required for verification so our AI can cross-check both dimensions.
+                Girth is optional. If provided, our AI can cross-check both dimensions for higher confidence.
               </Text>
             </View>
 
-            <Text style={s.sectionLabel}>GIRTH (circumference)</Text>
+            <Text style={s.sectionLabel}>GIRTH (optional)</Text>
             <View style={s.girthRow}>
               <TextInput
                 style={s.girthInput}
