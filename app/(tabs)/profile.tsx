@@ -185,7 +185,7 @@ export default function ProfileScreen() {
       if (!window.confirm('Are you sure you want to sign out?')) return;
       setSigningOut(true); await signOut(); return;
     }
-    Alert.alert('Sign Out', 'Are you sure?', [
+    if (window.confirm('Sign out?')) {
       { text: 'Cancel', style: 'cancel' },
       { text: 'Sign Out', style: 'destructive', onPress: async () => { setSigningOut(true); await signOut(); } },
     ]);

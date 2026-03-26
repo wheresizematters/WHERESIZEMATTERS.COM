@@ -73,7 +73,7 @@ export default function AdminScreen() {
       if (!window.confirm(msg)) return;
       doReview(req.id, action);
     } else {
-      Alert.alert(label, msg, [
+      if (window.confirm(label + ': ' + msg)) {
         { text: 'Cancel', style: 'cancel' },
         { text: label, style: action === 'reject' ? 'destructive' : 'default', onPress: () => doReview(req.id, action) },
       ]);

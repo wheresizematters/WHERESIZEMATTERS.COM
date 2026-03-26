@@ -218,8 +218,8 @@ export default function SettingsScreen() {
             icon="log-out-outline"
             label="Sign Out"
             danger
-            onPress={() => Alert.alert('Sign Out', 'Are you sure?', [
-              { text: 'Cancel', style: 'cancel' },
+            onPress={() => { if (window.confirm('Sign out?')) {
+              
               { text: 'Sign Out', style: 'destructive', onPress: signOut },
             ])}
           />
@@ -228,8 +228,8 @@ export default function SettingsScreen() {
             icon="trash-outline"
             label="Delete Account"
             danger
-            onPress={() => Alert.alert('Delete Account', 'This is permanent and cannot be undone.', [
-              { text: 'Cancel', style: 'cancel' },
+            onPress={() => { if (window.confirm('Delete account? This is permanent.')) {
+              
               { text: 'Delete', style: 'destructive', onPress: () => typeof window !== 'undefined' ? window.alert('Contact support@sizeapp.com to delete your account.') : null },
             ])}
           />
