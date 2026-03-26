@@ -23,22 +23,13 @@ r.post("/verify", requireAuth, async (req: Request, res: Response) => {
     const signedUrl = await getSignedUrl(s3, new GetObjectCommand({ Bucket: bucket, Key: imagePath }), { expiresIn: 300 });
 
     // Call the abliterated vision model on RunPod
-    const prompt = `You are a measurement verification AI for a social app. Analyze this photo carefully.
+    const prompt = `Measure the penis in this photo. Look for a reference object (ruler, tape measure, credit card, dollar bill, phone) to calibrate scale.
 
-The user claims their size is ${reportedSize} inches${reportedGirth ? ` with ${reportedGirth} inch girth` : ''}.
+Return JSON only:
+{"size_inches": <number>, "confidence": "high"|"medium"|"low", "reference": "<what you used to measure>"}
 
-Look for a reference object (ruler, credit card, dollar bill, measuring tape) in the photo.
-Estimate the actual measurement based on the reference object.
-
-Respond in this exact JSON format:
-{
-  "estimated_size": <number or null if can't determine>,
-  "confidence": "high" | "medium" | "low",
-  "reference_object_found": true | false,
-  "reference_object_type": "<what you see>",
-  "matches_claim": true | false,
-  "notes": "<brief explanation>"
-}`;
+If no reference object or no penis visible, return:
+{"size_inches": null, "confidence": "low", "reference": "none"}`;
 
     const visionRes = await fetch(`${VISION_URL}/v1/vision`, {
       method: "POST",
@@ -58,12 +49,12 @@ Respond in this exact JSON format:
       } catch {}
 
       const confidence = analysis.confidence ?? "low";
-      const matchesClaim = analysis.matches_claim ?? false;
-      const estimatedSize = analysis.estimated_size ?? null;
+      const estimatedSize = analysis.size_inches ?? null;
+      const reference = analysis.reference ?? "none";
 
-      // Auto-verify if high confidence and matches claim (within 0.5 inch tolerance)
-      const withinTolerance = estimatedSize && Math.abs(estimatedSize - reportedSize) <= 0.5;
-      const autoVerify = confidence === "high" && (matchesClaim || withinTolerance);
+      // Auto-verify: high/medium confidence + within 0.75 inch of claim
+      const withinTolerance = estimatedSize !== null && Math.abs(estimatedSize - reportedSize) <= 0.75;
+      const autoVerify = (confidence === "high" || confidence === "medium") && withinTolerance && reference !== "none";
 
       await svc.upsertVerificationRequest({
         user_id: req.userId!,
@@ -71,16 +62,24 @@ Respond in this exact JSON format:
         reported_size: reportedSize,
         ai_est_size: estimatedSize,
         ai_confidence: confidence,
-        ai_notes: analysis.notes ?? response.slice(0, 200),
+        ai_notes: `AI measured ${estimatedSize ?? '?'}" (${confidence} confidence, ref: ${reference}). Claimed: ${reportedSize}"`,
         status: autoVerify ? "auto_verified" : "pending",
       });
 
       if (autoVerify) {
-        await updateProfile(req.userId!, { is_verified: true } as any);
-        return res.json({ status: "auto_verified", reason: "AI verified your measurement" });
+        await updateProfile(req.userId!, { is_verified: true, size_inches: estimatedSize } as any);
+        return res.json({
+          status: "auto_verified",
+          reason: `Verified at ${estimatedSize}" (${confidence} confidence)`,
+        });
       }
 
-      return res.json({ status: "pending", reason: `AI confidence: ${confidence}. Queued for admin review.` });
+      return res.json({
+        status: "pending",
+        reason: estimatedSize
+          ? `AI measured ${estimatedSize}" (${confidence}). Queued for review.`
+          : `Could not measure (${confidence}). Queued for review.`,
+      });
     }
 
     // Vision API not available — fall back to manual review
