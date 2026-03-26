@@ -218,20 +218,14 @@ export default function SettingsScreen() {
             icon="log-out-outline"
             label="Sign Out"
             danger
-            onPress={() => { if (window.confirm('Sign out?')) {
-              
-              { text: 'Sign Out', style: 'destructive', onPress: signOut },
-            ])}
+            onPress={async () => { if (window.confirm('Sign out?')) { await signOut(); } }}
           />
           <View style={styles.divider} />
           <SettingsRow
             icon="trash-outline"
             label="Delete Account"
             danger
-            onPress={() => { if (window.confirm('Delete account? This is permanent.')) {
-              
-              { text: 'Delete', style: 'destructive', onPress: () => typeof window !== 'undefined' ? window.alert('Contact support@sizeapp.com to delete your account.') : null },
-            ])}
+            onPress={() => { if (window.confirm('Delete account? This is permanent.')) { window.alert('Contact @wheresize on X to delete your account.'); } }}
           />
         </View>
       </ScrollView>

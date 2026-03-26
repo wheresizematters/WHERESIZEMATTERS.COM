@@ -74,9 +74,8 @@ export default function AdminScreen() {
       doReview(req.id, action);
     } else {
       if (window.confirm(label + ': ' + msg)) {
-        { text: 'Cancel', style: 'cancel' },
-        { text: label, style: action === 'reject' ? 'destructive' : 'default', onPress: () => doReview(req.id, action) },
-      ]);
+        doReview(req.id, action);
+      }
     }
   }
 
