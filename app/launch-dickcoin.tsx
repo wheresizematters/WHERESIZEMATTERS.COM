@@ -44,7 +44,7 @@ export default function LaunchDickCoinScreen() {
   const [txHash, setTxHash] = useState('');
   const [generatingLogo, setGeneratingLogo] = useState(false);
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
-  const [logoRemaining, setLogoRemaining] = useState(4);
+  const [logoRemaining, setLogoRemaining] = useState(3);
 
   async function pickImage() {
     const result = await ImagePicker.launchImageLibraryAsync({
