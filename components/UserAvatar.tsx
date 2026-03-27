@@ -2,6 +2,7 @@ import { View, Text, StyleSheet } from 'react-native';
 import { Image } from 'expo-image';
 import { COLORS } from '@/constants/theme';
 import { getSizeTier } from '@/constants/theme';
+import { proxyMediaUrl } from '@/lib/media';
 
 interface Props {
   username: string;
@@ -29,7 +30,7 @@ export default function UserAvatar({
     <View style={[styles.wrap, { width: size, height: size }]}>
       {avatarUrl ? (
         <Image
-          source={{ uri: avatarUrl }}
+          source={{ uri: proxyMediaUrl(avatarUrl) ?? avatarUrl }}
           style={[
             styles.image,
             { width: size, height: size, borderRadius, borderWidth, borderColor: tier.color },

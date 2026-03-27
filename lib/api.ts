@@ -178,7 +178,7 @@ export async function uploadMessageMedia(
   conversationId: string, localUri: string, mimeType: string,
 ): Promise<{ path: string | null; error: string | null }> {
   const ext = mimeType.includes('video') ? 'mp4' : 'jpg';
-  const path = `message-media/${conversationId}/${Date.now()}.${ext}`;
+  const path = `${conversationId}/${Date.now()}.${ext}`;
   // Get presigned upload URL from our API
   const urlData = await post<{ uploadUrl: string; publicUrl: string }>('/api/v1/storage/upload-url', {
     bucket: 'message-media', path, contentType: mimeType,
@@ -193,8 +193,8 @@ export async function uploadMessageMedia(
 }
 
 export async function getMessageMediaUrl(path: string): Promise<string | null> {
-  const data = await api<{ url: string }>(`/api/v1/storage/signed-url?bucket=message-media&path=${encodeURIComponent(path)}`);
-  return data?.url ?? null;
+  // Media is now served through our proxy
+  return `/api/v1/storage/media/message-media/${path}`;
 }
 
 export async function markMediaViewed(messageId: string): Promise<void> {

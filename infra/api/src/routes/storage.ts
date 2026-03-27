@@ -44,8 +44,9 @@ r.post("/upload-url", requireAuth, async (req: Request, res: Response) => {
       return;
     }
 
-    // Key is prefixed with the logical bucket name
-    const key = `${bucket}/${objectPath}`;
+    // Strip bucket prefix from path if caller already included it
+    const cleanPath = objectPath.startsWith(bucket + "/") ? objectPath.slice(bucket.length + 1) : objectPath;
+    const key = `${bucket}/${cleanPath}`;
 
     const command = new PutObjectCommand({
       Bucket: BUCKET,
@@ -54,7 +55,8 @@ r.post("/upload-url", requireAuth, async (req: Request, res: Response) => {
     });
 
     const uploadUrl = await getSignedUrl(s3, command, { expiresIn: 600 }); // 10 min
-    const publicUrl = `https://${BUCKET}.s3.${REGION}.amazonaws.com/${key}`;
+    // Return a proxy URL through our API (S3 blocks public access)
+    const publicUrl = `/api/v1/storage/media/${key}`;
 
     res.json({ uploadUrl, publicUrl, key });
   } catch (err: any) {
@@ -102,6 +104,50 @@ r.get("/signed-url", requireAuth, async (req: Request, res: Response) => {
   } catch (err: any) {
     console.error("Signed URL error:", err);
     res.status(500).json({ error: "Failed to generate signed URL" });
+  }
+});
+
+// ── GET /media/* — Proxy S3 media to browser (no public access needed) ──
+r.get("/media/*", async (req: Request, res: Response) => {
+  try {
+    const key = req.params[0];
+    if (!key || key.includes("..")) {
+      res.status(400).send("Invalid path");
+      return;
+    }
+
+    if (!BUCKET) {
+      res.status(500).send("Storage not configured");
+      return;
+    }
+
+    const command = new GetObjectCommand({ Bucket: BUCKET, Key: key });
+    const s3Res = await s3.send(command);
+
+    if (!s3Res.Body) {
+      res.status(404).send("Not found");
+      return;
+    }
+
+    // Set proper content type and cache headers
+    const contentType = s3Res.ContentType ?? "application/octet-stream";
+    res.setHeader("Content-Type", contentType);
+    res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+
+    // Stream S3 body to response
+    const chunks: Buffer[] = [];
+    const stream = s3Res.Body as any;
+    for await (const chunk of stream) {
+      chunks.push(Buffer.from(chunk));
+    }
+    res.send(Buffer.concat(chunks));
+  } catch (err: any) {
+    if (err.name === "NoSuchKey") {
+      res.status(404).send("Not found");
+    } else {
+      console.error("Media proxy error:", err.name);
+      res.status(500).send("Error loading media");
+    }
   }
 });
 

@@ -106,7 +106,7 @@ async function pickAndUploadImage(bucket: 'avatars' | 'headers', userId: string)
   if (!token) return null;
 
   async function uploadToS3(blob: Blob, ext: string): Promise<string | null> {
-    const path = `${bucket}/${userId}/photo.${ext}`;
+    const path = `${userId}/photo.${ext}`;
     const contentType = `image/${ext}`;
     const urlRes = await fetch(`${API}/api/v1/storage/upload-url`, {
       method: 'POST',

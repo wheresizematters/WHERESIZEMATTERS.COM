@@ -5,6 +5,7 @@ import { Video, ResizeMode } from 'expo-av';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SIZES, RADIUS } from '@/constants/theme';
 import PaywallModal from './PaywallModal';
+import { proxyMediaUrl } from '@/lib/media';
 
 const { width } = Dimensions.get('window');
 const MEDIA_HEIGHT = width * 0.75;
@@ -19,20 +20,21 @@ interface Props {
 export default function LockedMedia({ uri, type, isPremium, isOwner = false }: Props) {
   const [showPaywall, setShowPaywall] = useState(false);
   const canView = isPremium || isOwner;
+  const mediaUri = proxyMediaUrl(uri) ?? uri;
 
   return (
     <>
       <View style={styles.container}>
         {canView && type === 'video' ? (
           <Video
-            source={{ uri }}
+            source={{ uri: mediaUri }}
             style={styles.media}
             resizeMode={ResizeMode.COVER}
             useNativeControls
             isLooping={false}
           />
         ) : (
-          <Image source={{ uri }} style={styles.media} resizeMode="cover" />
+          <Image source={{ uri: mediaUri }} style={styles.media} resizeMode="cover" />
         )}
 
         {!canView && (

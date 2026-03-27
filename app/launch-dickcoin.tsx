@@ -77,7 +77,7 @@ export default function LaunchDickCoinScreen() {
 
       if (imageUri) {
         const ext = imageUri.split('.').pop() ?? 'jpg';
-        const path = `dickcoin-images/${session.user.id}/${Date.now()}.${ext}`;
+        const path = `${session.user.id}/${Date.now()}.${ext}`;
         const urlRes = await fetch(`${API}/api/v1/storage/upload-url`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken}` },

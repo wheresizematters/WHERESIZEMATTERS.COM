@@ -1,6 +1,19 @@
 import * as ImagePicker from 'expo-image-picker';
 import { getToken, getApiUrl, SUPABASE_READY } from './supabase';
 
+const S3_BUCKET = 'size-media-845654871945';
+
+/** Rewrite S3 direct URLs to our proxy (S3 blocks public access) */
+export function proxyMediaUrl(url: string | null | undefined): string | null {
+  if (!url) return null;
+  // Already a proxy URL
+  if (url.startsWith('/api/v1/storage/media/')) return url;
+  // Rewrite S3 direct URLs
+  const s3Match = url.match(new RegExp(`https?://${S3_BUCKET}\\.s3[^/]*\\.amazonaws\\.com/(.+)`));
+  if (s3Match) return `/api/v1/storage/media/${s3Match[1]}`;
+  return url;
+}
+
 const API = getApiUrl();
 
 export async function pickMedia(type: 'image' | 'video' | 'all' = 'all') {
@@ -42,7 +55,7 @@ export async function uploadMedia(
 
   try {
     const ext = mimeType.includes('video') ? 'mp4' : 'jpg';
-    const path = `media/${userId}/${postId}.${ext}`;
+    const path = `${userId}/${postId}.${ext}`;
     const token = getToken();
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
     if (token) headers['Authorization'] = `Bearer ${token}`;
