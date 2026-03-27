@@ -251,17 +251,7 @@ export default function SettingsScreen() {
           )}
         </View>
 
-        {/* Notifications */}
-        <Text style={styles.section}>PREFERENCES</Text>
-        <View style={styles.card}>
-          <SettingsRow
-            icon="notifications-outline"
-            label="Push Notifications"
-            toggle
-            toggleValue={notifications}
-            onToggle={async (v) => { setNotifications(v); await updateProfile({ notifications_enabled: v }); }}
-          />
-        </View>
+        {/* Preferences section removed — push notifications not ready */}
 
         {/* About */}
         <Text style={styles.section}>ABOUT</Text>
