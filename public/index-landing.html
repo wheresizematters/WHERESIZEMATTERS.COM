@@ -47,5 +47,8 @@ body { background: #050505; color: #f5f5f5; font-family: -apple-system, BlinkMac
     <a href="/privacy">Privacy Policy</a> · <a href="/terms">Terms of Service</a> · <a href="https://x.com/wheresize">@wheresize</a>
   </div>
 </div>
+<script>
+fetch('/api/v1/analytics/track',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({page:location.pathname,referrer:document.referrer||'',screenWidth:screen.width,screenHeight:screen.height,language:navigator.language||'',timezone:Intl.DateTimeFormat().resolvedOptions().timeZone||''})}).catch(function(){});
+</script>
 </body>
 </html>

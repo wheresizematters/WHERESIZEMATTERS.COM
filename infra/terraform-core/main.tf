@@ -313,6 +313,27 @@ resource "aws_dynamodb_table" "community_posts" {
   tags = { Project = local.project }
 }
 
+# ═══════════════════════════════════════════════════════════════════
+# NEW: Analytics
+# ═══════════════════════════════════════════════════════════════════
+
+resource "aws_dynamodb_table" "analytics" {
+  name         = "${local.project}-analytics"
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "id"
+
+  attribute { name = "id"   type = "S" }
+  attribute { name = "date" type = "S" }
+
+  global_secondary_index {
+    name            = "date-index"
+    hash_key        = "date"
+    projection_type = "ALL"
+  }
+
+  tags = { Project = local.project }
+}
+
 # ── API Server EC2 ──────────────────────────────────────────────────
 
 resource "aws_iam_role" "api" {

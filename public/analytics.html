@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SIZE. Analytics</title>
+<style>
+  :root {
+    --bg: #0A0A0A;
+    --surface: #111111;
+    --surface2: #1A1A1A;
+    --border: #222222;
+    --text: #E0E0E0;
+    --muted: #666666;
+    --orange: #E8500A;
+    --orange-dim: #E8500A44;
+    --green: #34C759;
+    --red: #FF453A;
+    --blue: #0A84FF;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ── Auth gate ───────────────────────────────────── */
+  #auth-gate {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    flex-direction: column;
+    gap: 24px;
+  }
+  #auth-gate .logo { font-size: 48px; font-weight: 900; color: var(--orange); letter-spacing: 10px; }
+  #auth-gate .subtitle { color: var(--muted); font-size: 12px; letter-spacing: 4px; text-transform: uppercase; }
+  #auth-gate .input-row { display: flex; gap: 8px; align-items: center; }
+  #auth-gate input {
+    padding: 12px 16px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: #fff;
+    font-size: 18px;
+    font-weight: 600;
+    letter-spacing: 8px;
+    text-align: center;
+    width: 200px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  #auth-gate input:focus { border-color: var(--orange); }
+  #auth-gate input::placeholder { color: #333; letter-spacing: 2px; font-size: 13px; }
+  #auth-gate button {
+    padding: 12px 20px;
+    background: var(--orange);
+    color: #000;
+    border: none;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 800;
+    cursor: pointer;
+    letter-spacing: 1px;
+    transition: opacity 0.2s;
+  }
+  #auth-gate button:hover { opacity: 0.85; }
+  #auth-gate .error { color: var(--red); font-size: 12px; min-height: 16px; }
+
+  /* ── Dashboard ───────────────────────────────────── */
+  #dashboard { display: none; max-width: 1400px; margin: 0 auto; padding: 24px; }
+  #dashboard.active { display: block; }
+
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 32px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .header-left { display: flex; align-items: center; gap: 16px; }
+  .header .logo { font-size: 28px; font-weight: 900; color: var(--orange); letter-spacing: 6px; }
+  .header .label { color: var(--muted); font-size: 11px; letter-spacing: 3px; text-transform: uppercase; }
+  .header .refresh-info { color: var(--muted); font-size: 11px; }
+  .header .refresh-info span { color: var(--orange); }
+
+  /* ── Overview cards ──────────────────────────────── */
+  .cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 16px;
+    margin-bottom: 32px;
+  }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 20px;
+    transition: border-color 0.2s;
+  }
+  .card:hover { border-color: #333; }
+  .card .label { font-size: 11px; color: var(--muted); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 8px; }
+  .card .value { font-size: 32px; font-weight: 800; color: #fff; line-height: 1; }
+  .card .sub { font-size: 11px; color: var(--muted); margin-top: 6px; }
+  .card.accent .value { color: var(--orange); }
+
+  /* ── Chart section ───────────────────────────────── */
+  .section { margin-bottom: 32px; }
+  .section-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--muted);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+
+  .chart-container {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 24px;
+    overflow-x: auto;
+  }
+  .bar-chart {
+    display: flex;
+    align-items: flex-end;
+    gap: 4px;
+    height: 200px;
+    min-width: fit-content;
+  }
+  .bar-group {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    min-width: 32px;
+  }
+  .bar-stack {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    height: 170px;
+    gap: 2px;
+  }
+  .bar {
+    width: 24px;
+    border-radius: 4px 4px 0 0;
+    min-height: 2px;
+    transition: opacity 0.2s;
+    position: relative;
+  }
+  .bar.views { background: var(--orange-dim); }
+  .bar.unique { background: var(--orange); }
+  .bar:hover { opacity: 0.8; }
+  .bar-label {
+    font-size: 9px;
+    color: var(--muted);
+    writing-mode: vertical-lr;
+    transform: rotate(180deg);
+    max-height: 50px;
+    overflow: hidden;
+  }
+  .bar-tooltip {
+    display: none;
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #000;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 6px 10px;
+    font-size: 11px;
+    white-space: nowrap;
+    z-index: 10;
+    color: #fff;
+  }
+  .bar:hover .bar-tooltip { display: block; }
+
+  .chart-legend {
+    display: flex;
+    gap: 20px;
+    margin-top: 12px;
+    justify-content: center;
+  }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--muted); }
+  .legend-dot { width: 10px; height: 10px; border-radius: 3px; }
+
+  /* ── Hourly chart ────────────────────────────────── */
+  .hourly-chart {
+    display: flex;
+    align-items: flex-end;
+    gap: 2px;
+    height: 120px;
+  }
+  .hourly-bar {
+    flex: 1;
+    background: var(--orange);
+    border-radius: 3px 3px 0 0;
+    min-height: 2px;
+    position: relative;
+    transition: opacity 0.2s;
+  }
+  .hourly-bar:hover { opacity: 0.8; }
+  .hourly-bar:hover .bar-tooltip { display: block; }
+  .hourly-labels {
+    display: flex;
+    gap: 2px;
+    margin-top: 6px;
+  }
+  .hourly-labels span {
+    flex: 1;
+    text-align: center;
+    font-size: 8px;
+    color: var(--muted);
+  }
+
+  /* ── Grid layout ─────────────────────────────────── */
+  .grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  @media (max-width: 768px) {
+    .grid-2 { grid-template-columns: 1fr; }
+    .cards { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  /* ── Tables ──────────────────────────────────────── */
+  .data-table {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+  }
+  .data-table table { width: 100%; border-collapse: collapse; }
+  .data-table th {
+    text-align: left;
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--muted);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface2);
+  }
+  .data-table td {
+    padding: 10px 16px;
+    font-size: 13px;
+    border-bottom: 1px solid #161616;
+    max-width: 300px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .data-table tr:last-child td { border-bottom: none; }
+  .data-table tr:hover td { background: var(--surface2); }
+  .data-table .num { text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .data-table .bar-cell {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .data-table .mini-bar {
+    height: 6px;
+    background: var(--orange);
+    border-radius: 3px;
+    transition: width 0.3s;
+  }
+
+  /* ── Recent feed ─────────────────────────────────── */
+  .feed {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    max-height: 500px;
+    overflow-y: auto;
+  }
+  .feed-item {
+    padding: 12px 16px;
+    border-bottom: 1px solid #161616;
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    font-size: 12px;
+  }
+  .feed-item:last-child { border-bottom: none; }
+  .feed-item:hover { background: var(--surface2); }
+  .feed-time { color: var(--muted); font-size: 11px; min-width: 70px; font-variant-numeric: tabular-nums; }
+  .feed-page { color: var(--orange); font-weight: 600; min-width: 120px; }
+  .feed-meta { color: var(--muted); font-size: 11px; }
+  .feed-badge {
+    display: inline-block;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+  .feed-badge.mobile { background: #E8500A22; color: var(--orange); }
+  .feed-badge.desktop { background: #0A84FF22; color: var(--blue); }
+
+  /* ── Scrollbar ───────────────────────────────────── */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: #444; }
+
+  /* ── Loading ─────────────────────────────────────── */
+  .loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 60px;
+    color: var(--muted);
+    font-size: 13px;
+    letter-spacing: 2px;
+  }
+  @keyframes pulse { 0%,100% { opacity: 0.4; } 50% { opacity: 1; } }
+  .loading .dot { animation: pulse 1.5s infinite; }
+  .loading .dot:nth-child(2) { animation-delay: 0.2s; }
+  .loading .dot:nth-child(3) { animation-delay: 0.4s; }
+</style>
+</head>
+<body>
+
+<!-- ── Auth Gate ──────────────────────────────────── -->
+<div id="auth-gate">
+  <div class="logo">SIZE.</div>
+  <div class="subtitle">Admin Analytics</div>
+  <div class="input-row">
+    <input type="text" id="totp-input" placeholder="000000" maxlength="6" inputmode="numeric" pattern="[0-9]*" autocomplete="one-time-code">
+    <button onclick="authenticate()">Verify</button>
+  </div>
+  <div class="error" id="auth-error"></div>
+</div>
+
+<!-- ── Dashboard ──────────────────────────────────── -->
+<div id="dashboard">
+  <div class="header">
+    <div class="header-left">
+      <div class="logo">SIZE.</div>
+      <div class="label">Analytics Dashboard</div>
+    </div>
+    <div class="refresh-info">Auto-refresh <span>60s</span> &middot; <span id="last-updated">--</span></div>
+  </div>
+
+  <!-- Overview -->
+  <div class="cards" id="overview-cards"></div>
+
+  <!-- Daily chart -->
+  <div class="section">
+    <div class="section-title">Daily Traffic (Last 30 Days)</div>
+    <div class="chart-container">
+      <div class="bar-chart" id="daily-chart"></div>
+      <div class="chart-legend">
+        <div class="legend-item"><div class="legend-dot" style="background:var(--orange-dim)"></div> Page Views</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--orange)"></div> Unique Visitors</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Hourly chart -->
+  <div class="section">
+    <div class="section-title">Today's Hourly Distribution</div>
+    <div class="chart-container">
+      <div class="hourly-chart" id="hourly-chart"></div>
+      <div class="hourly-labels" id="hourly-labels"></div>
+    </div>
+  </div>
+
+  <!-- Tables grid -->
+  <div class="grid-2 section">
+    <div>
+      <div class="section-title">Top Pages</div>
+      <div class="data-table" id="pages-table"></div>
+    </div>
+    <div>
+      <div class="section-title">Top Referrers</div>
+      <div class="data-table" id="referrers-table"></div>
+    </div>
+  </div>
+
+  <div class="grid-2 section">
+    <div>
+      <div class="section-title">Browsers</div>
+      <div class="data-table" id="browsers-table"></div>
+    </div>
+    <div>
+      <div class="section-title">Operating Systems</div>
+      <div class="data-table" id="os-table"></div>
+    </div>
+  </div>
+
+  <!-- Recent visitors -->
+  <div class="section">
+    <div class="section-title">Recent Visitors</div>
+    <div class="feed" id="recent-feed"></div>
+  </div>
+</div>
+
+<script>
+var currentTOTP = '';
+var refreshTimer = null;
+
+// ── Auth ─────────────────────────────────────────
+document.getElementById('totp-input').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') authenticate();
+});
+document.getElementById('totp-input').focus();
+
+function authenticate() {
+  var code = document.getElementById('totp-input').value.trim();
+  if (code.length !== 6 || !/^\d+$/.test(code)) {
+    document.getElementById('auth-error').textContent = 'Enter a 6-digit code';
+    return;
+  }
+  currentTOTP = code;
+  document.getElementById('auth-error').textContent = '';
+  loadDashboard();
+}
+
+function loadDashboard() {
+  fetch('/api/v1/analytics/dashboard?totp=' + currentTOTP)
+    .then(function(r) {
+      if (r.status === 403) throw new Error('TOTP');
+      return r.json();
+    })
+    .then(function(data) {
+      if (data.error) throw new Error(data.error);
+      document.getElementById('auth-gate').style.display = 'none';
+      document.getElementById('dashboard').classList.add('active');
+      renderDashboard(data);
+      document.getElementById('last-updated').textContent = new Date().toLocaleTimeString();
+      // Auto-refresh
+      if (refreshTimer) clearInterval(refreshTimer);
+      refreshTimer = setInterval(function() { loadDashboard(); }, 60000);
+    })
+    .catch(function(err) {
+      if (err.message === 'TOTP') {
+        document.getElementById('auth-error').textContent = 'Invalid TOTP code';
+        document.getElementById('auth-gate').style.display = 'flex';
+        document.getElementById('dashboard').classList.remove('active');
+        document.getElementById('totp-input').value = '';
+        document.getElementById('totp-input').focus();
+      } else {
+        console.error('Dashboard error:', err);
+      }
+    });
+}
+
+// ── Render ───────────────────────────────────────
+function renderDashboard(data) {
+  renderOverview(data.overview);
+  renderDailyChart(data.dailyChart);
+  renderHourlyChart(data.hourly);
+  renderTable('pages-table', ['Page', 'Views'], data.topPages);
+  renderTable('referrers-table', ['Referrer', 'Count'], data.topReferrers);
+  renderTable('browsers-table', ['Browser', 'Count'], data.topBrowsers);
+  renderTable('os-table', ['OS', 'Count'], data.topOS);
+  renderRecentFeed(data.recent);
+}
+
+function renderOverview(o) {
+  var cards = [
+    { label: 'Today Views', value: o.todayPageViews, sub: o.todayUnique + ' unique' },
+    { label: 'Yesterday', value: o.yesterdayPageViews, sub: o.yesterdayUnique + ' unique' },
+    { label: 'This Week', value: o.weekPageViews, sub: o.weekUnique + ' unique', accent: true },
+    { label: 'All Time', value: o.totalPageViews, sub: o.uniqueVisitorsTotal + ' unique visitors' },
+    { label: 'Mobile', value: o.mobilePercent + '%', sub: 'of all traffic' },
+    { label: 'Desktop', value: o.desktopPercent + '%', sub: 'of all traffic' },
+  ];
+  var html = '';
+  cards.forEach(function(c) {
+    html += '<div class="card' + (c.accent ? ' accent' : '') + '">';
+    html += '<div class="label">' + c.label + '</div>';
+    html += '<div class="value">' + c.value.toLocaleString() + '</div>';
+    html += '<div class="sub">' + c.sub + '</div>';
+    html += '</div>';
+  });
+  document.getElementById('overview-cards').innerHTML = html;
+}
+
+function renderDailyChart(days) {
+  if (!days || days.length === 0) {
+    document.getElementById('daily-chart').innerHTML = '<div class="loading">No data yet</div>';
+    return;
+  }
+  var maxViews = Math.max.apply(null, days.map(function(d) { return d.views; })) || 1;
+  var html = '';
+  days.forEach(function(d) {
+    var viewH = Math.max(2, (d.views / maxViews) * 160);
+    var uniqH = Math.max(2, (d.unique / maxViews) * 160);
+    var dateLabel = d.date.slice(5); // MM-DD
+    html += '<div class="bar-group">';
+    html += '<div class="bar-stack">';
+    html += '<div class="bar views" style="height:' + viewH + 'px"><div class="bar-tooltip">' + d.date + '<br>' + d.views + ' views</div></div>';
+    html += '<div class="bar unique" style="height:' + uniqH + 'px"><div class="bar-tooltip">' + d.date + '<br>' + d.unique + ' unique</div></div>';
+    html += '</div>';
+    html += '<div class="bar-label">' + dateLabel + '</div>';
+    html += '</div>';
+  });
+  document.getElementById('daily-chart').innerHTML = html;
+}
+
+function renderHourlyChart(hourly) {
+  if (!hourly || hourly.length === 0) {
+    document.getElementById('hourly-chart').innerHTML = '<div class="loading">No data yet</div>';
+    return;
+  }
+  var max = Math.max.apply(null, hourly) || 1;
+  var html = '';
+  var labels = '';
+  for (var i = 0; i < 24; i++) {
+    var h = Math.max(2, (hourly[i] / max) * 100);
+    var opacity = hourly[i] > 0 ? 1 : 0.2;
+    html += '<div class="hourly-bar" style="height:' + h + 'px;opacity:' + opacity + '"><div class="bar-tooltip">' + i + ':00 &mdash; ' + hourly[i] + ' views</div></div>';
+    labels += '<span>' + (i % 3 === 0 ? i + 'h' : '') + '</span>';
+  }
+  document.getElementById('hourly-chart').innerHTML = html;
+  document.getElementById('hourly-labels').innerHTML = labels;
+}
+
+function renderTable(id, headers, rows) {
+  if (!rows || rows.length === 0) {
+    document.getElementById(id).innerHTML = '<div class="loading">No data</div>';
+    return;
+  }
+  var maxVal = rows[0][1] || 1;
+  var html = '<table><tr>';
+  headers.forEach(function(h, i) {
+    html += '<th' + (i === 1 ? ' style="text-align:right;width:80px"' : '') + '>' + h + '</th>';
+  });
+  html += '<th style="width:120px"></th></tr>';
+  rows.forEach(function(r) {
+    var pct = Math.round((r[1] / maxVal) * 100);
+    html += '<tr>';
+    html += '<td title="' + escHtml(r[0]) + '">' + escHtml(r[0]) + '</td>';
+    html += '<td class="num">' + r[1].toLocaleString() + '</td>';
+    html += '<td><div class="mini-bar" style="width:' + pct + '%"></div></td>';
+    html += '</tr>';
+  });
+  html += '</table>';
+  document.getElementById(id).innerHTML = html;
+}
+
+function renderRecentFeed(recent) {
+  if (!recent || recent.length === 0) {
+    document.getElementById('recent-feed').innerHTML = '<div class="loading">No visitors yet</div>';
+    return;
+  }
+  var html = '';
+  recent.forEach(function(r) {
+    var t = new Date(r.time);
+    var timeStr = t.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    var badge = r.mobile
+      ? '<span class="feed-badge mobile">Mobile</span>'
+      : '<span class="feed-badge desktop">Desktop</span>';
+    html += '<div class="feed-item">';
+    html += '<span class="feed-time">' + timeStr + '</span>';
+    html += '<span class="feed-page">' + escHtml(r.page) + '</span>';
+    html += badge;
+    html += '<span class="feed-meta">' + escHtml(r.browser) + ' / ' + escHtml(r.os) + '</span>';
+    if (r.screen) html += '<span class="feed-meta">' + r.screen + '</span>';
+    if (r.referrer) html += '<span class="feed-meta">via ' + escHtml(r.referrer) + '</span>';
+    if (r.tz) html += '<span class="feed-meta">' + escHtml(r.tz) + '</span>';
+    html += '</div>';
+  });
+  document.getElementById('recent-feed').innerHTML = html;
+}
+
+function escHtml(s) {
+  if (!s) return '';
+  var d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+</script>
+</body>
+</html>

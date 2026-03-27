@@ -99,6 +99,26 @@ function RootLayoutNav() {
     }
   }, [session, loading, splashDone, segments, profile]);
 
+  // Analytics tracking
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    function track() {
+      fetch('/api/v1/analytics/track', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          page: window.location.pathname,
+          referrer: document.referrer || '',
+          screenWidth: screen.width,
+          screenHeight: screen.height,
+          language: navigator.language || '',
+          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || '',
+        }),
+      }).catch(() => {});
+    }
+    track();
+  }, [segments]);
+
   if (!splashDone || loading) return <SplashScreen />;
 
   return (
