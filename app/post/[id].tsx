@@ -216,8 +216,8 @@ function PostDetail({ post, myId, isPremium, onVotePost }: {
 function CommentRow({ comment, myId, onDelete }: { comment: Comment; myId: string; onDelete?: (commentId: string) => void }) {
   const router = useRouter();
   const tier = getSizeTier(comment.author.size_inches);
-  const [score, setScore] = useState((comment as any).score ?? 0);
-  const [userVote, setUserVote] = useState<0 | 1 | -1>((comment as any).user_vote ?? 0);
+  const [score, setScore] = useState(comment.score ?? 0);
+  const [userVote, setUserVote] = useState<0 | 1 | -1>(comment.user_vote ?? 0);
   const linkUrl = extractFirstUrl(comment.content);
   const isOwner = comment.author.id === myId;
 
@@ -274,9 +274,9 @@ function CommentRow({ comment, myId, onDelete }: { comment: Comment; myId: strin
         {/* Link preview */}
         {linkUrl && <LinkPreview url={linkUrl} />}
         {/* Comment media */}
-        {(comment as any).media_url && (
+        {comment.media_url && (
           <Image
-            source={{ uri: (comment as any).media_url }}
+            source={{ uri: comment.media_url }}
             style={styles.commentMedia}
             resizeMode="cover"
           />

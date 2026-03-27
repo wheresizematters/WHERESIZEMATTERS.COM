@@ -256,9 +256,9 @@ export default function SettingsScreen() {
         {/* About */}
         <Text style={styles.section}>ABOUT</Text>
         <View style={styles.card}>
-          <SettingsRow icon="document-text-outline" label="Privacy Policy" onPress={() => typeof window !== 'undefined' ? window.alert('Coming soon.') : null} />
+          <SettingsRow icon="document-text-outline" label="Privacy Policy" onPress={() => typeof window !== 'undefined' && (window.location.href = '/privacy')} />
           <View style={styles.divider} />
-          <SettingsRow icon="shield-outline" label="Terms of Service" onPress={() => typeof window !== 'undefined' ? window.alert('Coming soon.') : null} />
+          <SettingsRow icon="shield-outline" label="Terms of Service" onPress={() => typeof window !== 'undefined' && (window.location.href = '/terms')} />
           <View style={styles.divider} />
           <SettingsRow icon="information-circle-outline" label="Version" value="1.0.0" />
         </View>

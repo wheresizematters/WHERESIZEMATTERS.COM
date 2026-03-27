@@ -100,6 +100,10 @@ export interface Comment {
   post_id: string;
   user_id: string;
   content: string;
+  media_url?: string | null;
+  score?: number;
+  user_vote?: 0 | 1 | -1;
+  pinned?: boolean;
   author: {
     id: string;
     username: string;
