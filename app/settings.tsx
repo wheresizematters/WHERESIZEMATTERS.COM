@@ -277,7 +277,18 @@ export default function SettingsScreen() {
             icon="trash-outline"
             label="Delete Account"
             danger
-            onPress={async () => { if (window.confirm('Delete account? This is permanent and cannot be undone.')) { const { error } = await deleteProfile(); if (error) { window.alert(`Failed to delete account: ${error}`); } else { await signOut(); } } }}
+            onPress={() => {
+              const username = profile?.username ?? '';
+              const input = window.prompt(`This will permanently delete your account, all your posts, and all your data. This cannot be undone.\n\nType "${username}" to confirm:`);
+              if (!input) return;
+              if (input.trim() !== username) { window.alert('Username did not match. Account not deleted.'); return; }
+              const input2 = window.prompt('Type "DELETE" to permanently delete your account:');
+              if (input2?.trim() !== 'DELETE') { window.alert('Account not deleted.'); return; }
+              deleteProfile().then(({ error }) => {
+                if (error) { window.alert(`Failed: ${error}`); }
+                else { window.alert('Account deleted.'); signOut(); }
+              });
+            }}
           />
         </View>
       </ScrollView>
