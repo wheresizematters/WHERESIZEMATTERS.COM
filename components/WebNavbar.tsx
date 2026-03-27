@@ -1,7 +1,8 @@
 import { View, Text, TouchableOpacity, StyleSheet, useWindowDimensions } from 'react-native';
 import { useRouter, usePathname } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, SIZES } from '@/constants/theme';
+import { COLORS, SIZES, RADIUS } from '@/constants/theme';
+import { useAuth } from '@/context/AuthContext';
 
 const TABS = [
   { label: 'Feed',        href: '/(tabs)',              icon: 'home-outline' as const,           iconActive: 'home' as const,        match: '/' },
@@ -16,6 +17,7 @@ export default function WebNavbar() {
   const router = useRouter();
   const pathname = usePathname();
   const { width } = useWindowDimensions();
+  const { session } = useAuth();
   if (width < 768) return null;
 
   return (
@@ -45,6 +47,15 @@ export default function WebNavbar() {
               </TouchableOpacity>
             );
           })}
+          {!session && (
+            <TouchableOpacity
+              style={styles.signInBtn}
+              onPress={() => router.push('/(auth)/login' as any)}
+            >
+              <Ionicons name="log-in-outline" size={16} color={COLORS.bg} />
+              <Text style={styles.signInText}>Sign In</Text>
+            </TouchableOpacity>
+          )}
         </View>
       </View>
     </View>
@@ -96,5 +107,20 @@ const styles = StyleSheet.create({
   },
   tabLabelActive: {
     color: COLORS.gold,
+  },
+  signInBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: COLORS.gold,
+    borderRadius: RADIUS.full,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    marginLeft: 8,
+  },
+  signInText: {
+    color: COLORS.bg,
+    fontWeight: '800',
+    fontSize: SIZES.sm,
   },
 });

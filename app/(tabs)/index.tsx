@@ -693,9 +693,8 @@ export default function FeedScreen() {
   const activeFilterCount = (activeTag ? 1 : 0) + (verifiedOnly ? 1 : 0);
 
   const loadPosts = useCallback(async () => {
-    if (!session) { setLoading(false); setRefreshing(false); return; }
     try {
-      const data = await fetchPosts(session.user.id);
+      const data = await fetchPosts(session?.user.id);
       setPosts(data);
     } catch {
       // Keep existing posts on error rather than clearing
@@ -706,7 +705,7 @@ export default function FeedScreen() {
   }, [session]);
 
   const handleVoteOnPost = useCallback(async (postId: string, vote: 1 | -1 | 0) => {
-    if (!session) return;
+    if (!session) { router.push('/(auth)/login' as any); return; }
     setPosts(prev => prev.map(p => {
       if (p.id !== postId) return p;
       const prevVote = p.user_vote ?? 0;
@@ -792,13 +791,25 @@ export default function FeedScreen() {
           <Text style={styles.logo}>SIZE.</Text>
           <Text style={styles.tabTitle}>FEED</Text>
         </View>
-        <View style={{ flexDirection: 'row', gap: 16, alignItems: 'center' }}>
-          <TouchableOpacity onPress={() => { setRefreshing(true); loadPosts(); }}>
-            <Ionicons name="refresh-outline" size={24} color={refreshing ? COLORS.gold : COLORS.muted} />
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => router.push('/settings' as any)}>
-            <Ionicons name="notifications-outline" size={24} color={COLORS.muted} />
-          </TouchableOpacity>
+        <View style={{ flexDirection: 'row', gap: 12, alignItems: 'center' }}>
+          {!session ? (
+            <TouchableOpacity
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: COLORS.gold, borderRadius: RADIUS.full, paddingHorizontal: 14, paddingVertical: 8 }}
+              onPress={() => router.push('/(auth)/login' as any)}
+            >
+              <Ionicons name="log-in-outline" size={16} color={COLORS.bg} />
+              <Text style={{ color: COLORS.bg, fontWeight: '800', fontSize: 13 }}>Sign In</Text>
+            </TouchableOpacity>
+          ) : (
+            <>
+              <TouchableOpacity onPress={() => { setRefreshing(true); loadPosts(); }}>
+                <Ionicons name="refresh-outline" size={24} color={refreshing ? COLORS.gold : COLORS.muted} />
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => router.push('/settings' as any)}>
+                <Ionicons name="notifications-outline" size={24} color={COLORS.muted} />
+              </TouchableOpacity>
+            </>
+          )}
         </View>
       </View>
       )}
@@ -947,9 +958,11 @@ export default function FeedScreen() {
         </>
       )}
 
-      <TouchableOpacity style={styles.fab} onPress={() => setShowCreate(true)}>
-        <Text style={styles.fabIcon}>+</Text>
-      </TouchableOpacity>
+      {session && (
+        <TouchableOpacity style={styles.fab} onPress={() => setShowCreate(true)}>
+          <Text style={styles.fabIcon}>+</Text>
+        </TouchableOpacity>
+      )}
 
       <CreatePostModal
         visible={showCreate}

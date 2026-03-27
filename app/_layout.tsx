@@ -12,6 +12,16 @@ import InstallPrompt from '@/components/InstallPrompt';
 import { addNotificationResponseListener } from '@/lib/notifications';
 
 const SPLASH_DURATION = 2600; // ms
+const SPLASH_SEEN_KEY = 'size_splash_seen';
+
+function hasSeenSplash(): boolean {
+  if (typeof localStorage === 'undefined') return false;
+  return localStorage.getItem(SPLASH_SEEN_KEY) === '1';
+}
+
+function markSplashSeen() {
+  if (typeof localStorage !== 'undefined') localStorage.setItem(SPLASH_SEEN_KEY, '1');
+}
 
 function SplashScreen() {
   const logoOpacity = useRef(new Animated.Value(0)).current;
@@ -44,15 +54,20 @@ function RootLayoutNav() {
   const { session, loading, profile } = useAuth();
   const segments = useSegments();
   const router = useRouter();
-  const [splashDone, setSplashDone] = useState(false);
+  const alreadySeen = hasSeenSplash();
+  const [splashDone, setSplashDone] = useState(alreadySeen);
 
-  // Always show splash for at least SPLASH_DURATION ms
+  // Show splash only on first visit
   useEffect(() => {
-    const timer = setTimeout(() => setSplashDone(true), SPLASH_DURATION);
+    if (alreadySeen) return;
+    const timer = setTimeout(() => {
+      markSplashSeen();
+      setSplashDone(true);
+    }, SPLASH_DURATION);
     return () => clearTimeout(timer);
   }, []);
 
-  // Handle tapping a push notification — navigate to the correct screen
+  // Handle tapping a push notification
   useEffect(() => {
     const sub = addNotificationResponseListener(response => {
       const data = response.notification.request.content.data as any;
@@ -68,14 +83,14 @@ function RootLayoutNav() {
     return () => sub.remove();
   }, [router]);
 
+  // Only redirect logged-in users away from auth pages / to setup-size
+  // Non-logged-in users can browse freely
   useEffect(() => {
     if (loading || !splashDone) return;
     const inAuthGroup = segments[0] === '(auth)';
     const inSetupSize = segments[0] === 'setup-size';
 
-    if (!session && !inAuthGroup) {
-      router.replace('/(auth)/login');
-    } else if (session && inAuthGroup) {
+    if (session && inAuthGroup) {
       router.replace('/(tabs)');
     } else if (session && !inSetupSize && (!profile || (profile as any)?.has_set_size === false)) {
       router.replace('/setup-size' as any);
