@@ -7,6 +7,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SIZES, RADIUS } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
+import { getToken } from '@/lib/supabase';
 import PageContainer from '@/components/PageContainer';
 import UserAvatar from '@/components/UserAvatar';
 import {
@@ -40,6 +41,7 @@ export default function CircleJerkScreen() {
   const [sending, setSending] = useState(false);
   const [input, setInput] = useState('');
   const [gated, setGated] = useState(false);
+  const isCreator = coin?.userId === session?.user.id;
 
   const loadData = useCallback(async () => {
     if (!coinAddress) { setLoading(false); return; }
@@ -108,6 +110,28 @@ export default function CircleJerkScreen() {
       setInput('');
       await loadMessages();
     } catch {} finally { setSending(false); }
+  }
+
+  async function deleteMessage(messageId: string) {
+    if (!window.confirm('Delete this message?')) return;
+    const token = getToken();
+    await fetch(`${API_BASE}/api/v1/circle-jerks/${coinAddress}/messages/${messageId}`, {
+      method: 'DELETE',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    }).catch(() => {});
+    setMessages(prev => prev.filter(m => m.id !== messageId));
+  }
+
+  async function pinMessage(messageId: string) {
+    const token = getToken();
+    const res = await fetch(`${API_BASE}/api/v1/circle-jerks/${coinAddress}/messages/${messageId}/pin`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+    }).catch(() => null);
+    if (res?.ok) {
+      const { pinned } = await res.json();
+      setMessages(prev => prev.map(m => m.id === messageId ? { ...m, pinned } : m));
+    }
   }
 
   const tierInfo = getTierInfo(myTier);
@@ -206,14 +230,33 @@ export default function CircleJerkScreen() {
           contentContainerStyle={styles.messageList}
           renderItem={({ item }) => {
             const t = getTierInfo(item.senderTier);
+            const isMine = item.senderId === session?.user.id;
+            const canDelete = isCreator || isMine;
             return (
-              <View style={styles.msgRow}>
+              <View style={[styles.msgRow, (item as any).pinned && styles.msgPinned]}>
+                {(item as any).pinned && (
+                  <View style={styles.pinLabel}>
+                    <Ionicons name="pin" size={10} color={COLORS.gold} />
+                    <Text style={styles.pinLabelText}>Pinned</Text>
+                  </View>
+                )}
                 <View style={styles.msgHeader}>
                   <Text style={[styles.msgUsername, { color: t.color }]}>@{item.senderUsername}</Text>
                   <View style={[styles.msgTierPill, { borderColor: `${t.color}40` }]}>
                     <Text style={[styles.msgTierText, { color: t.color }]}>{item.senderTier}</Text>
                   </View>
                   <Text style={styles.msgTime}>{timeAgo(item.createdAt)}</Text>
+                  {/* Mod controls */}
+                  {canDelete && (
+                    <TouchableOpacity onPress={() => deleteMessage(item.id)} style={styles.modBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                      <Ionicons name="trash-outline" size={13} color={COLORS.mutedDark} />
+                    </TouchableOpacity>
+                  )}
+                  {isCreator && (
+                    <TouchableOpacity onPress={() => pinMessage(item.id)} style={styles.modBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                      <Ionicons name={(item as any).pinned ? "pin" : "pin-outline"} size={13} color={(item as any).pinned ? COLORS.gold : COLORS.mutedDark} />
+                    </TouchableOpacity>
+                  )}
                 </View>
                 <Text style={styles.msgContent}>{item.content}</Text>
               </View>
@@ -293,6 +336,10 @@ const styles = StyleSheet.create({
   // Messages
   messageList: { paddingHorizontal: 16, paddingBottom: 8 },
   msgRow: { marginBottom: 12 },
+  msgPinned: { backgroundColor: `${COLORS.gold}08`, borderLeftWidth: 2, borderLeftColor: COLORS.gold, paddingLeft: 10, borderRadius: 4 },
+  pinLabel: { flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 4 },
+  pinLabelText: { color: COLORS.gold, fontSize: 9, fontWeight: '700', letterSpacing: 1 },
+  modBtn: { padding: 4, marginLeft: 4 },
   msgHeader: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 2 },
   msgUsername: { fontWeight: '700', fontSize: SIZES.sm },
   msgTierPill: { paddingHorizontal: 6, paddingVertical: 1, borderRadius: RADIUS.full, borderWidth: 1 },
