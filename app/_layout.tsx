@@ -7,6 +7,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { AuthProvider, useAuth } from '@/context/AuthContext';
 import { PurchaseProvider } from '@/context/PurchaseContext';
 import { UnreadProvider } from '@/context/UnreadContext';
+import { FeatureFlagsProvider } from '@/context/FeatureFlagsContext';
 import { COLORS } from '@/constants/theme';
 import InstallPrompt from '@/components/InstallPrompt';
 import { addNotificationResponseListener } from '@/lib/notifications';
@@ -147,13 +148,15 @@ export default function RootLayout() {
 
   return (
     <AuthProvider>
-      <PurchaseProvider>
-        <UnreadProvider>
-          <StatusBar style="light" />
-          <RootLayoutNav />
-          <InstallPrompt />
-        </UnreadProvider>
-      </PurchaseProvider>
+      <FeatureFlagsProvider>
+        <PurchaseProvider>
+          <UnreadProvider>
+            <StatusBar style="light" />
+            <RootLayoutNav />
+            <InstallPrompt />
+          </UnreadProvider>
+        </PurchaseProvider>
+      </FeatureFlagsProvider>
     </AuthProvider>
   );
 }

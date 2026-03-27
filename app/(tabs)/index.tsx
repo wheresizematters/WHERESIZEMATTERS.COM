@@ -14,6 +14,7 @@ import { SUPABASE_READY, getToken } from '@/lib/supabase';
 import { pickMedia, uploadMedia } from '@/lib/media';
 import { useAuth } from '@/context/AuthContext';
 import { usePurchase } from '@/context/PurchaseContext';
+import { useFeatureFlags } from '@/context/FeatureFlagsContext';
 import { Post } from '@/lib/types';
 import LockedMedia from '@/components/LockedMedia';
 import LinkPreview from '@/components/LinkPreview';
@@ -677,6 +678,10 @@ export default function FeedScreen() {
   const router = useRouter();
   const { session } = useAuth();
   const { isPremium } = usePurchase();
+  const flags = useFeatureFlags();
+  const visibleFeedTabs = FEED_TABS.filter(t =>
+    (t !== 'DISCUSSIONS' || flags.discussions) && (t !== 'MEDIA' || flags.media)
+  );
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -815,7 +820,7 @@ export default function FeedScreen() {
       )}
 
       <View style={styles.feedTabBar}>
-        {FEED_TABS.map(tab => (
+        {visibleFeedTabs.map(tab => (
           <TouchableOpacity
             key={tab}
             style={styles.feedTabBtn}

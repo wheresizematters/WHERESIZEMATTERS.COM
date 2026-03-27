@@ -11,6 +11,7 @@ import { fetchLeaderboard, fetchUserRank, fetchTotalUserCount, fetchLeaderboardB
 import PageContainer from '@/components/PageContainer';
 import { usePurchase } from '@/context/PurchaseContext';
 import { useAuth } from '@/context/AuthContext';
+import { useFeatureFlags } from '@/context/FeatureFlagsContext';
 import PaywallModal from '@/components/PaywallModal';
 import { LeaderboardEntry } from '@/lib/types';
 import UserAvatar from '@/components/UserAvatar';
@@ -154,6 +155,7 @@ export default function LeaderboardScreen() {
   const router = useRouter();
   const { isPremium } = usePurchase();
   const { profile, session } = useAuth();
+  const flags = useFeatureFlags();
 
   // Global leaderboard state
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
@@ -523,6 +525,7 @@ export default function LeaderboardScreen() {
             <Ionicons name="rocket-outline" size={14} color={mode === 'dickcoins' ? COLORS.gold : COLORS.muted} />
             <Text style={[styles.modeBtnText, mode === 'dickcoins' && styles.modeBtnTextActive]}>DickCoins</Text>
           </TouchableOpacity>
+          {flags.netWorthLeaderboard && (
           <TouchableOpacity
             style={[styles.modeBtn, mode === 'networth' && styles.modeBtnActive]}
             onPress={async () => {
@@ -539,6 +542,8 @@ export default function LeaderboardScreen() {
             <Ionicons name="cash-outline" size={14} color={mode === 'networth' ? COLORS.gold : COLORS.muted} />
             <Text style={[styles.modeBtnText, mode === 'networth' && styles.modeBtnTextActive]}>Net Worth</Text>
           </TouchableOpacity>
+          )}
+          {flags.cloutLeaderboard && (
           <TouchableOpacity
             style={[styles.modeBtn, mode === 'clout' && styles.modeBtnActive]}
             onPress={async () => {
@@ -555,6 +560,7 @@ export default function LeaderboardScreen() {
             <Ionicons name="logo-twitter" size={14} color={mode === 'clout' ? COLORS.gold : COLORS.muted} />
             <Text style={[styles.modeBtnText, mode === 'clout' && styles.modeBtnTextActive]}>Clout</Text>
           </TouchableOpacity>
+          )}
         </View>
 
         {mode === 'global' ? renderGlobalContent() : mode === 'nearby' ? renderNearbyContent() : mode === 'clout' ? (

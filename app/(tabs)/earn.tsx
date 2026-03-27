@@ -9,6 +9,7 @@ import { useRouter } from 'expo-router';
 import { COLORS, SIZES, RADIUS } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
 import { usePurchase } from '@/context/PurchaseContext';
+import { useFeatureFlags } from '@/context/FeatureFlagsContext';
 import { getToken, getApiUrl } from '@/lib/supabase';
 import PageContainer from '@/components/PageContainer';
 import PaywallModal from '@/components/PaywallModal';
@@ -36,6 +37,7 @@ const REWARDS = [
 export default function EarnScreen() {
   const { profile, session, updateProfile } = useAuth();
   const { isPremium } = usePurchase();
+  const flags = useFeatureFlags();
   const router = useRouter();
   const [coins, setCoins] = useState<number>(0);
   const [loading, setLoading] = useState(true);
@@ -212,6 +214,7 @@ export default function EarnScreen() {
           </View>
 
           {/* Staking section inline */}
+          {flags.staking && (
           <View style={styles.section}>
             <Text style={styles.sectionLabel}>STAKING</Text>
             <View style={styles.stakingCard}>
@@ -248,10 +251,12 @@ export default function EarnScreen() {
               </TouchableOpacity>
             </View>
           </View>
+          )}
 
           {/* $SIZE Token — chart + trade */}
           <View style={styles.section}>
             <Text style={styles.sectionLabel}>$SIZE TOKEN</Text>
+            {flags.charting && (
             <TouchableOpacity
               style={styles.tokenCard}
               activeOpacity={0.85}
@@ -264,8 +269,10 @@ export default function EarnScreen() {
               </View>
               <Text style={styles.tokenCardDesc}>Live price chart, swap widget, market data, and Circle Jerk community — all in one place.</Text>
             </TouchableOpacity>
+            )}
 
             {/* Quick buy section */}
+            {flags.quickBuy && (
             <View style={styles.quickBuyCard}>
               <Text style={styles.quickBuyTitle}>Quick Buy $SIZE</Text>
               <View style={styles.quickBuyRow}>
@@ -287,9 +294,11 @@ export default function EarnScreen() {
               </View>
               <Text style={styles.buyFee}>1% of swaps via SIZE. goes to the protocol</Text>
             </View>
+            )}
           </View>
 
           {/* Launch DickCoin CTA */}
+          {flags.launchDickCoin && (
           <View style={styles.section}>
             <Text style={styles.sectionLabel}>CREATE</Text>
             <TouchableOpacity
@@ -306,6 +315,7 @@ export default function EarnScreen() {
               </View>
             </TouchableOpacity>
           </View>
+          )}
 
           {/* Tab toggle */}
           <View style={styles.tabBar}>

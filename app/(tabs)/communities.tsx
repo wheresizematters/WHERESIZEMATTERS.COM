@@ -8,6 +8,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SIZES, RADIUS } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
 import { useUnread } from '@/context/UnreadContext';
+import { useFeatureFlags } from '@/context/FeatureFlagsContext';
 import PageContainer from '@/components/PageContainer';
 import { getMyCircleJerks, getTierInfo, DickCoin } from '@/lib/dickcoin';
 import { getToken } from '@/lib/supabase';
@@ -16,6 +17,7 @@ export default function CommunitiesScreen() {
   const router = useRouter();
   const { session, profile } = useAuth();
   const { hasUnread } = useUnread();
+  const flags = useFeatureFlags();
 
   const [myCoins, setMyCoins] = useState<DickCoin[]>([]);
   const [loading, setLoading] = useState(true);
@@ -70,7 +72,13 @@ export default function CommunitiesScreen() {
           </View>
         </View>
 
-        {loading ? (
+        {!flags.circleJerks ? (
+          <View style={styles.center}>
+            <Ionicons name="time-outline" size={40} color={COLORS.muted} />
+            <Text style={styles.emptyTitle}>Coming Soon</Text>
+            <Text style={styles.emptyDesc}>Circle Jerks are not available yet. Check back later!</Text>
+          </View>
+        ) : loading ? (
           <View style={styles.center}><ActivityIndicator size="large" color={COLORS.gold} /></View>
         ) : (
           <FlatList
