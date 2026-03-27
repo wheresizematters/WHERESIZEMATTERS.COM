@@ -18,6 +18,11 @@ import "@openzeppelin/contracts/access/Ownable2Step.sol";
  *           Shower  — 1M+     $SIZE — 2x  boost
  *           Shlong  — 10M+    $SIZE — 5x  boost
  *           Whale   — 100M+   $SIZE — 12x boost
+ *
+ *         Early Withdrawal Penalty:
+ *           Cubic decay from 50% at day 0 to 0% at 365 days.
+ *           penalty = 50% × (daysRemaining / 365)³
+ *           Penalized tokens are redistributed to loyal stakers.
  */
 contract SizeStaking is ReentrancyGuard, Pausable, Ownable2Step {
     using SafeERC20 for IERC20;
@@ -38,6 +43,11 @@ contract SizeStaking is ReentrancyGuard, Pausable, Ownable2Step {
     uint256 public constant SHOWER_BOOST  = 20_000;   // 2x
     uint256 public constant SHLONG_BOOST  = 50_000;   // 5x
     uint256 public constant WHALE_BOOST   = 120_000;  // 12x
+
+    // Early withdrawal penalty
+    uint256 public constant MAX_PENALTY_BPS = 5000;     // 50% max penalty
+    uint256 public constant LOCK_PERIOD     = 365 days; // 0% penalty after 1 year
+    uint256 private constant BPS = 10_000;
 
     uint256 private constant PRECISION = 1e18;
 
@@ -60,6 +70,7 @@ contract SizeStaking is ReentrancyGuard, Pausable, Ownable2Step {
     uint256 public totalEffectiveStaked;
     uint256 public accRewardPerShare;   // scaled by PRECISION
     uint256 public bufferedRewards;     // rewards deposited when no stakers
+    uint256 public totalPenaltiesCollected; // lifetime penalties redistributed
 
     // Authorised fee depositors (owner + approved bots)
     mapping(address => bool) public isDepositor;
@@ -69,10 +80,11 @@ contract SizeStaking is ReentrancyGuard, Pausable, Ownable2Step {
     // ──────────────────────────────────────────────────────────────────
 
     event Staked(address indexed user, uint256 amount, uint256 newTier);
-    event Unstaked(address indexed user, uint256 amount, uint256 newTier);
+    event Unstaked(address indexed user, uint256 amount, uint256 penalty, uint256 newTier);
     event RewardsClaimed(address indexed user, uint256 amount);
     event RewardsDeposited(address indexed depositor, uint256 amount);
-    event EmergencyWithdraw(address indexed user, uint256 amount);
+    event PenaltyRedistributed(address indexed user, uint256 penaltyAmount);
+    event EmergencyWithdraw(address indexed user, uint256 amount, uint256 penalty);
     event DepositorUpdated(address indexed depositor, bool status);
 
     // ──────────────────────────────────────────────────────────────────
@@ -161,7 +173,7 @@ contract SizeStaking is ReentrancyGuard, Pausable, Ownable2Step {
     }
 
     // ──────────────────────────────────────────────────────────────────
-    // Core: Unstake
+    // Core: Unstake (with early withdrawal penalty)
     // ──────────────────────────────────────────────────────────────────
 
     function unstake(uint256 _amount) external nonReentrant whenNotPaused {
@@ -179,21 +191,36 @@ contract SizeStaking is ReentrancyGuard, Pausable, Ownable2Step {
         if (remaining > 0 && remaining < GROWER_MIN)
             revert BelowMinimumTier(remaining, GROWER_MIN);
 
-        uint256 actualUnstake = _amount;
+        // Calculate early withdrawal penalty
+        uint256 penaltyBps = _getPenaltyBps(s.lastStakedAt);
+        uint256 penalty = (_amount * penaltyBps) / BPS;
+        uint256 userReceives = _amount - penalty;
 
         // Remove old effective stake
         totalEffectiveStaked -= _effectiveStake(s.amount);
 
         s.amount = remaining;
-        totalStaked -= actualUnstake;
+        totalStaked -= _amount;
         totalEffectiveStaked += _effectiveStake(remaining);
 
         // Reset reward debt
         s.rewardDebt = (_effectiveStake(remaining) * accRewardPerShare) / PRECISION;
 
-        sizeToken.safeTransfer(msg.sender, actualUnstake);
+        // Send user their tokens minus penalty
+        sizeToken.safeTransfer(msg.sender, userReceives);
 
-        emit Unstaked(msg.sender, actualUnstake, getTier(msg.sender));
+        // Redistribute penalty to remaining stakers
+        if (penalty > 0 && totalEffectiveStaked > 0) {
+            accRewardPerShare += (penalty * PRECISION) / totalEffectiveStaked;
+            totalPenaltiesCollected += penalty;
+            emit PenaltyRedistributed(msg.sender, penalty);
+        } else if (penalty > 0) {
+            // No stakers left — buffer it
+            bufferedRewards += penalty;
+            totalPenaltiesCollected += penalty;
+        }
+
+        emit Unstaked(msg.sender, userReceives, penalty, getTier(msg.sender));
     }
 
     // ──────────────────────────────────────────────────────────────────
@@ -234,13 +261,18 @@ contract SizeStaking is ReentrancyGuard, Pausable, Ownable2Step {
     }
 
     // ──────────────────────────────────────────────────────────────────
-    // Emergency: withdraw stake forfeiting unclaimed rewards
+    // Emergency: withdraw stake (penalty still applies)
     // ──────────────────────────────────────────────────────────────────
 
     function emergencyWithdraw() external nonReentrant {
         StakeInfo storage s = stakes[msg.sender];
         uint256 amount = s.amount;
         if (amount == 0) revert ZeroAmount();
+
+        // Penalty still applies on emergency withdraw
+        uint256 penaltyBps = _getPenaltyBps(s.lastStakedAt);
+        uint256 penalty = (amount * penaltyBps) / BPS;
+        uint256 userReceives = amount - penalty;
 
         totalEffectiveStaked -= _effectiveStake(amount);
         totalStaked -= amount;
@@ -249,9 +281,18 @@ contract SizeStaking is ReentrancyGuard, Pausable, Ownable2Step {
         s.rewardDebt = 0;
         s.pendingRewards = 0;
 
-        sizeToken.safeTransfer(msg.sender, amount);
+        sizeToken.safeTransfer(msg.sender, userReceives);
 
-        emit EmergencyWithdraw(msg.sender, amount);
+        // Redistribute penalty
+        if (penalty > 0 && totalEffectiveStaked > 0) {
+            accRewardPerShare += (penalty * PRECISION) / totalEffectiveStaked;
+            totalPenaltiesCollected += penalty;
+        } else if (penalty > 0) {
+            bufferedRewards += penalty;
+            totalPenaltiesCollected += penalty;
+        }
+
+        emit EmergencyWithdraw(msg.sender, userReceives, penalty);
     }
 
     // ──────────────────────────────────────────────────────────────────
@@ -284,6 +325,32 @@ contract SizeStaking is ReentrancyGuard, Pausable, Ownable2Step {
                 pendingRewards += accrued - s.rewardDebt;
             }
         }
+    }
+
+    /// @notice Get the current early withdrawal penalty in basis points for a user
+    function getEarlyWithdrawalPenalty(address _user) external view returns (uint256 penaltyBps, uint256 penaltyPct, uint256 daysStaked, uint256 daysRemaining) {
+        StakeInfo storage s = stakes[_user];
+        if (s.lastStakedAt == 0) return (0, 0, 0, 0);
+
+        uint256 elapsed = block.timestamp - s.lastStakedAt;
+        daysStaked = elapsed / 1 days;
+        penaltyBps = _getPenaltyBps(s.lastStakedAt);
+        penaltyPct = (penaltyBps * 100) / BPS; // e.g. 2500 bps = 25%
+
+        if (elapsed >= LOCK_PERIOD) {
+            daysRemaining = 0;
+        } else {
+            daysRemaining = (LOCK_PERIOD - elapsed) / 1 days;
+        }
+    }
+
+    /// @notice Preview how much a user would receive if they unstaked now
+    function previewUnstake(address _user, uint256 _amount) external view returns (uint256 userReceives, uint256 penalty, uint256 penaltyBps) {
+        StakeInfo storage s = stakes[_user];
+        if (_amount > s.amount) _amount = s.amount;
+        penaltyBps = _getPenaltyBps(s.lastStakedAt);
+        penalty = (_amount * penaltyBps) / BPS;
+        userReceives = _amount - penalty;
     }
 
     function getTier(address _user) public view returns (uint256) {
@@ -327,5 +394,22 @@ contract SizeStaking is ReentrancyGuard, Pausable, Ownable2Step {
         if (_amount >= SHOWER_MIN) return 2;
         if (_amount >= GROWER_MIN) return 1;
         return 0;
+    }
+
+    /// @dev Cubic decay penalty: 50% × (remaining / 365 days)³
+    ///      Frontloaded — drops fast early, flattens near the end.
+    ///      Day 0: 50% | 3mo: 21% | 6mo: 6.25% | 9mo: 0.78% | 12mo: 0%
+    function _getPenaltyBps(uint64 _stakedAt) internal view returns (uint256) {
+        if (_stakedAt == 0) return 0;
+        uint256 elapsed = block.timestamp - _stakedAt;
+        if (elapsed >= LOCK_PERIOD) return 0;
+
+        uint256 remaining = LOCK_PERIOD - elapsed;
+
+        // Cubic: (remaining/LOCK_PERIOD)³ × MAX_PENALTY_BPS
+        // Use fixed-point: scale to 1e18 to avoid truncation
+        uint256 ratio = (remaining * 1e18) / LOCK_PERIOD;       // 0 to 1e18
+        uint256 cubed = (ratio * ratio / 1e18) * ratio / 1e18;  // ratio³ in 1e18
+        return (cubed * MAX_PENALTY_BPS) / 1e18;
     }
 }

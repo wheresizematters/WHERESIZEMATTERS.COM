@@ -1,6 +1,6 @@
 import { TOKEN_ADDRESS, RPC_URL, BASE_CHAIN_ID_HEX } from './web3';
 
-export const STAKING_CONTRACT_ADDRESS = process.env.EXPO_PUBLIC_STAKING_CONTRACT_ADDRESS ?? '';
+export const STAKING_CONTRACT_ADDRESS = '0xD5bDD6D1179a2ca1dB79AFfcEBF602d7cFe918E6'; // Base Sepolia
 
 export const TIER_NAMES = ['None', 'Grower', 'Shower', 'Shlong', 'Whale'] as const;
 export const TIER_COLORS = ['#666666', '#888888', '#0A84FF', '#BF5AF2', '#E8500A'];

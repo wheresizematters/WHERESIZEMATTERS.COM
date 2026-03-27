@@ -1,9 +1,9 @@
-// Base mainnet config — fill TOKEN_ADDRESS once Saif deploys
-export const BASE_CHAIN_ID = 8453;
-export const BASE_CHAIN_ID_HEX = '0x2105';
-export const TOKEN_ADDRESS = process.env.EXPO_PUBLIC_SIZE_TOKEN_ADDRESS ?? '';
-export const RPC_URL =
-  process.env.EXPO_PUBLIC_BASE_RPC_URL ?? 'https://base-mainnet.core.chainstack.com/1f396980c6a698065bdf9bbebbb7fd78';
+// Base Sepolia testnet config
+export const BASE_CHAIN_ID = 84532;
+export const BASE_CHAIN_ID_HEX = '0x14a34';
+export const TOKEN_ADDRESS = '0x3Cb7fEb17BD78f6f1A3ec6C914A35C5664c9faEa'; // Mock $SIZE on Sepolia
+export const STAKING_ADDRESS = '0xD5bDD6D1179a2ca1dB79AFfcEBF602d7cFe918E6';
+export const RPC_URL = 'https://sepolia.base.org';
 
 // Minimal ERC-20 ABI for balance + transfer
 export const ERC20_ABI = [
@@ -13,7 +13,7 @@ export const ERC20_ABI = [
   'function transfer(address to, uint256 amount) returns (bool)',
 ];
 
-/** Switch MetaMask/Coinbase Wallet to Base mainnet */
+/** Switch MetaMask/Coinbase Wallet to Base Sepolia testnet */
 export async function switchToBase(): Promise<boolean> {
   const eth = (window as any).ethereum;
   if (!eth) return false;
@@ -31,10 +31,10 @@ export async function switchToBase(): Promise<boolean> {
           method: 'wallet_addEthereumChain',
           params: [{
             chainId: BASE_CHAIN_ID_HEX,
-            chainName: 'Base',
+            chainName: 'Base Sepolia',
             nativeCurrency: { name: 'Ethereum', symbol: 'ETH', decimals: 18 },
-            rpcUrls: ['https://mainnet.base.org'],
-            blockExplorerUrls: ['https://basescan.org'],
+            rpcUrls: ['https://sepolia.base.org'],
+            blockExplorerUrls: ['https://sepolia.basescan.org'],
           }],
         });
         return true;
@@ -46,7 +46,7 @@ export async function switchToBase(): Promise<boolean> {
   }
 }
 
-/** Get $SIZE token balance for a wallet address (requires contract deployed) */
+/** Get $SIZE token balance for a wallet address */
 export async function getSizeTokenBalance(walletAddress: string): Promise<string> {
   if (!TOKEN_ADDRESS) return '0';
   try {

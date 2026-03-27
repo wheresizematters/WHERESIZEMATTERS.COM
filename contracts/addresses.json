@@ -1,9 +1,24 @@
 {
-  "deployer": "0xa1113d1a049fcc81bf9b93d8f8175f4e031eabad",
+  "deployer": "0xa1113D1a049Fcc81bf9B93d8f8175F4e031eaBad",
   "protocolTreasury": "0x117c1e5d49e545021c21a0e3ade73dc42fd8ccf0",
   "gasWallet": "0x117c1e5d49e545021c21a0e3ade73dc42fd8ccf0",
   "feeCollectorBot": "0xa8d00375c8b8accef44352d45ca1f65422624557",
   "rewardsBot": "0x2466b3f0e3891db3380b335b7d0a132dea0360d9",
-  "chain": "base",
-  "chainId": 8453
+  "chain": "baseSepolia",
+  "chainId": 84532,
+  "contracts": {
+    "mockSizeToken": "0x3Cb7fEb17BD78f6f1A3ec6C914A35C5664c9faEa",
+    "sizeStaking": "0xD5bDD6D1179a2ca1dB79AFfcEBF602d7cFe918E6",
+    "sizeStakingV1": "0x02cd0832069d6F429f19d70436F4039fAd760109",
+    "sizeRewards": "0xdf7AfF4B67A4B68DcaE44cf5F49577eBcFb51551",
+    "sizeDickCoinFactory": "0xeFeD804ceBa717AE2413cf7A95ed61Ce4f777fF7",
+    "sizeGifting": "0x48539b265cd281D1f4c30edFd22d939DD236A9BF"
+  },
+  "dickcoins": {
+    "DONG": "0x5e9C0726b82596355A86347e0ca58241Fbc757F9",
+    "MICRO": "0x606371303173CeA150707b5516f15D1110B14710",
+    "RCOCK": "0xFeD825305ddc231ca3FE72Bec8440495cB39F659",
+    "GIGA": "0xF5D4A0bae51F0E869B92E7bCb54F8184267c9E58",
+    "DTIP": "0x4C247C0210C50926a03941C2e2d3d45D71164b97"
+  }
 }
