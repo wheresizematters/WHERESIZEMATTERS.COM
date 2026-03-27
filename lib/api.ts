@@ -330,3 +330,37 @@ export async function getGiftsForPost(postId: string): Promise<{ totalAmount: nu
 export async function getGiftsReceived(userId: string): Promise<any[]> {
   return (await api(`/api/v1/gifts/received/${userId}`)) ?? [];
 }
+
+// ── Wallet Verification & Net Worth ──────────────────────────────
+
+export interface VerifiedWallet {
+  address: string;
+  chain: string;
+  netWorth: number;
+  nativeBalance?: number;
+  lastRefreshed?: string;
+}
+
+export async function verifyWallet(address: string, signature: string, chain: string, message: string): Promise<{ status: string; wallet?: any; error?: string }> {
+  return (await post('/api/v1/wallets/verify', { address, signature, chain, message })) ?? { status: 'error', error: 'API unavailable' };
+}
+
+export async function getMyWallets(): Promise<{ wallets: VerifiedWallet[]; totalNetWorth: number }> {
+  return (await api('/api/v1/wallets/mine')) ?? { wallets: [], totalNetWorth: 0 };
+}
+
+export async function getUserNetWorth(userId: string): Promise<{ totalNetWorth: number; walletCount: number; chains: string[]; verified: boolean }> {
+  return (await api(`/api/v1/wallets/networth/${userId}`)) ?? { totalNetWorth: 0, walletCount: 0, chains: [], verified: false };
+}
+
+export async function getNetWorthLeaderboard(): Promise<any[]> {
+  return (await api('/api/v1/wallets/leaderboard')) ?? [];
+}
+
+export async function refreshMyNetWorth(): Promise<{ totalNetWorth: number; refreshed: number }> {
+  return (await post('/api/v1/wallets/refresh', {})) ?? { totalNetWorth: 0, refreshed: 0 };
+}
+
+export async function removeWallet(address: string): Promise<{ error: string | null }> {
+  return (await del(`/api/v1/wallets/${address}`)) ?? { error: 'API unavailable' };
+}

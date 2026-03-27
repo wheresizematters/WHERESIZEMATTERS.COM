@@ -16,6 +16,7 @@ import verificationRoutes from "./routes/verifications";
 import giftRoutes from "./routes/gifts";
 import stripeRoutes from "./routes/stripe";
 import analyticsRoutes from "./routes/analytics";
+import walletRoutes from "./routes/wallets";
 
 const app = express();
 const PORT = parseInt(process.env.PORT ?? "3000", 10);
@@ -50,6 +51,7 @@ app.use("/api/v1/verifications", verificationRoutes);
 app.use("/api/v1/gifts", giftRoutes);
 app.use("/api/v1/stripe", stripeRoutes);
 app.use("/api/v1/analytics", analyticsRoutes);
+app.use("/api/v1/wallets", walletRoutes);
 
 app.listen(PORT, () => {
   console.log("=== SIZE. API ===");
