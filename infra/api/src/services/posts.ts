@@ -273,6 +273,24 @@ export async function createComment(
   return { error: null };
 }
 
+export async function deleteComment(commentId: string, userId: string): Promise<{ error: string | null }> {
+  const comment = await getItem(T.comments, { id: commentId });
+  if (!comment) return { error: "Comment not found" };
+  if (comment.user_id !== userId) return { error: "Not authorized" };
+
+  await deleteItem(T.comments, { id: commentId });
+
+  // Decrement comment count on parent post
+  const post = await getItem(T.posts, { id: comment.post_id });
+  if (post) {
+    await updateItem(T.posts, { id: comment.post_id }, {
+      comment_count: Math.max(0, (post.comment_count ?? 1) - 1),
+    });
+  }
+
+  return { error: null };
+}
+
 // ── Coins helper ───────────────────────────────────────────────────
 
 async function maybeAwardPostCoins(userId: string): Promise<void> {

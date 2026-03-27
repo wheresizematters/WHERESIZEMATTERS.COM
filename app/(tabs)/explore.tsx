@@ -11,7 +11,7 @@ import PageContainer from '@/components/PageContainer';
 import { getTrendingDickCoins, DickCoin } from '@/lib/dickcoin';
 import { formatMarketCap } from '@/lib/token-info';
 
-type SortKey = 'volume' | 'holders' | 'fees' | 'newest';
+type SortKey = 'trending' | 'holders' | 'fees' | 'newest';
 
 export default function ExploreScreen() {
   const router = useRouter();
@@ -21,7 +21,7 @@ export default function ExploreScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [search, setSearch] = useState('');
-  const [sort, setSort] = useState<SortKey>('volume');
+  const [sort, setSort] = useState<SortKey>('trending');
 
   const loadData = useCallback(async () => {
     const data = await getTrendingDickCoins();
@@ -41,7 +41,7 @@ export default function ExploreScreen() {
     })
     .sort((a, b) => {
       switch (sort) {
-        case 'volume': return b.totalVolume - a.totalVolume;
+        case 'trending': return b.totalVolume - a.totalVolume;
         case 'holders': return b.holderCount - a.holderCount;
         case 'fees': return b.totalFeesEarned - a.totalFeesEarned;
         case 'newest': return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
@@ -83,7 +83,7 @@ export default function ExploreScreen() {
         {/* Sort tabs */}
         <View style={s.sortBar}>
           {([
-            { key: 'volume' as SortKey, label: 'Volume' },
+            { key: 'trending' as SortKey, label: 'Trending' },
             { key: 'holders' as SortKey, label: 'Holders' },
             { key: 'fees' as SortKey, label: 'Fees' },
             { key: 'newest' as SortKey, label: 'Newest' },

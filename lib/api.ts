@@ -59,6 +59,14 @@ export async function deletePost(postId: string): Promise<{ error: string | null
   return (await del(`/api/v1/posts/${postId}`)) ?? { error: "API unavailable" };
 }
 
+export async function deleteComment(postId: string, commentId: string): Promise<{ error: string | null }> {
+  return (await del(`/api/v1/posts/${postId}/comments/${commentId}`)) ?? { error: 'API unavailable' };
+}
+
+export async function deleteProfile(): Promise<{ error: string | null }> {
+  return (await del('/api/v1/profiles/me')) ?? { error: 'API unavailable' };
+}
+
 export async function createPost(
   userId: string, type: 'discussion' | 'poll', content: string,
   pollOptions?: string[], mediaUrl?: string, tag?: string, title?: string,
@@ -68,10 +76,11 @@ export async function createPost(
 
 // ── Leaderboard ───────────────────────────────────────────────────
 
-export async function fetchLeaderboard(filter?: { country?: string; ageRange?: string }): Promise<LeaderboardEntry[]> {
+export async function fetchLeaderboard(filter?: { country?: string; ageRange?: string; verifiedOnly?: boolean }): Promise<LeaderboardEntry[]> {
   const params = new URLSearchParams();
   if (filter?.country) params.set('country', filter.country);
   if (filter?.ageRange) params.set('ageRange', filter.ageRange);
+  if (filter?.verifiedOnly !== undefined) params.set('verifiedOnly', String(filter.verifiedOnly));
   const qs = params.toString();
   return (await api<LeaderboardEntry[]>(`/api/v1/profiles/leaderboard${qs ? `?${qs}` : ''}`)) ?? [];
 }

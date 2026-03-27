@@ -9,6 +9,7 @@ import { COLORS, SIZES, RADIUS, getSizeTier } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
 import { usePurchase } from '@/context/PurchaseContext';
 import PaywallModal from '@/components/PaywallModal';
+import { deleteProfile } from '@/lib/api';
 
 function SettingsRow({
   icon, label, value, onPress, danger, toggle, toggleValue, onToggle,
@@ -225,7 +226,7 @@ export default function SettingsScreen() {
             icon="trash-outline"
             label="Delete Account"
             danger
-            onPress={() => { if (window.confirm('Delete account? This is permanent.')) { window.alert('Contact @wheresize on X to delete your account.'); } }}
+            onPress={async () => { if (window.confirm('Delete account? This is permanent and cannot be undone.')) { const { error } = await deleteProfile(); if (error) { window.alert(`Failed to delete account: ${error}`); } else { await signOut(); } } }}
           />
         </View>
       </ScrollView>

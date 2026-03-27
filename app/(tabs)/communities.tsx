@@ -9,7 +9,7 @@ import { COLORS, SIZES, RADIUS } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
 import { useUnread } from '@/context/UnreadContext';
 import PageContainer from '@/components/PageContainer';
-import { getMyCircleJerks, getTrendingDickCoins, getTierInfo, DickCoin } from '@/lib/dickcoin';
+import { getMyCircleJerks, getTierInfo, DickCoin } from '@/lib/dickcoin';
 import { getToken } from '@/lib/supabase';
 
 export default function CommunitiesScreen() {
@@ -17,27 +17,21 @@ export default function CommunitiesScreen() {
   const { session, profile } = useAuth();
   const { hasUnread } = useUnread();
 
-  const [tab, setTab] = useState<'mine' | 'trending'>('mine');
   const [myCoins, setMyCoins] = useState<DickCoin[]>([]);
-  const [trending, setTrending] = useState<DickCoin[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
   const loadData = useCallback(async () => {
     const token = getToken() ?? '';
-    const [mine, trend] = await Promise.all([
-      getMyCircleJerks(token),
-      getTrendingDickCoins(),
-    ]);
+    const mine = await getMyCircleJerks(token);
     setMyCoins(mine);
-    setTrending(trend);
     setLoading(false);
     setRefreshing(false);
   }, []);
 
   useEffect(() => { loadData(); }, [loadData]);
 
-  const data = tab === 'mine' ? myCoins : trending;
+  const data = myCoins;
 
   return (
     <SafeAreaView style={styles.container}>
@@ -69,20 +63,11 @@ export default function CommunitiesScreen() {
           </View>
         </View>
 
-        {/* Tab toggle */}
+        {/* Section header */}
         <View style={styles.tabBar}>
-          <TouchableOpacity
-            style={[styles.tabBtn, tab === 'mine' && styles.tabBtnActive]}
-            onPress={() => setTab('mine')}
-          >
-            <Text style={[styles.tabBtnText, tab === 'mine' && styles.tabBtnTextActive]}>My Circle Jerks</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.tabBtn, tab === 'trending' && styles.tabBtnActive]}
-            onPress={() => setTab('trending')}
-          >
-            <Text style={[styles.tabBtnText, tab === 'trending' && styles.tabBtnTextActive]}>Trending</Text>
-          </TouchableOpacity>
+          <View style={[styles.tabBtn, styles.tabBtnActive]}>
+            <Text style={[styles.tabBtnText, styles.tabBtnTextActive]}>My Circle Jerks</Text>
+          </View>
         </View>
 
         {loading ? (
@@ -96,7 +81,7 @@ export default function CommunitiesScreen() {
             renderItem={({ item }) => (
               <TouchableOpacity
                 style={styles.coinRow}
-                onPress={() => router.push(`/coin/${item.contractAddress}` as any)}
+                onPress={() => router.push(`/circle-jerk/${item.contractAddress}` as any)}
                 activeOpacity={0.7}
               >
                 <View style={styles.coinInfo}>
@@ -119,14 +104,12 @@ export default function CommunitiesScreen() {
               <View style={styles.empty}>
                 <Ionicons name="chatbubbles-outline" size={40} color={COLORS.muted} />
                 <Text style={styles.emptyTitle}>
-                  {tab === 'mine' ? "You're not in any Circle Jerks yet" : 'No trending coins right now'}
+                  You're not in any Circle Jerks yet
                 </Text>
                 <Text style={styles.emptyDesc}>
-                  {tab === 'mine'
-                    ? "Buy a DickCoin to join its community, or launch your own."
-                    : "Check back soon or launch the first one."}
+                  Buy a DickCoin to join its community, or launch your own.
                 </Text>
-                {tab === 'mine' && profile?.is_verified && (
+                {profile?.is_verified && (
                   <TouchableOpacity
                     style={styles.emptyCta}
                     onPress={() => router.push('/launch-dickcoin' as any)}

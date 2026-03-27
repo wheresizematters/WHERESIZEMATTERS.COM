@@ -28,6 +28,7 @@ export interface SizeDickCoinFactoryInterface extends Interface {
     nameOrSignature:
       | "CREATOR_BPS"
       | "GAS_BPS"
+      | "MAX_DICKCOINS"
       | "PROTOCOL_BPS"
       | "TOTAL_BPS"
       | "acceptOwnership"
@@ -41,6 +42,7 @@ export interface SizeDickCoinFactoryInterface extends Interface {
       | "isAutoStakeReady"
       | "owner"
       | "pendingOwner"
+      | "pendingWithdrawals"
       | "protocolWallet"
       | "registerDickCoin"
       | "renounceOwnership"
@@ -48,6 +50,7 @@ export interface SizeDickCoinFactoryInterface extends Interface {
       | "setGasWallet"
       | "setProtocolWallet"
       | "transferOwnership"
+      | "withdraw"
   ): FunctionFragment;
 
   getEvent(
@@ -61,6 +64,7 @@ export interface SizeDickCoinFactoryInterface extends Interface {
       | "OwnershipTransferStarted"
       | "OwnershipTransferred"
       | "ProtocolWalletUpdated"
+      | "WithdrawalPending"
   ): EventFragment;
 
   encodeFunctionData(
@@ -68,6 +72,10 @@ export interface SizeDickCoinFactoryInterface extends Interface {
     values?: undefined
   ): string;
   encodeFunctionData(functionFragment: "GAS_BPS", values?: undefined): string;
+  encodeFunctionData(
+    functionFragment: "MAX_DICKCOINS",
+    values?: undefined
+  ): string;
   encodeFunctionData(
     functionFragment: "PROTOCOL_BPS",
     values?: undefined
@@ -112,6 +120,10 @@ export interface SizeDickCoinFactoryInterface extends Interface {
     values?: undefined
   ): string;
   encodeFunctionData(
+    functionFragment: "pendingWithdrawals",
+    values: [AddressLike]
+  ): string;
+  encodeFunctionData(
     functionFragment: "protocolWallet",
     values?: undefined
   ): string;
@@ -139,12 +151,17 @@ export interface SizeDickCoinFactoryInterface extends Interface {
     functionFragment: "transferOwnership",
     values: [AddressLike]
   ): string;
+  encodeFunctionData(functionFragment: "withdraw", values?: undefined): string;
 
   decodeFunctionResult(
     functionFragment: "CREATOR_BPS",
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "GAS_BPS", data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: "MAX_DICKCOINS",
+    data: BytesLike
+  ): Result;
   decodeFunctionResult(
     functionFragment: "PROTOCOL_BPS",
     data: BytesLike
@@ -186,6 +203,10 @@ export interface SizeDickCoinFactoryInterface extends Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(
+    functionFragment: "pendingWithdrawals",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
     functionFragment: "protocolWallet",
     data: BytesLike
   ): Result;
@@ -213,6 +234,7 @@ export interface SizeDickCoinFactoryInterface extends Interface {
     functionFragment: "transferOwnership",
     data: BytesLike
   ): Result;
+  decodeFunctionResult(functionFragment: "withdraw", data: BytesLike): Result;
 }
 
 export namespace AutoStakeThresholdReachedEvent {
@@ -344,6 +366,19 @@ export namespace ProtocolWalletUpdatedEvent {
   export type LogDescription = TypedLogDescription<Event>;
 }
 
+export namespace WithdrawalPendingEvent {
+  export type InputTuple = [recipient: AddressLike, amount: BigNumberish];
+  export type OutputTuple = [recipient: string, amount: bigint];
+  export interface OutputObject {
+    recipient: string;
+    amount: bigint;
+  }
+  export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
+  export type Filter = TypedDeferredTopicFilter<Event>;
+  export type Log = TypedEventLog<Event>;
+  export type LogDescription = TypedLogDescription<Event>;
+}
+
 export interface SizeDickCoinFactory extends BaseContract {
   connect(runner?: ContractRunner | null): SizeDickCoinFactory;
   waitForDeployment(): Promise<this>;
@@ -390,6 +425,8 @@ export interface SizeDickCoinFactory extends BaseContract {
   CREATOR_BPS: TypedContractMethod<[], [bigint], "view">;
 
   GAS_BPS: TypedContractMethod<[], [bigint], "view">;
+
+  MAX_DICKCOINS: TypedContractMethod<[], [bigint], "view">;
 
   PROTOCOL_BPS: TypedContractMethod<[], [bigint], "view">;
 
@@ -450,6 +487,12 @@ export interface SizeDickCoinFactory extends BaseContract {
 
   pendingOwner: TypedContractMethod<[], [string], "view">;
 
+  pendingWithdrawals: TypedContractMethod<
+    [arg0: AddressLike],
+    [bigint],
+    "view"
+  >;
+
   protocolWallet: TypedContractMethod<[], [string], "view">;
 
   registerDickCoin: TypedContractMethod<
@@ -484,6 +527,8 @@ export interface SizeDickCoinFactory extends BaseContract {
     "nonpayable"
   >;
 
+  withdraw: TypedContractMethod<[], [void], "nonpayable">;
+
   getFunction<T extends ContractMethod = ContractMethod>(
     key: string | FunctionFragment
   ): T;
@@ -493,6 +538,9 @@ export interface SizeDickCoinFactory extends BaseContract {
   ): TypedContractMethod<[], [bigint], "view">;
   getFunction(
     nameOrSignature: "GAS_BPS"
+  ): TypedContractMethod<[], [bigint], "view">;
+  getFunction(
+    nameOrSignature: "MAX_DICKCOINS"
   ): TypedContractMethod<[], [bigint], "view">;
   getFunction(
     nameOrSignature: "PROTOCOL_BPS"
@@ -559,6 +607,9 @@ export interface SizeDickCoinFactory extends BaseContract {
     nameOrSignature: "pendingOwner"
   ): TypedContractMethod<[], [string], "view">;
   getFunction(
+    nameOrSignature: "pendingWithdrawals"
+  ): TypedContractMethod<[arg0: AddressLike], [bigint], "view">;
+  getFunction(
     nameOrSignature: "protocolWallet"
   ): TypedContractMethod<[], [string], "view">;
   getFunction(
@@ -583,6 +634,9 @@ export interface SizeDickCoinFactory extends BaseContract {
   getFunction(
     nameOrSignature: "transferOwnership"
   ): TypedContractMethod<[newOwner: AddressLike], [void], "nonpayable">;
+  getFunction(
+    nameOrSignature: "withdraw"
+  ): TypedContractMethod<[], [void], "nonpayable">;
 
   getEvent(
     key: "AutoStakeThresholdReached"
@@ -646,6 +700,13 @@ export interface SizeDickCoinFactory extends BaseContract {
     ProtocolWalletUpdatedEvent.InputTuple,
     ProtocolWalletUpdatedEvent.OutputTuple,
     ProtocolWalletUpdatedEvent.OutputObject
+  >;
+  getEvent(
+    key: "WithdrawalPending"
+  ): TypedContractEvent<
+    WithdrawalPendingEvent.InputTuple,
+    WithdrawalPendingEvent.OutputTuple,
+    WithdrawalPendingEvent.OutputObject
   >;
 
   filters: {
@@ -746,6 +807,17 @@ export interface SizeDickCoinFactory extends BaseContract {
       ProtocolWalletUpdatedEvent.InputTuple,
       ProtocolWalletUpdatedEvent.OutputTuple,
       ProtocolWalletUpdatedEvent.OutputObject
+    >;
+
+    "WithdrawalPending(address,uint256)": TypedContractEvent<
+      WithdrawalPendingEvent.InputTuple,
+      WithdrawalPendingEvent.OutputTuple,
+      WithdrawalPendingEvent.OutputObject
+    >;
+    WithdrawalPending: TypedContractEvent<
+      WithdrawalPendingEvent.InputTuple,
+      WithdrawalPendingEvent.OutputTuple,
+      WithdrawalPendingEvent.OutputObject
     >;
   };
 }

@@ -1,5 +1,5 @@
 import { v4 as uuid } from "uuid";
-import { T, getItem, putItem, updateItem, queryItems, scanAll } from "../db";
+import { T, getItem, putItem, updateItem, deleteItem, queryItems, scanAll } from "../db";
 
 export interface Profile {
   id: string;
@@ -69,6 +69,11 @@ export async function updateProfile(userId: string, updates: Partial<Profile>): 
   return getProfile(userId);
 }
 
+export async function deleteProfile(userId: string): Promise<{ error: string | null }> {
+  await deleteItem(T.profiles, { id: userId });
+  return { error: null };
+}
+
 export async function awardCoins(userId: string, amount: number): Promise<void> {
   const profile = await getProfile(userId);
   if (!profile) return;
@@ -106,11 +111,14 @@ export interface LeaderboardEntry {
 export async function getLeaderboard(filter?: {
   country?: string;
   ageRange?: string;
+  verifiedOnly?: boolean;
 }): Promise<LeaderboardEntry[]> {
   let profiles = await scanAll<Profile>(T.profiles);
 
-  // Only verified users on leaderboard
-  profiles = profiles.filter((p) => p.is_verified);
+  // Filter by verification status (default: verified only)
+  if (filter?.verifiedOnly !== false) {
+    profiles = profiles.filter((p) => p.is_verified);
+  }
 
   if (filter?.country) profiles = profiles.filter((p) => p.country === filter.country);
   if (filter?.ageRange) profiles = profiles.filter((p) => p.age_range === filter.ageRange);

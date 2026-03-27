@@ -164,6 +164,8 @@ export default function LeaderboardScreen() {
   const [myRank, setMyRank] = useState<RankResult | null>(null);
   const [totalUsers, setTotalUsers] = useState<number>(0);
 
+  const [verifiedOnly, setVerifiedOnly] = useState(true);
+
   // Mode: 'global' | 'nearby' | 'dickcoins'
   const [mode, setMode] = useState<'global' | 'nearby' | 'dickcoins'>('global');
   const [dickCoins, setDickCoins] = useState<any[]>([]);
@@ -182,11 +184,13 @@ export default function LeaderboardScreen() {
   // ── Global load ────────────────────────────────────────────────────────────
   const load = useCallback(async () => {
     const AGE_RANGES = ['18–24', '25–34', '35–44'];
-    const filter = activeFilter === 'Global'
-      ? undefined
+    const baseFilter = activeFilter === 'Global'
+      ? {}
       : AGE_RANGES.includes(activeFilter)
         ? { ageRange: activeFilter }
         : { country: activeFilter };
+
+    const filter = { ...baseFilter, verifiedOnly };
 
     const [data, total] = await Promise.all([fetchLeaderboard(filter), fetchTotalUserCount()]);
     setEntries(data);
@@ -197,7 +201,7 @@ export default function LeaderboardScreen() {
     }
     setLoading(false);
     setRefreshing(false);
-  }, [session?.user.id, activeFilter]);
+  }, [session?.user.id, activeFilter, verifiedOnly]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -425,6 +429,17 @@ export default function LeaderboardScreen() {
                   <Text style={[styles.filterText, activeFilter === f && styles.filterTextActive]}>{f}</Text>
                 </TouchableOpacity>
               ))}
+              <TouchableOpacity
+                style={[styles.filterChip, verifiedOnly && styles.filterChipActive]}
+                onPress={() => { setVerifiedOnly(v => !v); setLoading(true); setEntries([]); }}
+              >
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                  <Ionicons name="checkmark-circle" size={12} color={verifiedOnly ? COLORS.gold : COLORS.muted} />
+                  <Text style={[styles.filterText, verifiedOnly && styles.filterTextActive]}>
+                    {verifiedOnly ? 'Verified Only' : 'All Users'}
+                  </Text>
+                </View>
+              </TouchableOpacity>
             </ScrollView>
 
             {/* Top 3 Podium */}

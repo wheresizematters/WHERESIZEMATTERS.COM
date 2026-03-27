@@ -25,11 +25,12 @@ import type {
 
 export interface SizeGiftingInterface extends Interface {
   getFunction(
-    nameOrSignature: "batchGift" | "gift" | "sizeToken"
+    nameOrSignature: "MAX_BATCH" | "batchGift" | "gift" | "sizeToken"
   ): FunctionFragment;
 
   getEvent(nameOrSignatureOrTopic: "Gift" | "PostTip"): EventFragment;
 
+  encodeFunctionData(functionFragment: "MAX_BATCH", values?: undefined): string;
   encodeFunctionData(
     functionFragment: "batchGift",
     values: [AddressLike[], BigNumberish[]]
@@ -40,6 +41,7 @@ export interface SizeGiftingInterface extends Interface {
   ): string;
   encodeFunctionData(functionFragment: "sizeToken", values?: undefined): string;
 
+  decodeFunctionResult(functionFragment: "MAX_BATCH", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "batchGift", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "gift", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "sizeToken", data: BytesLike): Result;
@@ -141,6 +143,8 @@ export interface SizeGifting extends BaseContract {
     event?: TCEvent
   ): Promise<this>;
 
+  MAX_BATCH: TypedContractMethod<[], [bigint], "view">;
+
   batchGift: TypedContractMethod<
     [_recipients: AddressLike[], _amounts: BigNumberish[]],
     [void],
@@ -164,6 +168,9 @@ export interface SizeGifting extends BaseContract {
     key: string | FunctionFragment
   ): T;
 
+  getFunction(
+    nameOrSignature: "MAX_BATCH"
+  ): TypedContractMethod<[], [bigint], "view">;
   getFunction(
     nameOrSignature: "batchGift"
   ): TypedContractMethod<

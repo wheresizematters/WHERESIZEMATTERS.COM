@@ -8,7 +8,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SIZES, RADIUS, getSizeTier } from '@/constants/theme';
-import { fetchPost, fetchComments, createComment, voteOnPoll, voteOnPost, deletePost } from "@/lib/api";
+import { fetchPost, fetchComments, createComment, voteOnPoll, voteOnPost, deletePost, deleteComment } from "@/lib/api";
 import { useAuth } from '@/context/AuthContext';
 import { usePurchase } from '@/context/PurchaseContext';
 import { SUPABASE_READY } from '@/lib/supabase';
@@ -213,12 +213,13 @@ function PostDetail({ post, myId, isPremium, onVotePost }: {
 }
 
 // ── Comment Row ───────────────────────────────────────────────────────────────
-function CommentRow({ comment }: { comment: Comment }) {
+function CommentRow({ comment, myId, onDelete }: { comment: Comment; myId: string; onDelete?: (commentId: string) => void }) {
   const router = useRouter();
   const tier = getSizeTier(comment.author.size_inches);
   const [score, setScore] = useState((comment as any).score ?? 0);
   const [userVote, setUserVote] = useState<0 | 1 | -1>((comment as any).user_vote ?? 0);
   const linkUrl = extractFirstUrl(comment.content);
+  const isOwner = comment.author.id === myId;
 
   function handleVote(vote: 1 | -1 | 0) {
     const delta = vote - userVote;
@@ -263,6 +264,11 @@ function CommentRow({ comment }: { comment: Comment }) {
             </View>
           )}
           <Text style={styles.commentTime}>{timeAgo(comment.created_at)}</Text>
+          {isOwner && onDelete && (
+            <TouchableOpacity onPress={() => { if (window.confirm('Delete this comment?')) onDelete(comment.id); }} style={{ marginLeft: 4, padding: 4 }}>
+              <Ionicons name="trash-outline" size={14} color={COLORS.red} />
+            </TouchableOpacity>
+          )}
         </View>
         <LinkedText text={comment.content} style={styles.commentContent} />
         {/* Link preview */}
@@ -399,7 +405,7 @@ export default function PostScreen() {
                 </>
               ) : null
             }
-            renderItem={({ item }) => <CommentRow comment={item} />}
+            renderItem={({ item }) => <CommentRow comment={item} myId={myId} onDelete={async (commentId) => { await deleteComment(postId, commentId); setComments(prev => prev.filter(c => c.id !== commentId)); }} />}
             ItemSeparatorComponent={() => <View style={styles.commentSep} />}
             ListEmptyComponent={
               !loading ? (

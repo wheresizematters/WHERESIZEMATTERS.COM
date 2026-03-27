@@ -14,9 +14,20 @@ r.patch("/me", requireAuth, async (req, res) => {
   res.json(updated);
 });
 
+r.delete("/me", requireAuth, async (req, res) => {
+  try {
+    const result = await svc.deleteProfile(req.userId!);
+    res.json(result);
+  } catch (err: any) {
+    console.error("Delete profile error:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 r.get("/leaderboard", async (req, res) => {
   const { country, ageRange } = req.query as any;
-  const entries = await svc.getLeaderboard({ country, ageRange });
+  const verifiedOnly = req.query.verifiedOnly !== 'false';
+  const entries = await svc.getLeaderboard({ country, ageRange, verifiedOnly });
   res.json(entries);
 });
 

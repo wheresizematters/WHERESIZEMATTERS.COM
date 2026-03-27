@@ -31,6 +31,7 @@ export interface SizeRewardsInterface extends Interface {
       | "claimRewards"
       | "currentEpoch"
       | "depositRewards"
+      | "epochClaimed"
       | "epochs"
       | "finalizeEpoch"
       | "gasWallet"
@@ -51,7 +52,6 @@ export interface SizeRewardsInterface extends Interface {
       | "sizeToken"
       | "transferOwnership"
       | "userEpochWeight"
-      | "userRewards"
   ): FunctionFragment;
 
   getEvent(
@@ -84,6 +84,10 @@ export interface SizeRewardsInterface extends Interface {
   encodeFunctionData(
     functionFragment: "depositRewards",
     values: [BigNumberish]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "epochClaimed",
+    values: [BigNumberish, AddressLike]
   ): string;
   encodeFunctionData(
     functionFragment: "epochs",
@@ -156,10 +160,6 @@ export interface SizeRewardsInterface extends Interface {
     functionFragment: "userEpochWeight",
     values: [BigNumberish, AddressLike]
   ): string;
-  encodeFunctionData(
-    functionFragment: "userRewards",
-    values: [AddressLike]
-  ): string;
 
   decodeFunctionResult(
     functionFragment: "acceptOwnership",
@@ -179,6 +179,10 @@ export interface SizeRewardsInterface extends Interface {
   ): Result;
   decodeFunctionResult(
     functionFragment: "depositRewards",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "epochClaimed",
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "epochs", data: BytesLike): Result;
@@ -247,10 +251,6 @@ export interface SizeRewardsInterface extends Interface {
   ): Result;
   decodeFunctionResult(
     functionFragment: "userEpochWeight",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "userRewards",
     data: BytesLike
   ): Result;
 }
@@ -430,6 +430,12 @@ export interface SizeRewards extends BaseContract {
     "nonpayable"
   >;
 
+  epochClaimed: TypedContractMethod<
+    [arg0: BigNumberish, arg1: AddressLike],
+    [boolean],
+    "view"
+  >;
+
   epochs: TypedContractMethod<
     [arg0: BigNumberish],
     [
@@ -524,12 +530,6 @@ export interface SizeRewards extends BaseContract {
     "view"
   >;
 
-  userRewards: TypedContractMethod<
-    [arg0: AddressLike],
-    [[bigint, bigint] & { lastClaimedEpoch: bigint; pendingClaim: bigint }],
-    "view"
-  >;
-
   getFunction<T extends ContractMethod = ContractMethod>(
     key: string | FunctionFragment
   ): T;
@@ -549,6 +549,13 @@ export interface SizeRewards extends BaseContract {
   getFunction(
     nameOrSignature: "depositRewards"
   ): TypedContractMethod<[_amount: BigNumberish], [void], "nonpayable">;
+  getFunction(
+    nameOrSignature: "epochClaimed"
+  ): TypedContractMethod<
+    [arg0: BigNumberish, arg1: AddressLike],
+    [boolean],
+    "view"
+  >;
   getFunction(
     nameOrSignature: "epochs"
   ): TypedContractMethod<
@@ -645,13 +652,6 @@ export interface SizeRewards extends BaseContract {
   ): TypedContractMethod<
     [arg0: BigNumberish, arg1: AddressLike],
     [bigint],
-    "view"
-  >;
-  getFunction(
-    nameOrSignature: "userRewards"
-  ): TypedContractMethod<
-    [arg0: AddressLike],
-    [[bigint, bigint] & { lastClaimedEpoch: bigint; pendingClaim: bigint }],
     "view"
   >;
 

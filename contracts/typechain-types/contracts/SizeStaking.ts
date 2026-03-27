@@ -28,6 +28,8 @@ export interface SizeStakingInterface extends Interface {
     nameOrSignature:
       | "GROWER_BOOST"
       | "GROWER_MIN"
+      | "LOCK_PERIOD"
+      | "MAX_PENALTY_BPS"
       | "SHLONG_BOOST"
       | "SHLONG_MIN"
       | "SHOWER_BOOST"
@@ -41,6 +43,7 @@ export interface SizeStakingInterface extends Interface {
       | "depositRewards"
       | "emergencyWithdraw"
       | "getBoost"
+      | "getEarlyWithdrawalPenalty"
       | "getStakeInfo"
       | "getTier"
       | "isDepositor"
@@ -48,12 +51,14 @@ export interface SizeStakingInterface extends Interface {
       | "pause"
       | "paused"
       | "pendingOwner"
+      | "previewUnstake"
       | "renounceOwnership"
       | "setDepositor"
       | "sizeToken"
       | "stake"
       | "stakes"
       | "totalEffectiveStaked"
+      | "totalPenaltiesCollected"
       | "totalStaked"
       | "transferOwnership"
       | "unpause"
@@ -67,6 +72,7 @@ export interface SizeStakingInterface extends Interface {
       | "OwnershipTransferStarted"
       | "OwnershipTransferred"
       | "Paused"
+      | "PenaltyRedistributed"
       | "RewardsClaimed"
       | "RewardsDeposited"
       | "Staked"
@@ -80,6 +86,14 @@ export interface SizeStakingInterface extends Interface {
   ): string;
   encodeFunctionData(
     functionFragment: "GROWER_MIN",
+    values?: undefined
+  ): string;
+  encodeFunctionData(
+    functionFragment: "LOCK_PERIOD",
+    values?: undefined
+  ): string;
+  encodeFunctionData(
+    functionFragment: "MAX_PENALTY_BPS",
     values?: undefined
   ): string;
   encodeFunctionData(
@@ -132,6 +146,10 @@ export interface SizeStakingInterface extends Interface {
     values: [AddressLike]
   ): string;
   encodeFunctionData(
+    functionFragment: "getEarlyWithdrawalPenalty",
+    values: [AddressLike]
+  ): string;
+  encodeFunctionData(
     functionFragment: "getStakeInfo",
     values: [AddressLike]
   ): string;
@@ -151,6 +169,10 @@ export interface SizeStakingInterface extends Interface {
     values?: undefined
   ): string;
   encodeFunctionData(
+    functionFragment: "previewUnstake",
+    values: [AddressLike, BigNumberish]
+  ): string;
+  encodeFunctionData(
     functionFragment: "renounceOwnership",
     values?: undefined
   ): string;
@@ -163,6 +185,10 @@ export interface SizeStakingInterface extends Interface {
   encodeFunctionData(functionFragment: "stakes", values: [AddressLike]): string;
   encodeFunctionData(
     functionFragment: "totalEffectiveStaked",
+    values?: undefined
+  ): string;
+  encodeFunctionData(
+    functionFragment: "totalPenaltiesCollected",
     values?: undefined
   ): string;
   encodeFunctionData(
@@ -184,6 +210,14 @@ export interface SizeStakingInterface extends Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "GROWER_MIN", data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: "LOCK_PERIOD",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "MAX_PENALTY_BPS",
+    data: BytesLike
+  ): Result;
   decodeFunctionResult(
     functionFragment: "SHLONG_BOOST",
     data: BytesLike
@@ -225,6 +259,10 @@ export interface SizeStakingInterface extends Interface {
   ): Result;
   decodeFunctionResult(functionFragment: "getBoost", data: BytesLike): Result;
   decodeFunctionResult(
+    functionFragment: "getEarlyWithdrawalPenalty",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
     functionFragment: "getStakeInfo",
     data: BytesLike
   ): Result;
@@ -241,6 +279,10 @@ export interface SizeStakingInterface extends Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(
+    functionFragment: "previewUnstake",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
     functionFragment: "renounceOwnership",
     data: BytesLike
   ): Result;
@@ -253,6 +295,10 @@ export interface SizeStakingInterface extends Interface {
   decodeFunctionResult(functionFragment: "stakes", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "totalEffectiveStaked",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "totalPenaltiesCollected",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
@@ -281,11 +327,16 @@ export namespace DepositorUpdatedEvent {
 }
 
 export namespace EmergencyWithdrawEvent {
-  export type InputTuple = [user: AddressLike, amount: BigNumberish];
-  export type OutputTuple = [user: string, amount: bigint];
+  export type InputTuple = [
+    user: AddressLike,
+    amount: BigNumberish,
+    penalty: BigNumberish
+  ];
+  export type OutputTuple = [user: string, amount: bigint, penalty: bigint];
   export interface OutputObject {
     user: string;
     amount: bigint;
+    penalty: bigint;
   }
   export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
   export type Filter = TypedDeferredTopicFilter<Event>;
@@ -324,6 +375,19 @@ export namespace PausedEvent {
   export type OutputTuple = [account: string];
   export interface OutputObject {
     account: string;
+  }
+  export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
+  export type Filter = TypedDeferredTopicFilter<Event>;
+  export type Log = TypedEventLog<Event>;
+  export type LogDescription = TypedLogDescription<Event>;
+}
+
+export namespace PenaltyRedistributedEvent {
+  export type InputTuple = [user: AddressLike, penaltyAmount: BigNumberish];
+  export type OutputTuple = [user: string, penaltyAmount: bigint];
+  export interface OutputObject {
+    user: string;
+    penaltyAmount: bigint;
   }
   export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
   export type Filter = TypedDeferredTopicFilter<Event>;
@@ -391,12 +455,19 @@ export namespace UnstakedEvent {
   export type InputTuple = [
     user: AddressLike,
     amount: BigNumberish,
+    penalty: BigNumberish,
     newTier: BigNumberish
   ];
-  export type OutputTuple = [user: string, amount: bigint, newTier: bigint];
+  export type OutputTuple = [
+    user: string,
+    amount: bigint,
+    penalty: bigint,
+    newTier: bigint
+  ];
   export interface OutputObject {
     user: string;
     amount: bigint;
+    penalty: bigint;
     newTier: bigint;
   }
   export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
@@ -452,6 +523,10 @@ export interface SizeStaking extends BaseContract {
 
   GROWER_MIN: TypedContractMethod<[], [bigint], "view">;
 
+  LOCK_PERIOD: TypedContractMethod<[], [bigint], "view">;
+
+  MAX_PENALTY_BPS: TypedContractMethod<[], [bigint], "view">;
+
   SHLONG_BOOST: TypedContractMethod<[], [bigint], "view">;
 
   SHLONG_MIN: TypedContractMethod<[], [bigint], "view">;
@@ -482,6 +557,19 @@ export interface SizeStaking extends BaseContract {
 
   getBoost: TypedContractMethod<[_user: AddressLike], [bigint], "view">;
 
+  getEarlyWithdrawalPenalty: TypedContractMethod<
+    [_user: AddressLike],
+    [
+      [bigint, bigint, bigint, bigint] & {
+        penaltyBps: bigint;
+        penaltyPct: bigint;
+        daysStaked: bigint;
+        daysRemaining: bigint;
+      }
+    ],
+    "view"
+  >;
+
   getStakeInfo: TypedContractMethod<
     [_user: AddressLike],
     [
@@ -507,6 +595,18 @@ export interface SizeStaking extends BaseContract {
   paused: TypedContractMethod<[], [boolean], "view">;
 
   pendingOwner: TypedContractMethod<[], [string], "view">;
+
+  previewUnstake: TypedContractMethod<
+    [_user: AddressLike, _amount: BigNumberish],
+    [
+      [bigint, bigint, bigint] & {
+        userReceives: bigint;
+        penalty: bigint;
+        penaltyBps: bigint;
+      }
+    ],
+    "view"
+  >;
 
   renounceOwnership: TypedContractMethod<[], [void], "nonpayable">;
 
@@ -537,6 +637,8 @@ export interface SizeStaking extends BaseContract {
 
   totalEffectiveStaked: TypedContractMethod<[], [bigint], "view">;
 
+  totalPenaltiesCollected: TypedContractMethod<[], [bigint], "view">;
+
   totalStaked: TypedContractMethod<[], [bigint], "view">;
 
   transferOwnership: TypedContractMethod<
@@ -558,6 +660,12 @@ export interface SizeStaking extends BaseContract {
   ): TypedContractMethod<[], [bigint], "view">;
   getFunction(
     nameOrSignature: "GROWER_MIN"
+  ): TypedContractMethod<[], [bigint], "view">;
+  getFunction(
+    nameOrSignature: "LOCK_PERIOD"
+  ): TypedContractMethod<[], [bigint], "view">;
+  getFunction(
+    nameOrSignature: "MAX_PENALTY_BPS"
   ): TypedContractMethod<[], [bigint], "view">;
   getFunction(
     nameOrSignature: "SHLONG_BOOST"
@@ -599,6 +707,20 @@ export interface SizeStaking extends BaseContract {
     nameOrSignature: "getBoost"
   ): TypedContractMethod<[_user: AddressLike], [bigint], "view">;
   getFunction(
+    nameOrSignature: "getEarlyWithdrawalPenalty"
+  ): TypedContractMethod<
+    [_user: AddressLike],
+    [
+      [bigint, bigint, bigint, bigint] & {
+        penaltyBps: bigint;
+        penaltyPct: bigint;
+        daysStaked: bigint;
+        daysRemaining: bigint;
+      }
+    ],
+    "view"
+  >;
+  getFunction(
     nameOrSignature: "getStakeInfo"
   ): TypedContractMethod<
     [_user: AddressLike],
@@ -631,6 +753,19 @@ export interface SizeStaking extends BaseContract {
   getFunction(
     nameOrSignature: "pendingOwner"
   ): TypedContractMethod<[], [string], "view">;
+  getFunction(
+    nameOrSignature: "previewUnstake"
+  ): TypedContractMethod<
+    [_user: AddressLike, _amount: BigNumberish],
+    [
+      [bigint, bigint, bigint] & {
+        userReceives: bigint;
+        penalty: bigint;
+        penaltyBps: bigint;
+      }
+    ],
+    "view"
+  >;
   getFunction(
     nameOrSignature: "renounceOwnership"
   ): TypedContractMethod<[], [void], "nonpayable">;
@@ -665,6 +800,9 @@ export interface SizeStaking extends BaseContract {
   >;
   getFunction(
     nameOrSignature: "totalEffectiveStaked"
+  ): TypedContractMethod<[], [bigint], "view">;
+  getFunction(
+    nameOrSignature: "totalPenaltiesCollected"
   ): TypedContractMethod<[], [bigint], "view">;
   getFunction(
     nameOrSignature: "totalStaked"
@@ -715,6 +853,13 @@ export interface SizeStaking extends BaseContract {
     PausedEvent.OutputObject
   >;
   getEvent(
+    key: "PenaltyRedistributed"
+  ): TypedContractEvent<
+    PenaltyRedistributedEvent.InputTuple,
+    PenaltyRedistributedEvent.OutputTuple,
+    PenaltyRedistributedEvent.OutputObject
+  >;
+  getEvent(
     key: "RewardsClaimed"
   ): TypedContractEvent<
     RewardsClaimedEvent.InputTuple,
@@ -762,7 +907,7 @@ export interface SizeStaking extends BaseContract {
       DepositorUpdatedEvent.OutputObject
     >;
 
-    "EmergencyWithdraw(address,uint256)": TypedContractEvent<
+    "EmergencyWithdraw(address,uint256,uint256)": TypedContractEvent<
       EmergencyWithdrawEvent.InputTuple,
       EmergencyWithdrawEvent.OutputTuple,
       EmergencyWithdrawEvent.OutputObject
@@ -804,6 +949,17 @@ export interface SizeStaking extends BaseContract {
       PausedEvent.InputTuple,
       PausedEvent.OutputTuple,
       PausedEvent.OutputObject
+    >;
+
+    "PenaltyRedistributed(address,uint256)": TypedContractEvent<
+      PenaltyRedistributedEvent.InputTuple,
+      PenaltyRedistributedEvent.OutputTuple,
+      PenaltyRedistributedEvent.OutputObject
+    >;
+    PenaltyRedistributed: TypedContractEvent<
+      PenaltyRedistributedEvent.InputTuple,
+      PenaltyRedistributedEvent.OutputTuple,
+      PenaltyRedistributedEvent.OutputObject
     >;
 
     "RewardsClaimed(address,uint256)": TypedContractEvent<
@@ -850,7 +1006,7 @@ export interface SizeStaking extends BaseContract {
       UnpausedEvent.OutputObject
     >;
 
-    "Unstaked(address,uint256,uint256)": TypedContractEvent<
+    "Unstaked(address,uint256,uint256,uint256)": TypedContractEvent<
       UnstakedEvent.InputTuple,
       UnstakedEvent.OutputTuple,
       UnstakedEvent.OutputObject

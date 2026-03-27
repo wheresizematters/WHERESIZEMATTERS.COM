@@ -110,4 +110,14 @@ r.post("/:postId/comments", requireAuth, async (req, res) => {
   }
 });
 
+r.delete("/:postId/comments/:commentId", requireAuth, async (req, res) => {
+  try {
+    const result = await svc.deleteComment(req.params.commentId, req.userId!);
+    res.json(result);
+  } catch (err: any) {
+    console.error("Delete comment error:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 export default r;
