@@ -350,7 +350,13 @@
       <div class="logo">SIZE.</div>
       <div class="label">Analytics Dashboard</div>
     </div>
-    <div class="refresh-info">Auto-refresh <span>60s</span> &middot; <span id="last-updated">--</span></div>
+    <div style="display:flex;align-items:center;gap:16px">
+      <div id="gate-toggle" style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:8px 14px;border-radius:8px;border:1px solid var(--border);background:var(--surface)" onclick="toggleGate()">
+        <div id="gate-dot" style="width:8px;height:8px;border-radius:50%;background:#666"></div>
+        <span id="gate-label" style="font-size:11px;font-weight:700;letter-spacing:1px;color:var(--muted)">GATE: ...</span>
+      </div>
+      <div class="refresh-info">Auto-refresh <span>60s</span> &middot; <span id="last-updated">--</span></div>
+    </div>
   </div>
 
   <!-- Overview -->
@@ -439,6 +445,7 @@ function loadDashboard() {
       document.getElementById('auth-gate').style.display = 'none';
       document.getElementById('dashboard').classList.add('active');
       renderDashboard(data);
+      loadGateStatus();
       document.getElementById('last-updated').textContent = new Date().toLocaleTimeString();
       // Auto-refresh
       if (refreshTimer) clearInterval(refreshTimer);
@@ -467,6 +474,49 @@ function renderDashboard(data) {
   renderTable('browsers-table', ['Browser', 'Count'], data.topBrowsers);
   renderTable('os-table', ['OS', 'Count'], data.topOS);
   renderRecentFeed(data.recent);
+}
+
+// ── Gate toggle ──────────────────────────────────
+var gateEnabled = true;
+
+function loadGateStatus() {
+  fetch('/api/v1/analytics/gate-status')
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      gateEnabled = d.enabled;
+      updateGateUI();
+    }).catch(function() {});
+}
+
+function updateGateUI() {
+  var dot = document.getElementById('gate-dot');
+  var label = document.getElementById('gate-label');
+  if (gateEnabled) {
+    dot.style.background = '#34C759';
+    label.textContent = 'GATE: ON';
+    label.style.color = '#34C759';
+  } else {
+    dot.style.background = '#FF453A';
+    label.textContent = 'GATE: OFF';
+    label.style.color = '#FF453A';
+  }
+}
+
+function toggleGate() {
+  var newState = !gateEnabled;
+  var msg = newState ? 'Turn ON invite gate? Public will be blocked.' : 'Turn OFF invite gate? Site will be public.';
+  if (!confirm(msg)) return;
+  fetch('/api/v1/analytics/gate-toggle', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ totp: currentTOTP, enabled: newState })
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(d) {
+    if (d.error) { alert('Failed: ' + d.error); return; }
+    gateEnabled = d.enabled;
+    updateGateUI();
+  }).catch(function() { alert('Failed to toggle gate'); });
 }
 
 function renderOverview(o) {

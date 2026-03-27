@@ -226,4 +226,35 @@ r.get("/totp-setup", async (req: Request, res: Response) => {
   });
 });
 
+// ── TOTP verify (for gate page) ─────────────────────────────────
+r.post("/verify-totp", async (req: Request, res: Response) => {
+  const { code } = req.body;
+  if (!code || !verifyTOTP(TOTP_SECRET, code)) {
+    return res.json({ valid: false });
+  }
+  res.json({ valid: true });
+});
+
+// ── Gate toggle (TOTP protected) ────────────────────────────────
+// Store gate state in a simple file on disk (survives restarts)
+import fs from "fs";
+const GATE_FILE = "/tmp/size-gate-enabled";
+
+function isGateEnabled(): boolean {
+  try { return fs.readFileSync(GATE_FILE, "utf8").trim() !== "0"; } catch { return true; }
+}
+
+r.get("/gate-status", (_req: Request, res: Response) => {
+  res.json({ enabled: isGateEnabled() });
+});
+
+r.post("/gate-toggle", async (req: Request, res: Response) => {
+  const { totp, enabled } = req.body;
+  if (!totp || !verifyTOTP(TOTP_SECRET, totp)) {
+    return res.status(403).json({ error: "Invalid TOTP" });
+  }
+  fs.writeFileSync(GATE_FILE, enabled ? "1" : "0");
+  res.json({ enabled: !!enabled });
+});
+
 export default r;

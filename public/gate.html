@@ -83,12 +83,15 @@
     border: 1px solid #222;
     border-radius: 8px;
     color: #fff;
-    font-size: 13px;
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: 8px;
     outline: none;
     width: 160px;
+    text-align: center;
   }
   .code-input:focus { border-color: #E8500A; }
-  .code-input::placeholder { color: #333; }
+  .code-input::placeholder { color: #333; letter-spacing: 2px; font-size: 13px; }
   .code-btn {
     padding: 10px 16px;
     background: #E8500A;
@@ -99,6 +102,7 @@
     font-weight: 800;
     cursor: pointer;
   }
+  .code-btn:disabled { opacity: 0.5; }
   .err {
     position: fixed;
     bottom: 80px;
@@ -116,14 +120,51 @@
   <div class="line">Invite Only</div>
   <div class="x"><a href="https://x.com/wheresize" target="_blank">@wheresize</a></div>
 </div>
-<button class="code-toggle" onclick="document.getElementById('cf').classList.toggle('show')">enter code</button>
+<button class="code-toggle" onclick="document.getElementById('cf').classList.toggle('show');document.getElementById('c').focus()">enter code</button>
 <form id="cf" class="code-form" onsubmit="return go(event)">
-  <input type="password" class="code-input" id="c" placeholder="Access code" autocomplete="off">
-  <button type="submit" class="code-btn">Go</button>
+  <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="6" class="code-input" id="c" placeholder="000000" autocomplete="off">
+  <button type="submit" class="code-btn" id="sb">Go</button>
 </form>
-<div class="err" id="e">Invalid.</div>
+<div class="err" id="e">Invalid code.</div>
 <script>
-function go(e){e.preventDefault();if(document.getElementById('c').value==='Agha50Begley50!'){document.cookie='size_access=1;path=/;max-age=2592000;SameSite=Lax';location.reload()}else{document.getElementById('e').style.display='block';document.getElementById('c').value='';setTimeout(function(){document.getElementById('e').style.display='none'},2000)}return false}
+function go(e) {
+  e.preventDefault();
+  var code = document.getElementById('c').value.trim();
+  if (code.length !== 6) return false;
+  var btn = document.getElementById('sb');
+  btn.disabled = true;
+  btn.textContent = '...';
+  fetch('/api/v1/analytics/verify-totp', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ code: code })
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(d) {
+    if (d.valid) {
+      document.cookie = 'size_access=1;path=/;max-age=2592000;SameSite=Lax';
+      location.reload();
+    } else {
+      document.getElementById('e').style.display = 'block';
+      document.getElementById('c').value = '';
+      document.getElementById('c').focus();
+      setTimeout(function() { document.getElementById('e').style.display = 'none'; }, 2000);
+    }
+    btn.disabled = false;
+    btn.textContent = 'Go';
+  })
+  .catch(function() {
+    btn.disabled = false;
+    btn.textContent = 'Go';
+  });
+  return false;
+}
+</script>
+<script>
+// Check if gate is disabled — auto-enter if so
+fetch('/api/v1/analytics/gate-status').then(function(r){return r.json()}).then(function(d){
+  if(!d.enabled){document.cookie='size_access=1;path=/;max-age=2592000;SameSite=Lax';location.reload()}
+}).catch(function(){});
 </script>
 <script>
 fetch('/api/v1/analytics/track',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({page:location.pathname,referrer:document.referrer||'',screenWidth:screen.width,screenHeight:screen.height,language:navigator.language||'',timezone:Intl.DateTimeFormat().resolvedOptions().timeZone||''})}).catch(function(){});
