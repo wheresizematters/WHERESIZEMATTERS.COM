@@ -2,6 +2,8 @@ import { Router, Request, Response } from "express";
 import { v4 as uuid } from "uuid";
 import { T, putItem, scanAll } from "../db";
 import crypto from "crypto";
+import fs from "fs";
+import { previewDistribution, simulateFromVolume, REWARDS_CONFIG } from "../services/rewards-engine";
 
 const r = Router();
 
@@ -246,7 +248,6 @@ r.post("/verify-totp", async (req: Request, res: Response) => {
 
 // ── Gate toggle (TOTP protected) ────────────────────────────────
 // Store gate state in a simple file on disk (survives restarts)
-import fs from "fs";
 const GATE_FILE = "/tmp/size-gate-enabled";
 
 function isGateEnabled(): boolean {
@@ -319,7 +320,6 @@ r.post("/features", (req: Request, res: Response) => {
 });
 
 // ── Rewards distribution (admin only) ───────────────────────────
-import { previewDistribution, simulateFromVolume, REWARDS_CONFIG } from "../services/rewards-engine";
 
 r.get("/rewards/preview", async (req: Request, res: Response) => {
   try {
