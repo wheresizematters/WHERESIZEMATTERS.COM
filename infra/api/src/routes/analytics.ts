@@ -266,4 +266,27 @@ r.post("/gate-toggle", async (req: Request, res: Response) => {
   res.json({ enabled: !!enabled });
 });
 
+// ── Rewards distribution (admin only) ───────────────────────────
+import { previewDistribution, REWARDS_CONFIG } from "../services/rewards-engine";
+
+r.get("/rewards/preview", async (req: Request, res: Response) => {
+  try {
+    const tk = req.query.token as string;
+    if (!isValidAdminToken(tk)) return res.status(403).json({ error: "Unauthorized" });
+
+    const poolSize = parseFloat(req.query.pool as string) || 100000; // default 100K $SIZE
+    const preview = await previewDistribution(poolSize);
+    res.json(preview);
+  } catch (err: any) {
+    console.error("Rewards preview error:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+r.get("/rewards/config", async (req: Request, res: Response) => {
+  const tk = req.query.token as string;
+  if (!isValidAdminToken(tk)) return res.status(403).json({ error: "Unauthorized" });
+  res.json(REWARDS_CONFIG);
+});
+
 export default r;
