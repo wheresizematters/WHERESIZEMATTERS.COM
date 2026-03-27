@@ -230,9 +230,22 @@ export default function SettingsScreen() {
                 value={(profile as any)?.x_handle ? `@${(profile as any).x_handle}` : 'Not set'}
                 onPress={() => setEditingXHandle(true)}
               />
-              {(profile as any)?.auth_provider === 'twitter' && (profile as any)?.x_handle ? (
-                <Text style={{ color: COLORS.muted, fontSize: SIZES.xs, paddingHorizontal: 60, paddingBottom: 8 }}>Linked via X login</Text>
-              ) : null}
+              {(profile as any)?.x_handle && (profile as any)?.oauth_provider_id ? (
+                <Text style={{ color: COLORS.green, fontSize: SIZES.xs, paddingHorizontal: 60, paddingBottom: 8 }}>✓ Verified via X</Text>
+              ) : (
+                <TouchableOpacity
+                  style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginLeft: 60, marginBottom: 10, backgroundColor: '#000', borderWidth: 1, borderColor: '#333', borderRadius: RADIUS.full, paddingHorizontal: 14, paddingVertical: 8, alignSelf: 'flex-start' }}
+                  onPress={() => {
+                    const token = getToken();
+                    if (token && typeof window !== 'undefined') {
+                      window.location.href = `/api/v1/auth/link-x/redirect?token=${token}`;
+                    }
+                  }}
+                >
+                  <Ionicons name="logo-twitter" size={16} color="#fff" />
+                  <Text style={{ color: '#fff', fontWeight: '700', fontSize: SIZES.sm }}>Connect X Account</Text>
+                </TouchableOpacity>
+              )}
             </View>
           )}
         </View>

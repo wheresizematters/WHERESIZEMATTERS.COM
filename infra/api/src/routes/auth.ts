@@ -212,6 +212,87 @@ r.get("/oauth/x/callback", async (req: Request, res: Response) => {
   }
 });
 
+// ── GET /link-x/redirect — Link X to existing account ───────────────
+r.get("/link-x/redirect", (req: Request, res: Response) => {
+  const userToken = req.query.token as string;
+  if (!userToken) { res.status(400).json({ error: "token required" }); return; }
+
+  const clientId = process.env.X_CLIENT_ID ?? process.env.X_CONSUMER_KEY ?? "";
+  const redirectUri = `${process.env.API_BASE_URL ?? "https://www.wheresizematters.com"}/api/v1/auth/link-x/callback`;
+  const state = require("crypto").randomBytes(16).toString("hex");
+  const scope = "users.read tweet.read offline.access";
+  const codeVerifier = require("crypto").randomBytes(32).toString("base64url");
+  const codeChallenge = require("crypto").createHash("sha256").update(codeVerifier).digest("base64url");
+
+  (global as any).__xLinkVerifiers = (global as any).__xLinkVerifiers ?? {};
+  (global as any).__xLinkVerifiers[state] = { codeVerifier, userToken };
+  setTimeout(() => delete (global as any).__xLinkVerifiers?.[state], 600_000);
+
+  const url = `https://twitter.com/i/oauth2/authorize?response_type=code&client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scope)}&state=${state}&code_challenge=${codeChallenge}&code_challenge_method=S256`;
+  res.redirect(url);
+});
+
+// ── GET /link-x/callback — handle X link redirect back ──────────────
+r.get("/link-x/callback", async (req: Request, res: Response) => {
+  try {
+    const { code, state } = req.query as { code: string; state: string };
+    const stored = (global as any).__xLinkVerifiers?.[state];
+    if (!code || !stored) { res.redirect("https://www.wheresizematters.com/profile?error=link_failed"); return; }
+    delete (global as any).__xLinkVerifiers?.[state];
+
+    const { codeVerifier, userToken } = stored;
+
+    // Verify the user's JWT to get their userId
+    const jwt = require("jsonwebtoken");
+    const JWT_SECRET = process.env.JWT_SECRET ?? "";
+    let userId: string;
+    try {
+      const decoded = jwt.verify(userToken, JWT_SECRET) as any;
+      userId = decoded.userId;
+    } catch {
+      res.redirect("https://www.wheresizematters.com/profile?error=invalid_token"); return;
+    }
+
+    const clientId = process.env.X_CLIENT_ID ?? process.env.X_CONSUMER_KEY ?? "";
+    const clientSecret = process.env.X_CLIENT_SECRET ?? process.env.X_CONSUMER_SECRET ?? "";
+    const redirectUri = `${process.env.API_BASE_URL ?? "https://www.wheresizematters.com"}/api/v1/auth/link-x/callback`;
+
+    // Exchange code for access token
+    const tokenRes = await fetch("https://api.twitter.com/2/oauth2/token", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+        Authorization: `Basic ${Buffer.from(`${clientId}:${clientSecret}`).toString("base64")}`,
+      },
+      body: new URLSearchParams({ code, grant_type: "authorization_code", redirect_uri: redirectUri, code_verifier: codeVerifier }),
+    });
+    if (!tokenRes.ok) { res.redirect("https://www.wheresizematters.com/profile?error=x_token_failed"); return; }
+    const { access_token } = await tokenRes.json() as any;
+
+    // Get X user info
+    const userRes = await fetch("https://api.twitter.com/2/users/me?user.fields=profile_image_url,public_metrics", {
+      headers: { Authorization: `Bearer ${access_token}` },
+    });
+    if (!userRes.ok) { res.redirect("https://www.wheresizematters.com/profile?error=x_user_failed"); return; }
+    const { data: xUser } = await userRes.json() as any;
+
+    // Link X to existing profile
+    await updateProfile(userId, {
+      x_handle: xUser.username,
+      x_avatar_url: xUser.profile_image_url ?? null,
+      x_name: xUser.name ?? null,
+      x_followers: xUser.public_metrics?.followers_count ?? 0,
+      auth_provider: "x", // Mark as X-linked
+      oauth_provider_id: xUser.id,
+    } as any);
+
+    res.redirect("https://www.wheresizematters.com/profile?x_linked=true");
+  } catch (err: any) {
+    console.error("Link X error:", err);
+    res.redirect("https://www.wheresizematters.com/profile?error=link_failed");
+  }
+});
+
 // ── GET /oauth/google/redirect — initiate Google OAuth flow ────────
 r.get("/oauth/google/redirect", (_req: Request, res: Response) => {
   const clientId = process.env.GOOGLE_CLIENT_ID ?? "";
