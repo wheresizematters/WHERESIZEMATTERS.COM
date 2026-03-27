@@ -107,11 +107,12 @@ export interface RankResult {
   rank: number;
   provisional: boolean;
   totalVerified: number;
+  totalUsers: number;
 }
 
 export async function fetchUserRank(userId: string): Promise<RankResult> {
   const data = await api<RankResult>(`/api/v1/profiles/${userId}/rank`);
-  return data ?? { rank: 0, provisional: false, totalVerified: 0 };
+  return data ?? { rank: 0, provisional: false, totalVerified: 0, totalUsers: 0 };
 }
 
 export async function fetchPost(postId: string): Promise<Post | null> {

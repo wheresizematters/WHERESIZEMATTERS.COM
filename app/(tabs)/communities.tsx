@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
-  SafeAreaView, ActivityIndicator, RefreshControl,
+  SafeAreaView, ActivityIndicator, RefreshControl, Image,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -92,6 +92,13 @@ export default function CommunitiesScreen() {
                 onPress={() => router.push(`/circle-jerk/${item.contractAddress}` as any)}
                 activeOpacity={0.7}
               >
+                {item.imageUrl ? (
+                  <Image source={{ uri: item.imageUrl }} style={styles.coinImage} />
+                ) : (
+                  <View style={styles.coinImageFallback}>
+                    <Text style={styles.coinImageLetter}>{item.ticker?.charAt(0) ?? '?'}</Text>
+                  </View>
+                )}
                 <View style={styles.coinInfo}>
                   <Text style={styles.coinName}>{item.name}</Text>
                   <Text style={styles.coinTicker}>{item.ticker}</Text>
@@ -158,6 +165,9 @@ const styles = StyleSheet.create({
   // List
   list: { paddingHorizontal: 16, paddingBottom: 100 },
   coinRow: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: COLORS.card, borderRadius: RADIUS.lg, borderWidth: 1, borderColor: COLORS.cardBorder, padding: 14, marginBottom: 8 },
+  coinImage: { width: 40, height: 40, borderRadius: 20, backgroundColor: COLORS.bg },
+  coinImageFallback: { width: 40, height: 40, borderRadius: 20, backgroundColor: COLORS.bg, borderWidth: 1.5, borderColor: COLORS.gold, alignItems: 'center', justifyContent: 'center' },
+  coinImageLetter: { color: COLORS.gold, fontWeight: '900', fontSize: 16 },
   coinInfo: { flex: 1 },
   coinName: { color: COLORS.white, fontWeight: '700', fontSize: SIZES.md },
   coinTicker: { color: COLORS.gold, fontSize: SIZES.xs, fontWeight: '600', marginTop: 1 },

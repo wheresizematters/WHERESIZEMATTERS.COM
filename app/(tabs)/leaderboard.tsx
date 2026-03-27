@@ -402,8 +402,8 @@ export default function LeaderboardScreen() {
                     </Text>
                     <Text style={styles.heroRank} numberOfLines={1} adjustsFontSizeToFit>
                       {myRank ? `#${myRank.rank.toLocaleString()}` : '—'}
-                      {myRank && myRank.totalVerified > 0 && (
-                        <Text style={styles.heroRankTotal}> / {myRank.totalVerified.toLocaleString()}</Text>
+                      {myRank && myRank.totalUsers > 0 && (
+                        <Text style={styles.heroRankTotal}> / {myRank.totalUsers.toLocaleString()}</Text>
                       )}
                     </Text>
                     <Text style={styles.heroUsername}>@{profile.username}</Text>

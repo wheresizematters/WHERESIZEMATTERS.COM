@@ -152,23 +152,20 @@ export async function getFollowersLeaderboard(): Promise<{
   }));
 }
 
-export async function getUserRank(userId: string): Promise<{ rank: number; provisional: boolean; totalVerified: number }> {
+export async function getUserRank(userId: string): Promise<{ rank: number; provisional: boolean; totalVerified: number; totalUsers: number }> {
   const all = await scanAll<Profile>(T.profiles);
   const user = all.find((p) => p.id === userId);
-  if (!user) return { rank: 0, provisional: false, totalVerified: 0 };
+  if (!user) return { rank: 0, provisional: false, totalVerified: 0, totalUsers: 0 };
 
-  const verified = all.filter((p) => p.is_verified).sort((a, b) => b.size_inches - a.size_inches);
-  const totalVerified = verified.length;
+  // Rank among ALL users (this is what the leaderboard shows)
+  const allSorted = all.sort((a, b) => b.size_inches - a.size_inches);
+  const totalUsers = allSorted.length;
+  const totalVerified = all.filter((p) => p.is_verified).length;
 
-  if (user.is_verified) {
-    const idx = verified.findIndex((p) => p.id === userId);
-    return { rank: idx >= 0 ? idx + 1 : 0, provisional: false, totalVerified };
-  }
+  const idx = allSorted.findIndex((p) => p.id === userId);
+  const rank = idx >= 0 ? idx + 1 : totalUsers;
 
-  // Provisional rank: where they'd place among verified users
-  const provisionalIdx = verified.findIndex((p) => user.size_inches >= p.size_inches);
-  const provisionalRank = provisionalIdx >= 0 ? provisionalIdx + 1 : verified.length + 1;
-  return { rank: provisionalRank, provisional: true, totalVerified };
+  return { rank, provisional: !user.is_verified, totalVerified, totalUsers };
 }
 
 export async function getLeaderboardNearby(
