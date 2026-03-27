@@ -14,6 +14,7 @@ import { fetchUserRank, fetchUserPostCount, fetchTotalUserCount, fetchUserPosts,
 import { useAuth } from '@/context/AuthContext';
 import { getToken, getApiUrl } from '@/lib/supabase';
 import { Post } from '@/lib/types';
+import { proxyMediaUrl } from '@/lib/media';
 
 type ProfileTab = 'posts' | 'compare';
 
@@ -56,10 +57,12 @@ const CHAIN_ICONS: Record<string, string> = {
 };
 
 function PostItem({ post }: { post: Post }) {
+  const router = useRouter();
   const totalVotes = post.poll_options?.reduce((s, o) => s + o.vote_count, 0) ?? 0;
   const tagColor = post.tag ? (TAG_COLORS[TAG_CATEGORIES[post.tag]] ?? COLORS.muted) : null;
+  const mediaUrl = (post as any).media_url ? proxyMediaUrl((post as any).media_url) : null;
   return (
-    <View style={styles.postItem}>
+    <TouchableOpacity style={styles.postItem} onPress={() => router.push(`/post/${post.id}` as any)} activeOpacity={0.8}>
       <View style={styles.postItemTop}>
         {post.tag && tagColor && (
           <View style={[styles.postTagChip, { borderColor: tagColor, backgroundColor: `${tagColor}18` }]}>
@@ -68,7 +71,11 @@ function PostItem({ post }: { post: Post }) {
         )}
         <Text style={styles.postItemTime}>{timeAgo(post.created_at)}</Text>
       </View>
+      {post.title && <Text style={{ color: COLORS.white, fontWeight: '800', fontSize: SIZES.base, marginBottom: 4 }}>{post.title}</Text>}
       <Text style={styles.postItemContent} numberOfLines={3}>{post.content}</Text>
+      {mediaUrl && (
+        <Image source={{ uri: mediaUrl }} style={{ width: '100%', height: 160, borderRadius: RADIUS.md, marginTop: 8, backgroundColor: COLORS.card }} resizeMode="cover" />
+      )}
       <View style={styles.postItemFooter}>
         {post.type === 'poll' && (
           <View style={styles.postItemStat}>
@@ -80,8 +87,13 @@ function PostItem({ post }: { post: Post }) {
           <Ionicons name="chatbubble-outline" size={12} color={COLORS.muted} />
           <Text style={styles.postItemStatText}>{post.comment_count}</Text>
         </View>
+        {mediaUrl && (
+          <View style={styles.postItemStat}>
+            <Ionicons name="image-outline" size={12} color={COLORS.muted} />
+          </View>
+        )}
       </View>
-    </View>
+    </TouchableOpacity>
   );
 }
 

@@ -166,7 +166,7 @@ export default function LeaderboardScreen() {
   const [myRank, setMyRank] = useState<RankResult | null>(null);
   const [totalUsers, setTotalUsers] = useState<number>(0);
 
-  const [verifiedOnly, setVerifiedOnly] = useState(true);
+  const [verifiedOnly, setVerifiedOnly] = useState(false);
 
   // Mode: 'global' | 'nearby' | 'dickcoins' | 'networth'
   const [mode, setMode] = useState<'global' | 'nearby' | 'dickcoins' | 'networth' | 'clout'>('global');
