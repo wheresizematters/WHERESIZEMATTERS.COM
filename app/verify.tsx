@@ -128,11 +128,13 @@ export default function VerifyScreen() {
 
     if (result.status === 'auto_verified') {
       await updateProfile({ is_verified: true });
-      // Award verification coins
-      // Rewards come from daily fee pool proportionally
       setStep('result_verified');
+    } else if (result.status === 'rejected') {
+      setErrorMsg(result.reason ?? 'Verification failed. Try again with a clearer photo and a reference object.');
+      setStep('error');
     } else {
-      setStep('result_pending');
+      // Shouldn't happen anymore but handle gracefully
+      setStep('result_verified');
     }
   }
 

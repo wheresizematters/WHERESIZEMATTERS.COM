@@ -226,11 +226,11 @@ export async function submitVerificationPhoto(
 
 export async function runVerification(
   imagePath: string, reportedSize: number, reportedGirth?: number | null, verifyType?: string,
-): Promise<{ status: 'auto_verified' | 'pending'; reason?: string; error?: string }> {
-  const data = await post<{ status: 'auto_verified' | 'pending'; reason?: string; error?: string }>(
+): Promise<{ status: 'auto_verified' | 'rejected'; reason?: string; error?: string }> {
+  const data = await post<{ status: 'auto_verified' | 'rejected'; reason?: string; error?: string }>(
     '/api/v1/verifications/verify', { imagePath, reportedSize, reportedGirth, verifyType: verifyType ?? 'size' },
   );
-  return data ?? { status: 'pending', error: 'API unavailable' };
+  return data ?? { status: 'rejected', reason: 'API unavailable. Try again.' };
 }
 
 export async function fetchPendingVerifications(): Promise<VerificationRequest[]> {

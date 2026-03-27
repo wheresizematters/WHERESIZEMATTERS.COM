@@ -99,6 +99,7 @@ If no reference object or no penis visible, return:
         if (estimatedSize) profileUpdates.size_inches = estimatedSize;
       }
 
+      // AI decides — no manual review. Either verified or rejected.
       await svc.upsertVerificationRequest({
         user_id: req.userId!,
         image_path: imagePath,
@@ -106,7 +107,7 @@ If no reference object or no penis visible, return:
         ai_est_size: analysis.size_inches ?? null,
         ai_confidence: confidence,
         ai_notes: notes,
-        status: autoVerify ? "auto_verified" : "pending",
+        status: autoVerify ? "auto_verified" : "rejected",
       });
 
       if (autoVerify) {
@@ -118,33 +119,45 @@ If no reference object or no penis visible, return:
         });
       }
 
+      // Rejected — tell user why and let them retry
+      let rejectReason = "";
+      if (type === "face") {
+        rejectReason = "Could not confirm a real face. Try better lighting and face the camera directly.";
+      } else if (type === "bra") {
+        rejectReason = "Could not determine size. Try a clearer photo with better lighting.";
+      } else {
+        const estimatedSize = analysis.size_inches ?? null;
+        if (!estimatedSize) {
+          rejectReason = "Could not detect or measure. Make sure a ruler or reference object is clearly visible next to it.";
+        } else if (analysis.reference === "none") {
+          rejectReason = `Detected but no reference object found. Place a ruler, credit card, or dollar bill next to it for scale.`;
+        } else {
+          rejectReason = `AI measured ${estimatedSize}" but you reported ${reportedSize}". Difference too large. Use a ruler for accurate measurement and try again.`;
+        }
+      }
+
       return res.json({
-        status: "pending",
-        reason: estimatedSize
-          ? `AI measured ${estimatedSize}" (${confidence}). Queued for review.`
-          : `Could not measure (${confidence}). Queued for review.`,
+        status: "rejected",
+        reason: rejectReason,
       });
     }
 
-    // Vision API not available — fall back to manual review
+    // Vision API not available — still try to verify, be lenient
+    // Accept with low confidence rather than blocking users
     await svc.upsertVerificationRequest({
       user_id: req.userId!,
       image_path: imagePath,
       reported_size: reportedSize,
-      status: "pending",
+      status: "auto_verified",
+      ai_notes: "Vision API unavailable — auto-accepted",
     });
-    res.json({ status: "pending", reason: "queued_for_review" });
+    await updateProfile(req.userId!, { is_verified: true });
+    res.json({ status: "auto_verified", reason: "Verified (photo accepted)" });
 
   } catch (err: any) {
     console.error("Verification error:", err.message);
-    // Fallback to manual review on any error
-    await svc.upsertVerificationRequest({
-      user_id: req.userId!,
-      image_path: imagePath,
-      reported_size: reportedSize,
-      status: "pending",
-    });
-    res.json({ status: "pending", reason: "queued_for_review" });
+    // On error, reject and let them retry rather than creating a manual queue
+    res.json({ status: "rejected", reason: "Verification failed due to a server error. Please try again." });
   }
 });
 
