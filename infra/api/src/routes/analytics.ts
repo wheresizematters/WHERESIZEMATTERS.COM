@@ -99,8 +99,9 @@ function verifyTOTP(secret: string, token: string): boolean {
 r.get("/dashboard", async (req: Request, res: Response) => {
   try {
     const token = req.query.totp as string;
-    if (!token || !verifyTOTP(TOTP_SECRET, token)) {
-      return res.status(403).json({ error: "Invalid TOTP code" });
+    const adminTk = req.query.token as string;
+    if (!isValidAdminToken(adminTk) && (!token || !verifyTOTP(TOTP_SECRET, token))) {
+      return res.status(403).json({ error: "Invalid authentication" });
     }
 
     const events = await scanAll<any>(T.analytics);
@@ -226,13 +227,21 @@ r.get("/totp-setup", async (req: Request, res: Response) => {
   });
 });
 
-// ── TOTP verify (for gate page) ─────────────────────────────────
+// ── Admin session token (permanent, derived from TOTP secret) ───
+const ADMIN_TOKEN = crypto.createHash("sha256").update("size-admin-" + TOTP_SECRET).digest("hex");
+
+function isValidAdminToken(token: string | undefined): boolean {
+  return token === ADMIN_TOKEN;
+}
+
+// ── TOTP verify (for gate page + admin dashboard) ───────────────
 r.post("/verify-totp", async (req: Request, res: Response) => {
   const { code } = req.body;
   if (!code || !verifyTOTP(TOTP_SECRET, code)) {
     return res.json({ valid: false });
   }
-  res.json({ valid: true });
+  // Return a permanent admin token — use this for all future admin calls
+  res.json({ valid: true, adminToken: ADMIN_TOKEN });
 });
 
 // ── Gate toggle (TOTP protected) ────────────────────────────────
@@ -249,9 +258,9 @@ r.get("/gate-status", (_req: Request, res: Response) => {
 });
 
 r.post("/gate-toggle", async (req: Request, res: Response) => {
-  const { totp, enabled } = req.body;
-  if (!totp || !verifyTOTP(TOTP_SECRET, totp)) {
-    return res.status(403).json({ error: "Invalid TOTP" });
+  const { totp, token, enabled } = req.body;
+  if (!isValidAdminToken(token) && (!totp || !verifyTOTP(TOTP_SECRET, totp))) {
+    return res.status(403).json({ error: "Invalid authentication" });
   }
   fs.writeFileSync(GATE_FILE, enabled ? "1" : "0");
   res.json({ enabled: !!enabled });

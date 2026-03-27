@@ -414,14 +414,22 @@
 </div>
 
 <script>
-var currentTOTP = '';
+var adminToken = '';
 var refreshTimer = null;
 
 // ── Auth ─────────────────────────────────────────
 document.getElementById('totp-input').addEventListener('keydown', function(e) {
   if (e.key === 'Enter') authenticate();
 });
-document.getElementById('totp-input').focus();
+
+// Check if already authenticated (localStorage persists forever)
+var savedToken = localStorage.getItem('size_admin_token');
+if (savedToken) {
+  adminToken = savedToken;
+  loadDashboard();
+} else {
+  document.getElementById('totp-input').focus();
+}
 
 function authenticate() {
   var code = document.getElementById('totp-input').value.trim();
@@ -429,13 +437,29 @@ function authenticate() {
     document.getElementById('auth-error').textContent = 'Enter a 6-digit code';
     return;
   }
-  currentTOTP = code;
-  document.getElementById('auth-error').textContent = '';
-  loadDashboard();
+  fetch('/api/v1/analytics/verify-totp', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ code: code })
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(d) {
+    if (d.valid && d.adminToken) {
+      adminToken = d.adminToken;
+      localStorage.setItem('size_admin_token', d.adminToken);
+      document.getElementById('auth-error').textContent = '';
+      loadDashboard();
+    } else {
+      document.getElementById('auth-error').textContent = 'Invalid code. Enter the current 6-digit code from Google Authenticator.';
+    }
+  })
+  .catch(function() {
+    document.getElementById('auth-error').textContent = 'API error. Try again.';
+  });
 }
 
 function loadDashboard() {
-  fetch('/api/v1/analytics/dashboard?totp=' + currentTOTP)
+  fetch('/api/v1/analytics/dashboard?token=' + adminToken)
     .then(function(r) {
       if (r.status === 403) throw new Error('TOTP');
       return r.json();
@@ -453,7 +477,9 @@ function loadDashboard() {
     })
     .catch(function(err) {
       if (err.message === 'TOTP') {
-        document.getElementById('auth-error').textContent = 'Invalid TOTP code';
+        localStorage.removeItem('size_admin_token');
+        adminToken = '';
+        document.getElementById('auth-error').textContent = 'Session expired. Enter your 6-digit code.';
         document.getElementById('auth-gate').style.display = 'flex';
         document.getElementById('dashboard').classList.remove('active');
         document.getElementById('totp-input').value = '';
@@ -509,7 +535,7 @@ function toggleGate() {
   fetch('/api/v1/analytics/gate-toggle', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ totp: currentTOTP, enabled: newState })
+    body: JSON.stringify({ token: adminToken, enabled: newState })
   })
   .then(function(r) { return r.json(); })
   .then(function(d) {
