@@ -361,12 +361,71 @@ export default function ProfileScreen() {
               </View>
             </View>
 
-            {!profile.is_verified && (
-              <TouchableOpacity style={styles.verifyHint} onPress={() => router.push('/verify' as any)}>
-                <Ionicons name="shield-checkmark-outline" size={14} color={COLORS.gold} />
-                <Text style={styles.verifyHintText}>Get Verified to unlock the full leaderboard →</Text>
-              </TouchableOpacity>
-            )}
+          </View>
+
+          {/* ── Verification badges ── */}
+          <View style={styles.verifyCard}>
+            <Text style={styles.verifyCardTitle}>VERIFICATION</Text>
+
+            {/* Size */}
+            <View style={styles.verifyRow}>
+              <Ionicons name={profile.is_verified ? "checkmark-circle" : "close-circle"} size={18} color={profile.is_verified ? COLORS.green : COLORS.muted} />
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.verifyRowLabel, profile.is_verified && { color: COLORS.green }]}>
+                  Size {profile.is_verified ? "Verified" : "Unverified"}
+                </Text>
+                {profile.is_verified && <Text style={styles.verifyRowSub}>{size.toFixed(1)}" — AI verified</Text>}
+              </View>
+              {!profile.is_verified && (
+                <TouchableOpacity style={styles.verifyRowBtn} onPress={() => router.push('/verify' as any)}>
+                  <Text style={styles.verifyRowBtnText}>Verify</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+
+            {/* Wallet / Net Worth */}
+            <View style={styles.verifyRow}>
+              <Ionicons name={(profile as any).wallet_address ? "checkmark-circle" : "close-circle"} size={18} color={(profile as any).wallet_address ? COLORS.green : COLORS.muted} />
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.verifyRowLabel, (profile as any).wallet_address && { color: COLORS.green }]}>
+                  Wallet {(profile as any).wallet_address ? "Connected" : "Not Connected"}
+                </Text>
+                {totalNetWorth > 0 && <Text style={styles.verifyRowSub}>Net worth: {formatNetWorth(totalNetWorth)}</Text>}
+                {wallets.length > 0 && <Text style={styles.verifyRowSub}>{wallets.length} wallet{wallets.length > 1 ? 's' : ''} verified</Text>}
+              </View>
+              {!(profile as any).wallet_address && (
+                <TouchableOpacity style={styles.verifyRowBtn} onPress={() => router.push('/(tabs)/earn' as any)}>
+                  <Text style={styles.verifyRowBtnText}>Connect</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+
+            {/* X / Followers */}
+            <View style={styles.verifyRow}>
+              <Ionicons name={(profile as any).x_handle ? "checkmark-circle" : "close-circle"} size={18} color={(profile as any).x_handle ? "#1DA1F2" : COLORS.muted} />
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.verifyRowLabel, (profile as any).x_handle && { color: "#1DA1F2" }]}>
+                  {(profile as any).x_handle ? `@${(profile as any).x_handle}` : "X Not Linked"}
+                </Text>
+                {(profile as any).x_followers > 0 && (
+                  <Text style={styles.verifyRowSub}>{((profile as any).x_followers >= 1000 ? `${((profile as any).x_followers / 1000).toFixed(1)}K` : (profile as any).x_followers)} followers</Text>
+                )}
+              </View>
+              {!(profile as any).x_handle && (
+                <TouchableOpacity style={styles.verifyRowBtn} onPress={() => router.push('/settings' as any)}>
+                  <Text style={styles.verifyRowBtnText}>Link</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+
+            {/* $SIZE Balance */}
+            <View style={styles.verifyRow}>
+              <Ionicons name="flash" size={18} color={COLORS.gold} />
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.verifyRowLabel, { color: COLORS.gold }]}>$SIZE Balance</Text>
+                <Text style={styles.verifyRowSub}>{(profile.size_coins ?? 0).toLocaleString()} coins</Text>
+              </View>
+            </View>
           </View>
 
           {/* ── Size card ── */}
@@ -667,6 +726,14 @@ const styles = StyleSheet.create({
   metaLink: { color: COLORS.gold, fontSize: SIZES.sm, fontWeight: '600' },
   verifyHint: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   verifyHintText: { color: COLORS.gold, fontSize: SIZES.xs, fontWeight: '600' },
+  // Verification card
+  verifyCard: { backgroundColor: COLORS.card, borderRadius: RADIUS.lg, borderWidth: 1, borderColor: COLORS.cardBorder, padding: 16, marginHorizontal: 16, marginBottom: 16, gap: 12 },
+  verifyCardTitle: { color: COLORS.muted, fontSize: 10, fontWeight: '800', letterSpacing: 2.5 },
+  verifyRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  verifyRowLabel: { color: COLORS.white, fontSize: SIZES.sm, fontWeight: '700' },
+  verifyRowSub: { color: COLORS.muted, fontSize: SIZES.xs, marginTop: 1 },
+  verifyRowBtn: { backgroundColor: COLORS.gold, borderRadius: RADIUS.full, paddingHorizontal: 14, paddingVertical: 6 },
+  verifyRowBtnText: { color: COLORS.bg, fontWeight: '800', fontSize: SIZES.xs },
 
   // Size card
   sizeCard: { marginHorizontal: 16, borderRadius: RADIUS.xl, borderWidth: 1, borderColor: 'rgba(232,80,10,0.3)', overflow: 'hidden', marginBottom: 16 },
