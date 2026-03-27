@@ -9,7 +9,7 @@
  *
  *  1. Trading happens on Uniswap (via Clanker)
  *  2. Fee collector bot claims ETH fees daily
- *  3. DickCoinFactory splits: 90% creator / 8% protocol / 2% gas
+ *  3. DickCoinFactory splits: 90% creator / 9.9% protocol / 0.1% gas
  *  4. Protocol's 8% split further:
  *     └─ 75% → SizeStaking (deposited as $SIZE, distributed to stakers)
  *     └─ 25% → SizeRewards (epoch-based, distributed to top 10 + active users)
@@ -39,7 +39,7 @@ import { v4 as uuid } from "uuid";
 // ── Configuration ────────────────────────────────────────────────
 
 export const REWARDS_CONFIG = {
-  // Protocol fee split (of the 8% protocol receives from DickCoin trades)
+  // Protocol fee split (of the 9.9% protocol receives from DickCoin trades)
   stakingSharePct: 75,      // 75% of protocol fees → staking rewards
   epochSharePct: 25,        // 25% of protocol fees → epoch rewards
 
@@ -83,7 +83,7 @@ export interface DailyFeeSnapshot {
   id: string;
   date: string;
   totalFeesEth: number;           // total ETH fees collected today
-  protocolFeesEth: number;        // 8% protocol share
+  protocolFeesEth: number;        // 9.9% protocol share
   stakingPoolEth: number;         // 75% of protocol → stakers
   epochPoolEth: number;           // 25% of protocol → epoch rewards
   epochPoolSizeTokens: number;    // converted to $SIZE at market price
@@ -115,7 +115,7 @@ export async function recordDailyFees(
   const today = new Date().toISOString().split("T")[0];
 
   // Protocol gets 8% of total trading fees
-  const protocolFeesEth = totalFeesEth * 0.08;
+  const protocolFeesEth = totalFeesEth * 0.099;
 
   // Split protocol fees
   const stakingPoolEth = protocolFeesEth * (REWARDS_CONFIG.stakingSharePct / 100);
@@ -292,8 +292,8 @@ export async function previewDistribution(dailyPoolSize: number) {
     note: "Pool size is deterministic — derived from actual trading volume fees.",
     formula: {
       step1: "Total trading fees (ETH) collected from all DickCoin trades",
-      step2: "DickCoinFactory splits: 90% creator / 8% protocol / 2% gas",
-      step3: `Protocol's 8% split: ${REWARDS_CONFIG.stakingSharePct}% → stakers, ${REWARDS_CONFIG.epochSharePct}% → epoch rewards`,
+      step2: "DickCoinFactory splits: 90% creator / 9.9% protocol / 0.1% gas",
+      step3: `Protocol's 9.9% split: ${REWARDS_CONFIG.stakingSharePct}% → stakers, ${REWARDS_CONFIG.epochSharePct}% → epoch rewards`,
       step4: `Epoch pool split: ${REWARDS_CONFIG.topTenSharePct}% → top 10 by rank, ${REWARDS_CONFIG.activitySharePct}% → active users`,
       step5: "Rank weights: #1=200, #2=150, #3=120 ... #10=30",
       step6: "Activity: verified=10, post=3, upvote=5, referral=8, msg=1, login=1",
@@ -308,7 +308,7 @@ export async function simulateFromVolume(dailyVolumeEth: number, ethPrice: numbe
   const totalFeesEth = dailyVolumeEth * 0.01;
 
   // Protocol gets 8%
-  const protocolFeesEth = totalFeesEth * 0.08;
+  const protocolFeesEth = totalFeesEth * 0.099;
 
   // Staking pool = 75% of protocol fees
   const stakingPoolEth = protocolFeesEth * (REWARDS_CONFIG.stakingSharePct / 100);

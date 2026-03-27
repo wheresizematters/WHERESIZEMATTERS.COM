@@ -29,17 +29,17 @@ contract SizeStaking is ReentrancyGuard, Pausable, Ownable2Step {
 
     IERC20 public immutable sizeToken;
 
-    uint256 public constant GROWER_MIN  = 100_000e18;
-    uint256 public constant SHOWER_MIN  = 1_000_000e18;
-    uint256 public constant SHLONG_MIN  = 10_000_000e18;
-    uint256 public constant WHALE_MIN   = 100_000_000e18;
+    uint256 public constant GROWER_MIN  = 10_000_000e18;    // 10M   = 0.01% of 100B supply
+    uint256 public constant SHOWER_MIN  = 25_000_000e18;   // 25M   = 0.025%
+    uint256 public constant SHLONG_MIN  = 100_000_000e18;  // 100M  = 0.1%
+    uint256 public constant WHALE_MIN   = 250_000_000e18;  // 250M  = 0.25%
 
     uint256 public constant GROWER_BOOST  = 10_000;   // 1x
     uint256 public constant SHOWER_BOOST  = 20_000;   // 2x
     uint256 public constant SHLONG_BOOST  = 50_000;   // 5x
     uint256 public constant WHALE_BOOST   = 120_000;  // 12x
 
-    uint256 public constant MAX_PENALTY_BPS = 5000;     // 50% max penalty
+    uint256 public constant MAX_PENALTY_BPS = 6900;     // 69% max penalty
     uint256 public constant LOCK_PERIOD     = 365 days;
     uint256 private constant BPS = 10_000;
     uint256 private constant PRECISION = 1e18;

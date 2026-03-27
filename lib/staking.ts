@@ -6,7 +6,7 @@ export const TIER_NAMES = ['None', 'Grower', 'Shower', 'Shlong', 'Whale'] as con
 export const TIER_COLORS = ['#666666', '#888888', '#0A84FF', '#BF5AF2', '#E8500A'];
 export const TIER_APY = [0, 8, 18, 40, 80];
 export const TIER_BOOST = [0, 1, 2, 5, 12];
-export const TIER_MIN = [0, 100_000, 1_000_000, 10_000_000, 100_000_000];
+export const TIER_MIN = [0, 10_000_000, 25_000_000, 100_000_000, 250_000_000];
 
 // ABI function selectors (keccak256 first 4 bytes)
 const SEL = {
