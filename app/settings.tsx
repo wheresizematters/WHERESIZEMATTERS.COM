@@ -10,6 +10,7 @@ import { useAuth } from '@/context/AuthContext';
 import { usePurchase } from '@/context/PurchaseContext';
 import PaywallModal from '@/components/PaywallModal';
 import { deleteProfile } from '@/lib/api';
+import { getToken } from '@/lib/supabase';
 
 function SettingsRow({
   icon, label, value, onPress, danger, toggle, toggleValue, onToggle,

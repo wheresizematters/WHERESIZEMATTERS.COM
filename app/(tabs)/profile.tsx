@@ -273,8 +273,9 @@ export default function ProfileScreen() {
             </View>
             {/* Top row: settings */}
             <View style={styles.topBar}>
-              <TouchableOpacity onPress={() => router.push('/settings' as any)} style={styles.topBarBtn}>
-                <Ionicons name="settings-outline" size={20} color="#fff" />
+              <TouchableOpacity onPress={() => router.push('/settings' as any)} style={styles.settingsBtn}>
+                <Ionicons name="settings-outline" size={18} color="#fff" />
+                <Text style={{ color: '#fff', fontWeight: '700', fontSize: 12 }}>Settings</Text>
               </TouchableOpacity>
             </View>
           </TouchableOpacity>
@@ -700,6 +701,7 @@ const styles = StyleSheet.create({
   headerEditText: { color: 'rgba(255,255,255,0.8)', fontSize: 11, fontWeight: '600' },
   topBar: { position: 'absolute', top: 12, right: 14, flexDirection: 'row', gap: 10 },
   topBarBtn: { width: 34, height: 34, borderRadius: 17, backgroundColor: 'rgba(0,0,0,0.55)', alignItems: 'center', justifyContent: 'center' },
+  settingsBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(0,0,0,0.65)', borderRadius: RADIUS.full, paddingHorizontal: 14, paddingVertical: 8, borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)' },
 
   // Avatar
   avatarRow: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', paddingHorizontal: 16, marginTop: -36, marginBottom: 12 },
