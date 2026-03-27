@@ -9,23 +9,7 @@ import "@openzeppelin/contracts/access/Ownable2Step.sol";
 /**
  * @title SizeRewards
  * @notice Proportional daily reward distribution for SIZE. platform.
- *
- *         The protocol deposits ETH revenue daily. This contract converts
- *         a portion to $SIZE and distributes to users proportionally based
- *         on their activity weight.
- *
- *         Activity weights (set by backend, verified on-chain):
- *         - Verify:  0.001%  of daily pool (10 bps)
- *         - Refer:   0.0008% of daily pool (8 bps)
- *         - Upvote:  0.0005% of daily pool (5 bps)
- *         - Post:    0.0003% of daily pool (3 bps)
- *         - Login:   0.0001% of daily pool (1 bp)
- *         - Message: 0.0001% of daily pool (1 bp)
- *
- *         Each user's reward = (their total weight / total weight of all
- *         users that day) * daily reward pool
- *
- *         Daily caps prevent sybil farming.
+ *         Activity weights set by backend, rewards claimed per-epoch.
  */
 contract SizeRewards is ReentrancyGuard, Ownable2Step {
     using SafeERC20 for IERC20;
@@ -34,53 +18,45 @@ contract SizeRewards is ReentrancyGuard, Ownable2Step {
     address public protocolWallet;
     address public gasWallet;
 
-    // Daily epoch tracking
-    uint256 public currentEpoch;           // increments each distribution
+    uint256 public currentEpoch;
     uint256 public lastDistributionTime;
     uint256 public minDistributionInterval = 23 hours;
+    uint256 public pendingRewardPool;
 
-    // Reward pool for current epoch
-    uint256 public pendingRewardPool;      // $SIZE tokens waiting to be distributed
-
-    // User claims
-    struct UserReward {
-        uint256 lastClaimedEpoch;
-        uint256 pendingClaim;              // $SIZE tokens claimable
-    }
-    mapping(address => UserReward) public userRewards;
-
-    // Epoch snapshots (set by backend after computing proportional rewards)
     struct EpochSnapshot {
-        uint256 totalPool;                 // total $SIZE distributed this epoch
-        uint256 totalWeight;               // sum of all user weights
+        uint256 totalPool;
+        uint256 totalWeight;
         uint256 timestamp;
         bool finalized;
     }
     mapping(uint256 => EpochSnapshot) public epochs;
 
-    // User epoch weights (set by authorized distributor)
     // epoch => user => weight
     mapping(uint256 => mapping(address => uint256)) public userEpochWeight;
+    // epoch => user => claimed
+    mapping(uint256 => mapping(address => bool)) public epochClaimed;
 
-    // Authorized distributors (backend bots)
     mapping(address => bool) public isDistributor;
 
-    // ── Events ─────────────────────────────────────────────────────
     event RewardsDeposited(uint256 amount, uint256 epoch);
     event EpochFinalized(uint256 epoch, uint256 totalPool, uint256 totalWeight);
     event UserWeightSet(uint256 epoch, address indexed user, uint256 weight);
     event RewardsClaimed(address indexed user, uint256 amount, uint256 epoch);
     event DistributorUpdated(address indexed distributor, bool status);
 
-    // ── Errors ─────────────────────────────────────────────────────
     error NotDistributor();
     error EpochNotFinalized();
     error AlreadyClaimed();
     error NothingToClaim();
     error TooSoon();
     error ZeroAmount();
+    error ZeroAddress();
+    error EpochAlreadyFinalized();
+    error ArrayTooLong();
 
     constructor(address _sizeToken, address _protocolWallet, address _gasWallet) Ownable(msg.sender) {
+        if (_sizeToken == address(0) || _protocolWallet == address(0) || _gasWallet == address(0))
+            revert ZeroAddress();
         sizeToken = IERC20(_sizeToken);
         protocolWallet = _protocolWallet;
         gasWallet = _gasWallet;
@@ -92,22 +68,25 @@ contract SizeRewards is ReentrancyGuard, Ownable2Step {
         _;
     }
 
-    // ── Admin ──────────────────────────────────────────────────────
+    // ── Admin ────────────────────────────────────────────────────────
 
     function setDistributor(address _addr, bool _status) external onlyOwner {
+        if (_addr == address(0)) revert ZeroAddress();
         isDistributor[_addr] = _status;
         emit DistributorUpdated(_addr, _status);
     }
 
     function setProtocolWallet(address _wallet) external onlyOwner {
+        if (_wallet == address(0)) revert ZeroAddress();
         protocolWallet = _wallet;
     }
 
     function setGasWallet(address _wallet) external onlyOwner {
+        if (_wallet == address(0)) revert ZeroAddress();
         gasWallet = _wallet;
     }
 
-    // ── Deposit rewards into pool ──────────────────────────────────
+    // ── Deposit rewards ──────────────────────────────────────────────
 
     function depositRewards(uint256 _amount) external nonReentrant onlyDistributor {
         if (_amount == 0) revert ZeroAmount();
@@ -116,26 +95,32 @@ contract SizeRewards is ReentrancyGuard, Ownable2Step {
         emit RewardsDeposited(_amount, currentEpoch);
     }
 
-    // ── Set user weights for current epoch (called by backend) ─────
+    // ── Set user weights (only for current unfinalised epoch) ────────
 
     function setUserWeights(
         address[] calldata _users,
         uint256[] calldata _weights
     ) external onlyDistributor {
         require(_users.length == _weights.length, "Length mismatch");
+        if (_users.length > 500) revert ArrayTooLong();
+
         uint256 epoch = currentEpoch;
+        // Cannot set weights for already-finalized epoch
+        if (epochs[epoch].finalized) revert EpochAlreadyFinalized();
+
         for (uint256 i = 0; i < _users.length; i++) {
             userEpochWeight[epoch][_users[i]] = _weights[i];
             emit UserWeightSet(epoch, _users[i], _weights[i]);
         }
     }
 
-    // ── Finalize epoch and distribute ──────────────────────────────
+    // ── Finalize epoch ───────────────────────────────────────────────
 
     function finalizeEpoch(uint256 _totalWeight) external onlyDistributor {
         if (lastDistributionTime > 0 && block.timestamp < lastDistributionTime + minDistributionInterval) {
             revert TooSoon();
         }
+        if (_totalWeight == 0) revert ZeroAmount();
 
         uint256 epoch = currentEpoch;
         uint256 pool = pendingRewardPool;
@@ -154,59 +139,43 @@ contract SizeRewards is ReentrancyGuard, Ownable2Step {
         emit EpochFinalized(epoch, pool, _totalWeight);
     }
 
-    // ── Claim rewards (users call this, gas paid by gas wallet) ────
+    // ── Claim rewards ────────────────────────────────────────────────
 
     function claimRewards(uint256 _epoch) external nonReentrant {
-        EpochSnapshot storage snap = epochs[_epoch];
-        if (!snap.finalized) revert EpochNotFinalized();
-
-        uint256 weight = userEpochWeight[_epoch][msg.sender];
-        if (weight == 0) revert NothingToClaim();
-
-        UserReward storage ur = userRewards[msg.sender];
-        // Prevent double claim for same epoch
-        if (ur.lastClaimedEpoch > _epoch) revert AlreadyClaimed();
-
-        uint256 reward = (snap.totalPool * weight) / snap.totalWeight;
-        if (reward == 0) revert NothingToClaim();
-
-        ur.lastClaimedEpoch = _epoch;
-        sizeToken.safeTransfer(msg.sender, reward);
-
-        emit RewardsClaimed(msg.sender, reward, _epoch);
+        _claimSingle(msg.sender, _epoch);
     }
 
-    // ── Batch claim multiple epochs ────────────────────────────────
-
     function claimMultipleEpochs(uint256[] calldata _epochs) external nonReentrant {
+        if (_epochs.length > 100) revert ArrayTooLong();
         uint256 totalReward = 0;
-        UserReward storage ur = userRewards[msg.sender];
 
         for (uint256 i = 0; i < _epochs.length; i++) {
             uint256 ep = _epochs[i];
             EpochSnapshot storage snap = epochs[ep];
             if (!snap.finalized) continue;
+            if (epochClaimed[ep][msg.sender]) continue;
 
             uint256 weight = userEpochWeight[ep][msg.sender];
             if (weight == 0) continue;
-            if (ur.lastClaimedEpoch > ep) continue;
 
             uint256 reward = (snap.totalPool * weight) / snap.totalWeight;
+            if (reward == 0) continue;
+
+            epochClaimed[ep][msg.sender] = true;
             totalReward += reward;
-            ur.lastClaimedEpoch = ep;
+            emit RewardsClaimed(msg.sender, reward, ep);
         }
 
         if (totalReward == 0) revert NothingToClaim();
         sizeToken.safeTransfer(msg.sender, totalReward);
-
-        emit RewardsClaimed(msg.sender, totalReward, _epochs[_epochs.length - 1]);
     }
 
-    // ── View ───────────────────────────────────────────────────────
+    // ── View ─────────────────────────────────────────────────────────
 
     function getClaimable(address _user, uint256 _epoch) external view returns (uint256) {
         EpochSnapshot storage snap = epochs[_epoch];
         if (!snap.finalized || snap.totalWeight == 0) return 0;
+        if (epochClaimed[_epoch][_user]) return 0;
         uint256 weight = userEpochWeight[_epoch][_user];
         return (snap.totalPool * weight) / snap.totalWeight;
     }
@@ -220,5 +189,24 @@ contract SizeRewards is ReentrancyGuard, Ownable2Step {
             lastDistributionTime,
             lastDistributionTime + minDistributionInterval
         );
+    }
+
+    // ── Internal ─────────────────────────────────────────────────────
+
+    function _claimSingle(address _user, uint256 _epoch) internal {
+        EpochSnapshot storage snap = epochs[_epoch];
+        if (!snap.finalized) revert EpochNotFinalized();
+        if (epochClaimed[_epoch][_user]) revert AlreadyClaimed();
+
+        uint256 weight = userEpochWeight[_epoch][_user];
+        if (weight == 0) revert NothingToClaim();
+
+        uint256 reward = (snap.totalPool * weight) / snap.totalWeight;
+        if (reward == 0) revert NothingToClaim();
+
+        epochClaimed[_epoch][_user] = true;
+        sizeToken.safeTransfer(_user, reward);
+
+        emit RewardsClaimed(_user, reward, _epoch);
     }
 }

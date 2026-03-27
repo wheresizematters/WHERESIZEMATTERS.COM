@@ -9,48 +9,38 @@ import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
  * @notice Manages fee collection and distribution for all DickCoins
  *         launched through the SIZE. platform.
  *
- *         Fee flow:
- *         1. DickCoin trades on Uniswap V4 (via Clanker)
- *         2. Clanker sends fee ETH to this contract
- *         3. This contract splits fees:
- *            - 90% to DickCoin creator
- *            - 8% to protocol treasury
- *            - 2% to gas wallet (subsidizes user transactions)
+ *         Fee split: 90% creator / 8% protocol / 2% gas wallet
  *
- *         The gas wallet is used by the backend to pay for:
- *         - User reward claims
- *         - Autostaking contract deployments
- *         - Fee distribution transactions
+ *         Uses pull-pattern for failed transfers to prevent DOS.
  */
 contract SizeDickCoinFactory is Ownable2Step, ReentrancyGuard {
 
-    // ── Fee split (basis points, 10000 = 100%) ─────────────────────
-    uint256 public constant CREATOR_BPS = 9000;    // 90%
-    uint256 public constant PROTOCOL_BPS = 800;    // 8%
-    uint256 public constant GAS_BPS = 200;         // 2%
+    uint256 public constant CREATOR_BPS = 9000;
+    uint256 public constant PROTOCOL_BPS = 800;
+    uint256 public constant GAS_BPS = 200;
     uint256 public constant TOTAL_BPS = 10000;
+    uint256 public constant MAX_DICKCOINS = 10000;
 
-    // ── Wallets ────────────────────────────────────────────────────
     address public protocolWallet;
     address public gasWallet;
 
-    // ── DickCoin registry ──────────────────────────────────────────
     struct DickCoinInfo {
-        address creator;           // wallet that launched it
-        address tokenAddress;      // ERC-20 contract on Base
-        uint256 totalFeesReceived; // total ETH fees received
-        uint256 creatorPaid;       // total ETH paid to creator
-        uint256 stakingDeployed;   // timestamp when autostaking deployed (0 = not yet)
+        address creator;
+        address tokenAddress;
+        uint256 totalFeesReceived;
+        uint256 creatorPaid;
+        uint256 stakingDeployed;
         bool active;
     }
 
-    mapping(address => DickCoinInfo) public dickCoins;  // tokenAddress => info
+    mapping(address => DickCoinInfo) public dickCoins;
     address[] public allDickCoins;
 
-    // Autostaking threshold
+    // Pull-pattern: failed transfers accumulate here
+    mapping(address => uint256) public pendingWithdrawals;
+
     uint256 public autoStakeThreshold = 0.5 ether;
 
-    // ── Events ─────────────────────────────────────────────────────
     event DickCoinRegistered(address indexed tokenAddress, address indexed creator);
     event FeesReceived(address indexed tokenAddress, uint256 amount);
     event FeesSplit(address indexed tokenAddress, uint256 creatorAmount, uint256 protocolAmount, uint256 gasAmount);
@@ -58,21 +48,22 @@ contract SizeDickCoinFactory is Ownable2Step, ReentrancyGuard {
     event AutoStakeThresholdReached(address indexed tokenAddress, uint256 totalFees);
     event ProtocolWalletUpdated(address oldWallet, address newWallet);
     event GasWalletUpdated(address oldWallet, address newWallet);
+    event WithdrawalPending(address indexed recipient, uint256 amount);
 
-    // ── Errors ─────────────────────────────────────────────────────
     error ZeroAddress();
     error AlreadyRegistered();
     error NotRegistered();
-    error TransferFailed();
+    error ZeroAmount();
+    error TooManyCoins();
+    error NothingToWithdraw();
 
-    // ── Constructor ────────────────────────────────────────────────
     constructor(address _protocolWallet, address _gasWallet) Ownable(msg.sender) {
         if (_protocolWallet == address(0) || _gasWallet == address(0)) revert ZeroAddress();
         protocolWallet = _protocolWallet;
         gasWallet = _gasWallet;
     }
 
-    // ── Admin ──────────────────────────────────────────────────────
+    // ── Admin ────────────────────────────────────────────────────────
 
     function setProtocolWallet(address _wallet) external onlyOwner {
         if (_wallet == address(0)) revert ZeroAddress();
@@ -90,11 +81,12 @@ contract SizeDickCoinFactory is Ownable2Step, ReentrancyGuard {
         autoStakeThreshold = _threshold;
     }
 
-    // ── Register a new DickCoin ────────────────────────────────────
+    // ── Register ─────────────────────────────────────────────────────
 
     function registerDickCoin(address _tokenAddress, address _creator) external onlyOwner {
         if (_tokenAddress == address(0) || _creator == address(0)) revert ZeroAddress();
         if (dickCoins[_tokenAddress].active) revert AlreadyRegistered();
+        if (allDickCoins.length >= MAX_DICKCOINS) revert TooManyCoins();
 
         dickCoins[_tokenAddress] = DickCoinInfo({
             creator: _creator,
@@ -109,69 +101,61 @@ contract SizeDickCoinFactory is Ownable2Step, ReentrancyGuard {
         emit DickCoinRegistered(_tokenAddress, _creator);
     }
 
-    // ── Receive and split fees ─────────────────────────────────────
+    // ── Distribute fees (pull-pattern safe) ──────────────────────────
 
-    /**
-     * @notice Receive ETH fees for a specific DickCoin and split them.
-     *         Called by the fee collector bot after claiming from Clanker.
-     */
     function distributeFees(address _tokenAddress) external payable nonReentrant {
         DickCoinInfo storage info = dickCoins[_tokenAddress];
         if (!info.active) revert NotRegistered();
+        if (msg.value == 0) revert ZeroAmount();
 
         uint256 amount = msg.value;
         info.totalFeesReceived += amount;
 
-        // Split
         uint256 creatorAmount = (amount * CREATOR_BPS) / TOTAL_BPS;
         uint256 protocolAmount = (amount * PROTOCOL_BPS) / TOTAL_BPS;
-        uint256 gasAmount = amount - creatorAmount - protocolAmount; // remainder to gas (handles rounding)
+        uint256 gasAmount = amount - creatorAmount - protocolAmount;
 
-        // Transfer to creator
-        (bool s1, ) = payable(info.creator).call{value: creatorAmount}("");
-        if (!s1) revert TransferFailed();
+        // Use pull-pattern: try transfer, if fails credit pendingWithdrawals
+        _safeSendETH(info.creator, creatorAmount);
         info.creatorPaid += creatorAmount;
 
-        // Transfer to protocol
-        (bool s2, ) = payable(protocolWallet).call{value: protocolAmount}("");
-        if (!s2) revert TransferFailed();
-
-        // Transfer to gas wallet
-        (bool s3, ) = payable(gasWallet).call{value: gasAmount}("");
-        if (!s3) revert TransferFailed();
+        _safeSendETH(protocolWallet, protocolAmount);
+        _safeSendETH(gasWallet, gasAmount);
 
         emit FeesReceived(_tokenAddress, amount);
         emit FeesSplit(_tokenAddress, creatorAmount, protocolAmount, gasAmount);
         emit CreatorPaid(info.creator, creatorAmount);
 
-        // Check autostaking threshold
         if (info.stakingDeployed == 0 && info.totalFeesReceived >= autoStakeThreshold) {
             info.stakingDeployed = block.timestamp;
             emit AutoStakeThresholdReached(_tokenAddress, info.totalFeesReceived);
         }
     }
 
-    // ── View functions ─────────────────────────────────────────────
+    /// @notice Withdraw pending ETH from failed transfers
+    function withdraw() external nonReentrant {
+        uint256 amount = pendingWithdrawals[msg.sender];
+        if (amount == 0) revert NothingToWithdraw();
+        pendingWithdrawals[msg.sender] = 0;
+        (bool success, ) = payable(msg.sender).call{value: amount}("");
+        if (!success) {
+            // Re-credit if still failing
+            pendingWithdrawals[msg.sender] = amount;
+        }
+    }
+
+    // ── View ─────────────────────────────────────────────────────────
 
     function getDickCoinCount() external view returns (uint256) {
         return allDickCoins.length;
     }
 
     function getDickCoinInfo(address _tokenAddress) external view returns (
-        address creator,
-        uint256 totalFeesReceived,
-        uint256 creatorPaid,
-        bool stakingActive,
-        bool active
+        address creator, uint256 totalFeesReceived, uint256 creatorPaid,
+        bool stakingActive, bool active
     ) {
         DickCoinInfo storage info = dickCoins[_tokenAddress];
-        return (
-            info.creator,
-            info.totalFeesReceived,
-            info.creatorPaid,
-            info.stakingDeployed > 0,
-            info.active
-        );
+        return (info.creator, info.totalFeesReceived, info.creatorPaid, info.stakingDeployed > 0, info.active);
     }
 
     function isAutoStakeReady(address _tokenAddress) external view returns (bool) {
@@ -179,9 +163,16 @@ contract SizeDickCoinFactory is Ownable2Step, ReentrancyGuard {
         return info.active && info.stakingDeployed == 0 && info.totalFeesReceived >= autoStakeThreshold;
     }
 
-    // ── Fallback ───────────────────────────────────────────────────
+    // ── Internal ─────────────────────────────────────────────────────
 
-    receive() external payable {
-        // Accept ETH directly — can be distributed later via distributeFees
+    function _safeSendETH(address _to, uint256 _amount) internal {
+        if (_amount == 0) return;
+        (bool success, ) = payable(_to).call{value: _amount, gas: 30000}("");
+        if (!success) {
+            pendingWithdrawals[_to] += _amount;
+            emit WithdrawalPending(_to, _amount);
+        }
     }
+
+    receive() external payable {}
 }
