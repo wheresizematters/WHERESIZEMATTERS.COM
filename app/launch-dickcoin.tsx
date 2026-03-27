@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import {
   View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity,
-  TextInput, ActivityIndicator,
+  TextInput, ActivityIndicator, Image,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -42,6 +42,9 @@ export default function LaunchDickCoinScreen() {
   const [error, setError] = useState('');
   const [contractAddress, setContractAddress] = useState('');
   const [txHash, setTxHash] = useState('');
+  const [generatingLogo, setGeneratingLogo] = useState(false);
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
+  const [logoRemaining, setLogoRemaining] = useState(4);
 
   async function pickImage() {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -52,6 +55,35 @@ export default function LaunchDickCoinScreen() {
     });
     if (!result.canceled && result.assets[0]) {
       setImageUri(result.assets[0].uri);
+    }
+  }
+
+  async function generateLogo() {
+    if (!name.trim() || !ticker.trim()) {
+      setError('Enter a name and ticker first');
+      return;
+    }
+    setGeneratingLogo(true);
+    setError('');
+    try {
+      const token = getToken();
+      const res = await fetch(`${getApiUrl()}/api/v1/logo/generate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        body: JSON.stringify({ coinName: name.trim(), ticker: ticker.trim(), description: description.trim() }),
+      });
+      const data = await res.json();
+      if (data.error) {
+        setError(data.error);
+      } else {
+        setLogoUrl(data.logoUrl);
+        setImageUri(data.logoUrl); // Use as the coin image
+        setLogoRemaining(data.remaining);
+      }
+    } catch {
+      setError('Logo generation failed. Try again.');
+    } finally {
+      setGeneratingLogo(false);
     }
   }
 
@@ -257,19 +289,57 @@ export default function LaunchDickCoinScreen() {
 
               <View style={s.section}>
                 <Text style={s.sectionLabel}>COIN IMAGE</Text>
-                <TouchableOpacity style={s.imagePicker} onPress={pickImage}>
-                  {imageUri ? (
-                    <View style={s.imagePreview}>
-                      <Ionicons name="checkmark-circle" size={24} color={COLORS.green} />
-                      <Text style={s.imagePickerText}>Image selected</Text>
+
+                {/* AI Generated Logo */}
+                {logoUrl ? (
+                  <View style={s.logoResultWrap}>
+                    <Image source={{ uri: logoUrl }} style={s.logoResult} resizeMode="cover" />
+                    <View style={s.logoActions}>
+                      {logoRemaining > 0 && (
+                        <TouchableOpacity style={s.regenBtn} onPress={generateLogo} disabled={generatingLogo}>
+                          {generatingLogo ? (
+                            <ActivityIndicator size="small" color={COLORS.gold} />
+                          ) : (
+                            <>
+                              <Ionicons name="refresh" size={16} color={COLORS.gold} />
+                              <Text style={s.regenBtnText}>Regenerate ({logoRemaining} left)</Text>
+                            </>
+                          )}
+                        </TouchableOpacity>
+                      )}
+                      <TouchableOpacity style={s.uploadBtn} onPress={pickImage}>
+                        <Ionicons name="cloud-upload-outline" size={16} color={COLORS.muted} />
+                        <Text style={s.uploadBtnText}>Upload own</Text>
+                      </TouchableOpacity>
                     </View>
-                  ) : (
-                    <View style={s.imagePreview}>
-                      <Ionicons name="image-outline" size={24} color={COLORS.muted} />
-                      <Text style={s.imagePickerText}>Tap to upload (1:1 square)</Text>
-                    </View>
-                  )}
-                </TouchableOpacity>
+                  </View>
+                ) : (
+                  <View style={s.logoGenWrap}>
+                    <TouchableOpacity style={s.genBtn} onPress={generateLogo} disabled={generatingLogo}>
+                      {generatingLogo ? (
+                        <View style={s.genLoading}>
+                          <ActivityIndicator size="small" color={COLORS.gold} />
+                          <Text style={s.genLoadingText}>Generating logo...</Text>
+                        </View>
+                      ) : (
+                        <>
+                          <Ionicons name="sparkles" size={24} color={COLORS.gold} />
+                          <Text style={s.genBtnTitle}>Generate AI Logo</Text>
+                          <Text style={s.genBtnSub}>
+                            {profile?.is_verified ? 'Free for verified users' : '500 $SIZE coins per generation'}
+                          </Text>
+                        </>
+                      )}
+                    </TouchableOpacity>
+                    <Text style={s.orText}>— or —</Text>
+                    <TouchableOpacity style={s.imagePicker} onPress={pickImage}>
+                      <View style={s.imagePreview}>
+                        <Ionicons name="image-outline" size={24} color={COLORS.muted} />
+                        <Text style={s.imagePickerText}>Upload your own (1:1 square)</Text>
+                      </View>
+                    </TouchableOpacity>
+                  </View>
+                )}
               </View>
 
               {error ? <Text style={s.error}>{error}</Text> : null}
@@ -397,6 +467,21 @@ const s = StyleSheet.create({
   imagePicker: { backgroundColor: COLORS.card, borderWidth: 1, borderColor: COLORS.cardBorder, borderRadius: RADIUS.md, padding: 20, alignItems: 'center' },
   imagePreview: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   imagePickerText: { color: COLORS.muted, fontSize: SIZES.sm },
+  // Logo generation
+  logoGenWrap: { gap: 12 },
+  genBtn: { backgroundColor: COLORS.card, borderWidth: 1, borderColor: `${COLORS.gold}40`, borderRadius: RADIUS.lg, padding: 24, alignItems: 'center', gap: 8 },
+  genBtnTitle: { color: COLORS.gold, fontSize: SIZES.lg, fontWeight: '800' },
+  genBtnSub: { color: COLORS.muted, fontSize: SIZES.xs },
+  genLoading: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 8 },
+  genLoadingText: { color: COLORS.gold, fontSize: SIZES.md, fontWeight: '700' },
+  orText: { color: COLORS.mutedDark, fontSize: SIZES.xs, textAlign: 'center', letterSpacing: 2 },
+  logoResultWrap: { alignItems: 'center', gap: 12 },
+  logoResult: { width: 200, height: 200, borderRadius: 100, borderWidth: 3, borderColor: COLORS.gold, backgroundColor: COLORS.card },
+  logoActions: { flexDirection: 'row', gap: 10, flexWrap: 'wrap', justifyContent: 'center' },
+  regenBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: `${COLORS.gold}15`, borderWidth: 1, borderColor: `${COLORS.gold}40`, borderRadius: RADIUS.full, paddingHorizontal: 14, paddingVertical: 8 },
+  regenBtnText: { color: COLORS.gold, fontSize: SIZES.sm, fontWeight: '700' },
+  uploadBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: COLORS.card, borderWidth: 1, borderColor: COLORS.cardBorder, borderRadius: RADIUS.full, paddingHorizontal: 14, paddingVertical: 8 },
+  uploadBtnText: { color: COLORS.muted, fontSize: SIZES.sm, fontWeight: '600' },
   error: { color: COLORS.red, fontSize: SIZES.sm, textAlign: 'center', marginVertical: 8 },
   backLink: { alignItems: 'center', marginTop: 12 },
   backLinkText: { color: COLORS.muted, fontSize: SIZES.sm },
