@@ -6,7 +6,12 @@ import { T, getItem, putItem, queryItems, scanAll } from "../db";
 
 const r = Router();
 
-// ── POST /launch — Deploy a DickCoin via Clanker ───────────────────
+const IS_MAINNET = process.env.BASE_CHAIN_ID === "8453";
+const BASE_RPC = process.env.BASE_RPC_URL ?? "https://base-mainnet.core.chainstack.com/1f396980c6a698065bdf9bbebbb7fd78";
+const DEPLOYER_KEY = process.env.DEPLOYER_PRIVATE_KEY ?? "";
+const PROTOCOL_WALLET = "0x117c1e5d49e545021c21a0e3ade73dc42fd8ccf0";
+
+// ── POST /launch — Deploy a DickCoin ─────────────────────────────
 r.post("/launch", requireAuth, async (req: Request, res: Response) => {
   try {
     const profile = await getProfile(req.userId!);
@@ -17,14 +22,75 @@ r.post("/launch", requireAuth, async (req: Request, res: Response) => {
     const { name, ticker, description, imageUrl, circleJerkConfig } = req.body;
     if (!name || !ticker) return res.status(400).json({ error: "Name and ticker required" });
 
-    // For now, create the DickCoin record in DynamoDB
-    // In production, this would call Clanker SDK to deploy the token
-    const contractAddress = "0x" + uuid().replace(/-/g, "").slice(0, 40); // placeholder
-    const poolAddress = "0x" + uuid().replace(/-/g, "").slice(0, 40);
-
     const now = new Date().toISOString();
+    let contractAddress: string;
+    let poolAddress: string;
+    let txHash: string;
 
-    // Save DickCoin record
+    // ── Deploy via Clanker on mainnet ────────────────────────────
+    if (IS_MAINNET && DEPLOYER_KEY) {
+      try {
+        const { Clanker } = require("clanker-sdk");
+        const { createPublicClient, createWalletClient, http } = require("viem");
+        const { privateKeyToAccount } = require("viem/accounts");
+        const { base } = require("viem/chains");
+
+        const account = privateKeyToAccount(DEPLOYER_KEY as `0x${string}`);
+        const publicClient = createPublicClient({ chain: base, transport: http(BASE_RPC) });
+        const wallet = createWalletClient({ account, chain: base, transport: http(BASE_RPC) });
+        const clanker = new Clanker({ wallet, publicClient });
+
+        console.log(`Deploying DickCoin: ${name} ($${ticker}) for @${profile.username}`);
+
+        const tokenAddress = await clanker.deployToken({
+          name,
+          symbol: ticker.toUpperCase(),
+          image: imageUrl || "https://www.wheresizematters.com/og-image.png",
+          metadata: {
+            description: description ?? `${name} — a DickCoin on SIZE.`,
+            socialMediaUrls: [
+              { platform: "x", url: "https://x.com/wheresize" },
+            ],
+          },
+          context: {
+            interface: "SIZE.",
+            platform: "SIZE. (wheresizematters.com)",
+            messageId: `dickcoin-${ticker}-${req.userId}`,
+            id: `${ticker}-${Date.now()}`,
+          },
+          pool: {
+            quoteToken: "0x4200000000000000000000000000000000000006", // WETH on Base
+            initialMarketCap: "1", // 1 ETH initial market cap
+          },
+          rewardsConfig: {
+            creatorReward: 80, // 80% to creator (Clanker max)
+            creatorAdmin: profile.wallet_address,
+            creatorRewardRecipient: profile.wallet_address,
+            interfaceAdmin: PROTOCOL_WALLET,
+            interfaceRewardRecipient: PROTOCOL_WALLET,
+          },
+        });
+
+        contractAddress = tokenAddress;
+        poolAddress = ""; // Clanker auto-creates the pool
+        txHash = ""; // SDK doesn't return tx hash directly
+        console.log(`DickCoin deployed: ${contractAddress}`);
+
+      } catch (clankerErr: any) {
+        console.error("Clanker deploy failed:", clankerErr.message);
+        return res.status(502).json({
+          error: `Token deployment failed: ${clankerErr.message}. Try again or contact support.`,
+        });
+      }
+    } else {
+      // ── Testnet / dev fallback — mock deployment ───────────────
+      contractAddress = "0x" + uuid().replace(/-/g, "").padEnd(40, "0").slice(0, 40);
+      poolAddress = "0x" + uuid().replace(/-/g, "").padEnd(40, "0").slice(0, 40);
+      txHash = "0x" + uuid().replace(/-/g, "").padEnd(64, "0");
+      console.log(`[TESTNET] Mock DickCoin: ${name} ($${ticker}) → ${contractAddress}`);
+    }
+
+    // ── Save DickCoin record ─────────────────────────────────────
     await putItem(T.groups, {
       id: contractAddress,
       name,
@@ -33,6 +99,7 @@ r.post("/launch", requireAuth, async (req: Request, res: Response) => {
       imageUrl: imageUrl ?? "",
       userId: req.userId!,
       creatorUsername: profile.username,
+      creatorWallet: profile.wallet_address,
       poolAddress,
       contractAddress,
       totalVolume: 0,
@@ -40,11 +107,12 @@ r.post("/launch", requireAuth, async (req: Request, res: Response) => {
       holderCount: 1,
       hasStaking: false,
       type: "dickcoin",
+      deployedOnChain: IS_MAINNET && DEPLOYER_KEY ? true : false,
       circleJerkConfig: circleJerkConfig ?? null,
       createdAt: now,
     });
 
-    // Auto-create Circle Jerk (group) for this DickCoin
+    // ── Auto-create Circle Jerk membership ───────────────────────
     await putItem(T.group_members, {
       group_id: contractAddress,
       user_id: req.userId!,
@@ -53,19 +121,14 @@ r.post("/launch", requireAuth, async (req: Request, res: Response) => {
       last_read_at: now,
     });
 
-    res.json({
-      contractAddress,
-      poolAddress,
-      txHash: "0x" + uuid().replace(/-/g, ""),
-      error: null,
-    });
+    res.json({ contractAddress, poolAddress, txHash, error: null });
   } catch (err: any) {
     console.error("DickCoin launch error:", err);
     res.status(500).json({ error: "Internal server error" });
   }
 });
 
-// ── GET /trending — Top DickCoins by volume ────────────────────────
+// ── GET /trending — Top DickCoins by volume ──────────────────────
 r.get("/trending", async (_req: Request, res: Response) => {
   try {
     const all = await scanAll<any>(T.groups);
@@ -80,7 +143,7 @@ r.get("/trending", async (_req: Request, res: Response) => {
   }
 });
 
-// ── GET /my-circle-jerks — DickCoins user is a member of ──────────
+// ── GET /my-circle-jerks — DickCoins user is a member of ────────
 r.get("/my-circle-jerks", requireAuth, async (req: Request, res: Response) => {
   try {
     const memberships = await queryItems<any>(
@@ -105,7 +168,7 @@ r.get("/my-circle-jerks", requireAuth, async (req: Request, res: Response) => {
   }
 });
 
-// ── GET /user/:userId — DickCoins launched by a user ───────────────
+// ── GET /user/:userId — DickCoins launched by a user ─────────────
 r.get("/user/:userId", async (req: Request, res: Response) => {
   try {
     const all = await scanAll<any>(T.groups);
@@ -114,7 +177,7 @@ r.get("/user/:userId", async (req: Request, res: Response) => {
   } catch { res.json([]); }
 });
 
-// ── GET /:contractAddress — DickCoin info ──────────────────────────
+// ── GET /:contractAddress — DickCoin info ────────────────────────
 r.get("/:contractAddress", async (req: Request, res: Response) => {
   try {
     const coin = await getItem<any>(T.groups, { id: req.params.contractAddress });
@@ -123,7 +186,7 @@ r.get("/:contractAddress", async (req: Request, res: Response) => {
   } catch { res.status(500).json({ error: "Internal error" }); }
 });
 
-// ── GET /:contractAddress/holders — DickCoin holders ───────────────
+// ── GET /:contractAddress/holders — DickCoin holders ─────────────
 r.get("/:contractAddress/holders", async (req: Request, res: Response) => {
   try {
     const members = await queryItems<any>(
@@ -135,7 +198,7 @@ r.get("/:contractAddress/holders", async (req: Request, res: Response) => {
   } catch { res.json([]); }
 });
 
-// ── POST /:contractAddress/config — Update Circle Jerk config ──────
+// ── POST /:contractAddress/config — Update Circle Jerk config ────
 r.post("/:contractAddress/config", requireAuth, async (req: Request, res: Response) => {
   try {
     const coin = await getItem<any>(T.groups, { id: req.params.contractAddress });
