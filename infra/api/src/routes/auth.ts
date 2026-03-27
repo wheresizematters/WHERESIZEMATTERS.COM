@@ -10,6 +10,7 @@ import {
   createOAuthProfile,
   updateProfile,
 } from "../services/profiles";
+import { createCustodialWallet } from "../services/custodial-wallet";
 
 const r = Router();
 
@@ -68,6 +69,11 @@ r.post("/signup", async (req: Request, res: Response) => {
       girthInches: girthInches != null ? parseFloat(girthInches) : null,
       authProvider: "email",
     });
+
+    // Auto-create custodial wallet (non-blocking)
+    createCustodialWallet(profile.id).then(w => {
+      if (w) updateProfile(profile.id, { wallet_address: w.address } as any).catch(() => {});
+    }).catch(() => {});
 
     const token = signToken({ userId: profile.id, email: profile.email!, username: profile.username });
 
@@ -182,7 +188,13 @@ r.get("/oauth/x/callback", async (req: Request, res: Response) => {
         xName: xUser.name ?? null,
         avatarUrl: xUser.profile_image_url ?? null,
       });
-      if (profile) await updateProfile(profile.id, { x_followers: xFollowers } as any);
+      if (profile) {
+        await updateProfile(profile.id, { x_followers: xFollowers } as any);
+        // Auto-create custodial wallet for new OAuth users
+        createCustodialWallet(profile.id).then(w => {
+          if (w) updateProfile(profile.id, { wallet_address: w.address } as any).catch(() => {});
+        }).catch(() => {});
+      }
     } else {
       await updateProfile(profile.id, {
         x_handle: xUser.username,
