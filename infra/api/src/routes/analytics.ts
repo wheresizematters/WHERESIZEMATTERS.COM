@@ -267,7 +267,7 @@ r.post("/gate-toggle", async (req: Request, res: Response) => {
 });
 
 // ── Rewards distribution (admin only) ───────────────────────────
-import { previewDistribution, REWARDS_CONFIG } from "../services/rewards-engine";
+import { previewDistribution, simulateFromVolume, REWARDS_CONFIG } from "../services/rewards-engine";
 
 r.get("/rewards/preview", async (req: Request, res: Response) => {
   try {
@@ -287,6 +287,24 @@ r.get("/rewards/config", async (req: Request, res: Response) => {
   const tk = req.query.token as string;
   if (!isValidAdminToken(tk)) return res.status(403).json({ error: "Unauthorized" });
   res.json(REWARDS_CONFIG);
+});
+
+// Simulate rewards from a given daily trading volume
+r.get("/rewards/simulate", async (req: Request, res: Response) => {
+  try {
+    const tk = req.query.token as string;
+    if (!isValidAdminToken(tk)) return res.status(403).json({ error: "Unauthorized" });
+
+    const volumeEth = parseFloat(req.query.volume as string) || 10;    // default 10 ETH daily volume
+    const ethPrice = parseFloat(req.query.ethPrice as string) || 2500;  // default $2500
+    const sizePrice = parseFloat(req.query.sizePrice as string) || 0.001; // default $0.001
+
+    const result = await simulateFromVolume(volumeEth, ethPrice, sizePrice);
+    res.json(result);
+  } catch (err: any) {
+    console.error("Rewards simulate error:", err);
+    res.status(500).json({ error: err.message });
+  }
 });
 
 export default r;
