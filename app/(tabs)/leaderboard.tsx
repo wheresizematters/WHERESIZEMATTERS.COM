@@ -504,13 +504,7 @@ export default function LeaderboardScreen() {
             <Ionicons name="globe-outline" size={14} color={mode === 'global' ? COLORS.gold : COLORS.muted} />
             <Text style={[styles.modeBtnText, mode === 'global' && styles.modeBtnTextActive]}>Global</Text>
           </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.modeBtn, mode === 'nearby' && styles.modeBtnActive]}
-            onPress={() => setMode('nearby')}
-          >
-            <Ionicons name="location-outline" size={14} color={mode === 'nearby' ? COLORS.gold : COLORS.muted} />
-            <Text style={[styles.modeBtnText, mode === 'nearby' && styles.modeBtnTextActive]}>Nearby</Text>
-          </TouchableOpacity>
+          {/* Nearby removed — crypto users don't like location tracking */}
           <TouchableOpacity
             style={[styles.modeBtn, mode === 'dickcoins' && styles.modeBtnActive]}
             onPress={async () => {
@@ -563,7 +557,7 @@ export default function LeaderboardScreen() {
           )}
         </View>
 
-        {mode === 'global' ? renderGlobalContent() : mode === 'nearby' ? renderNearbyContent() : mode === 'clout' ? (
+        {mode === 'global' ? renderGlobalContent() : mode === 'clout' ? (
           followersLoading ? (
             <View style={styles.loadingWrap}><ActivityIndicator size="large" color={COLORS.gold} /></View>
           ) : (
