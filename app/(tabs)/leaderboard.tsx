@@ -7,7 +7,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { COLORS, SIZES, RADIUS, getSizeTier } from '@/constants/theme';
-import { fetchLeaderboard, fetchUserRank, fetchTotalUserCount, fetchLeaderboardByRadius, NearbyEntry, RankResult } from '@/lib/api';
+import { fetchLeaderboard, fetchUserRank, fetchTotalUserCount, fetchLeaderboardByRadius, NearbyEntry, RankResult, getNetWorthLeaderboard } from '@/lib/api';
 import PageContainer from '@/components/PageContainer';
 import { usePurchase } from '@/context/PurchaseContext';
 import { useAuth } from '@/context/AuthContext';
@@ -166,9 +166,11 @@ export default function LeaderboardScreen() {
 
   const [verifiedOnly, setVerifiedOnly] = useState(true);
 
-  // Mode: 'global' | 'nearby' | 'dickcoins'
-  const [mode, setMode] = useState<'global' | 'nearby' | 'dickcoins'>('global');
+  // Mode: 'global' | 'nearby' | 'dickcoins' | 'networth'
+  const [mode, setMode] = useState<'global' | 'nearby' | 'dickcoins' | 'networth'>('global');
   const [dickCoins, setDickCoins] = useState<any[]>([]);
+  const [netWorthEntries, setNetWorthEntries] = useState<any[]>([]);
+  const [netWorthLoading, setNetWorthLoading] = useState(false);
 
   // Nearby state
   const [location, setLocation] = useState<UserLocation | null>(null);
@@ -519,9 +521,61 @@ export default function LeaderboardScreen() {
             <Ionicons name="rocket-outline" size={14} color={mode === 'dickcoins' ? COLORS.gold : COLORS.muted} />
             <Text style={[styles.modeBtnText, mode === 'dickcoins' && styles.modeBtnTextActive]}>DickCoins</Text>
           </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.modeBtn, mode === 'networth' && styles.modeBtnActive]}
+            onPress={async () => {
+              setMode('networth');
+              if (netWorthEntries.length === 0) {
+                setNetWorthLoading(true);
+                try {
+                  const data = await getNetWorthLeaderboard();
+                  setNetWorthEntries(data);
+                } catch {} finally { setNetWorthLoading(false); }
+              }
+            }}
+          >
+            <Ionicons name="cash-outline" size={14} color={mode === 'networth' ? COLORS.gold : COLORS.muted} />
+            <Text style={[styles.modeBtnText, mode === 'networth' && styles.modeBtnTextActive]}>Net Worth</Text>
+          </TouchableOpacity>
         </View>
 
-        {mode === 'global' ? renderGlobalContent() : mode === 'nearby' ? renderNearbyContent() : (          <FlatList            data={dickCoins}            keyExtractor={c => c.contractAddress ?? c.id}            contentContainerStyle={styles.list}            renderItem={({ item, index }) => (              <TouchableOpacity style={styles.row} onPress={() => { if (typeof window !== 'undefined') window.location.href = '/coin/' + (item.contractAddress ?? item.id); }} activeOpacity={0.7}>                <View style={styles.rankNumWrap}><Text style={styles.rankNum}>#{index + 1}</Text></View>                <View style={styles.userInfo}>                  <Text style={styles.username}>{item.name} <Text style={{ color: COLORS.gold, fontSize: SIZES.xs }}>{item.ticker}</Text></Text>                  <Text style={styles.countryText}>by @{item.creatorUsername} u00b7 {item.holderCount ?? 0} holders</Text>                </View>              </TouchableOpacity>            )}            ListEmptyComponent={<View style={{ alignItems: 'center', paddingTop: 60 }}><Text style={{ color: COLORS.muted }}>No DickCoins launched yet</Text></View>}          />        )}
+        {mode === 'global' ? renderGlobalContent() : mode === 'nearby' ? renderNearbyContent() : mode === 'networth' ? (
+          netWorthLoading ? (
+            <View style={styles.loadingWrap}><ActivityIndicator size="large" color={COLORS.gold} /></View>
+          ) : (
+            <FlatList
+              data={netWorthEntries}
+              keyExtractor={(item: any) => item.id ?? item.userId}
+              contentContainerStyle={styles.list}
+              showsVerticalScrollIndicator={false}
+              ListHeaderComponent={<Text style={styles.listHeader}>TOP NET WORTH</Text>}
+              ListEmptyComponent={<View style={{ alignItems: 'center', paddingTop: 60 }}><Text style={{ color: COLORS.muted }}>No verified wallets yet</Text></View>}
+              ItemSeparatorComponent={() => <View style={styles.sep} />}
+              renderItem={({ item, index }: { item: any; index: number }) => (
+                <TouchableOpacity style={styles.row} onPress={() => router.push(`/profile/${item.id ?? item.userId}` as any)} activeOpacity={0.7}>
+                  <View style={styles.rankNumWrap}><Text style={styles.rankNum}>#{index + 1}</Text></View>
+                  <View style={styles.userInfo}>
+                    <View style={styles.usernameRow}>
+                      <Text style={styles.username}>@{item.username}</Text>
+                      {item.is_verified && (
+                        <View style={styles.verifiedDot}><Text style={styles.verifiedDotText}>&#10003;</Text></View>
+                      )}
+                    </View>
+                    <Text style={styles.countryText}>{item.walletCount ?? 0} wallet{(item.walletCount ?? 0) !== 1 ? 's' : ''} · {(item.chains ?? []).length} chain{(item.chains ?? []).length !== 1 ? 's' : ''}</Text>
+                  </View>
+                  <View style={styles.netWorthBadge}>
+                    <Text style={styles.netWorthBadgeText}>
+                      {item.totalNetWorth >= 1_000_000_000 ? `$${(item.totalNetWorth / 1_000_000_000).toFixed(1)}B`
+                        : item.totalNetWorth >= 1_000_000 ? `$${(item.totalNetWorth / 1_000_000).toFixed(1)}M`
+                        : item.totalNetWorth >= 1_000 ? `$${(item.totalNetWorth / 1_000).toFixed(1)}K`
+                        : `$${Math.round(item.totalNetWorth).toLocaleString()}`}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              )}
+            />
+          )
+        ) : (          <FlatList            data={dickCoins}            keyExtractor={c => c.contractAddress ?? c.id}            contentContainerStyle={styles.list}            renderItem={({ item, index }) => (              <TouchableOpacity style={styles.row} onPress={() => { if (typeof window !== 'undefined') window.location.href = '/coin/' + (item.contractAddress ?? item.id); }} activeOpacity={0.7}>                <View style={styles.rankNumWrap}><Text style={styles.rankNum}>#{index + 1}</Text></View>                <View style={styles.userInfo}>                  <Text style={styles.username}>{item.name} <Text style={{ color: COLORS.gold, fontSize: SIZES.xs }}>{item.ticker}</Text></Text>                  <Text style={styles.countryText}>by @{item.creatorUsername} u00b7 {item.holderCount ?? 0} holders</Text>                </View>              </TouchableOpacity>            )}            ListEmptyComponent={<View style={{ alignItems: 'center', paddingTop: 60 }}><Text style={{ color: COLORS.muted }}>No DickCoins launched yet</Text></View>}          />        )}
 
         <PaywallModal visible={showPaywall} onClose={() => setShowPaywall(false)} trigger="Unlock the full Top 100 leaderboard" />
       </PageContainer>
@@ -610,6 +664,10 @@ const styles = StyleSheet.create({
   verifiedDot: { backgroundColor: COLORS.gold, borderRadius: RADIUS.full, width: 15, height: 15, alignItems: 'center', justifyContent: 'center' },
   verifiedDotText: { color: COLORS.bg, fontSize: 9, fontWeight: '900' },
   countryText: { color: COLORS.muted, fontSize: SIZES.xs, marginTop: 1 },
+
+  // Net worth badge
+  netWorthBadge: { backgroundColor: `${COLORS.gold}20`, borderWidth: 1, borderColor: `${COLORS.gold}40`, borderRadius: RADIUS.full, paddingHorizontal: 12, paddingVertical: 5, flexShrink: 0 },
+  netWorthBadgeText: { color: COLORS.gold, fontSize: SIZES.sm, fontWeight: '900' },
 
   // Unlock
   unlockBanner: { flexDirection: 'row', alignItems: 'center', gap: 10, margin: 16, padding: 16, backgroundColor: 'rgba(232,80,10,0.08)', borderRadius: RADIUS.lg, borderWidth: 1, borderColor: 'rgba(232,80,10,0.25)' },

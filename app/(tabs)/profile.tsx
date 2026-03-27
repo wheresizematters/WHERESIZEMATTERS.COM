@@ -10,7 +10,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SIZES, RADIUS, getSizeTier } from '@/constants/theme';
 import { WORLD_AVERAGE } from '@/lib/mockData';
-import { fetchUserRank, fetchUserPostCount, fetchTotalUserCount, fetchUserPosts, searchUsers, fetchUserPercentile } from '@/lib/api';
+import { fetchUserRank, fetchUserPostCount, fetchTotalUserCount, fetchUserPosts, searchUsers, fetchUserPercentile, verifyWallet, getMyWallets, refreshMyNetWorth, removeWallet, VerifiedWallet } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
 import { getToken, getApiUrl } from '@/lib/supabase';
 import { Post } from '@/lib/types';
@@ -36,6 +36,24 @@ function timeAgo(ts: string): string {
 function joinedDate(ts: string): string {
   return new Date(ts).toLocaleDateString([], { month: 'long', year: 'numeric' });
 }
+
+function formatNetWorth(val: number): string {
+  if (val >= 1_000_000_000) return `$${(val / 1_000_000_000).toFixed(1)}B`;
+  if (val >= 1_000_000) return `$${(val / 1_000_000).toFixed(1)}M`;
+  if (val >= 1_000) return `$${(val / 1_000).toFixed(1)}K`;
+  return `$${Math.round(val).toLocaleString()}`;
+}
+
+function truncateAddress(addr: string): string {
+  return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
+}
+
+const CHAIN_ICONS: Record<string, string> = {
+  ethereum: 'logo-ethereum',
+  polygon: 'logo-polygon',
+  base: 'globe-outline',
+  solana: 'planet-outline',
+};
 
 function PostItem({ post }: { post: Post }) {
   const totalVotes = post.poll_options?.reduce((s, o) => s + o.vote_count, 0) ?? 0;
@@ -142,6 +160,11 @@ export default function ProfileScreen() {
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [uploadingHeader, setUploadingHeader] = useState(false);
 
+  // Wallet state
+  const [wallets, setWallets] = useState<VerifiedWallet[]>([]);
+  const [totalNetWorth, setTotalNetWorth] = useState(0);
+  const [walletsLoading, setWalletsLoading] = useState(false);
+
   const size = profile?.size_inches ?? 0;
   const tier = getSizeTier(size);
 
@@ -153,6 +176,7 @@ export default function ProfileScreen() {
     fetchUserPercentile(size).then(setPercentile).catch(() => {});
     setPostsLoading(true);
     fetchUserPosts(session.user.id).then(setUserPosts).catch(() => setUserPosts([])).finally(() => setPostsLoading(false));
+    getMyWallets().then(data => { setWallets(data.wallets); setTotalNetWorth(data.totalNetWorth); }).catch(() => {});
   }, [session?.user.id]);
 
   useEffect(() => {
@@ -354,6 +378,105 @@ export default function ProfileScreen() {
                 <Text style={styles.statLbl}>{s.lbl}</Text>
               </View>
             ))}
+          </View>
+
+          {/* ── Wallet & Net Worth ── */}
+          <View style={styles.walletSection}>
+            <View style={styles.walletHeader}>
+              <Text style={styles.walletHeaderText}>WALLET & NET WORTH</Text>
+              <View style={styles.walletHeaderBtns}>
+                <TouchableOpacity
+                  style={styles.walletRefreshBtn}
+                  onPress={async () => {
+                    setWalletsLoading(true);
+                    try {
+                      const res = await refreshMyNetWorth();
+                      setTotalNetWorth(res.totalNetWorth);
+                      const data = await getMyWallets();
+                      setWallets(data.wallets);
+                    } catch {} finally { setWalletsLoading(false); }
+                  }}
+                >
+                  <Ionicons name="refresh-outline" size={14} color={COLORS.gold} />
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            <View style={styles.netWorthCard}>
+              <Text style={styles.netWorthLabel}>Total Net Worth</Text>
+              <Text style={styles.netWorthVal}>
+                {wallets.length > 0 ? formatNetWorth(totalNetWorth) : '\u2014'}
+              </Text>
+            </View>
+
+            {walletsLoading && <ActivityIndicator color={COLORS.gold} style={{ marginVertical: 8 }} />}
+
+            {wallets.map(w => (
+              <View key={w.address} style={styles.walletRow}>
+                <Ionicons name={(CHAIN_ICONS[w.chain] ?? 'wallet-outline') as any} size={16} color={COLORS.muted} />
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.walletAddr}>{truncateAddress(w.address)}</Text>
+                  <Text style={styles.walletChain}>{w.chain}</Text>
+                </View>
+                <Text style={styles.walletBal}>{formatNetWorth(w.netWorth)}</Text>
+                <TouchableOpacity
+                  onPress={async () => {
+                    if (Platform.OS === 'web') {
+                      if (!window.confirm('Remove this wallet?')) return;
+                    }
+                    await removeWallet(w.address);
+                    const data = await getMyWallets();
+                    setWallets(data.wallets);
+                    setTotalNetWorth(data.totalNetWorth);
+                  }}
+                  style={styles.walletRemoveBtn}
+                >
+                  <Ionicons name="close" size={14} color={COLORS.muted} />
+                </TouchableOpacity>
+              </View>
+            ))}
+
+            <TouchableOpacity
+              style={styles.verifyWalletBtn}
+              onPress={async () => {
+                try {
+                  if (typeof window === 'undefined' || !(window as any).ethereum) {
+                    if (Platform.OS === 'web') window.alert('No wallet detected. Install MetaMask or another Web3 wallet.');
+                    return;
+                  }
+                  const eth = (window as any).ethereum;
+                  const accounts: string[] = await eth.request({ method: 'eth_accounts' });
+                  let address = accounts[0];
+                  if (!address) {
+                    const requested: string[] = await eth.request({ method: 'eth_requestAccounts' });
+                    address = requested[0];
+                  }
+                  if (!address) { if (Platform.OS === 'web') window.alert('No wallet address found.'); return; }
+
+                  const message = `I verify this wallet on SIZE. Timestamp: ${Date.now()}`;
+                  const signature: string = await eth.request({ method: 'personal_sign', params: [message, address] });
+
+                  const chainIdHex: string = await eth.request({ method: 'eth_chainId' });
+                  const chainId = parseInt(chainIdHex, 16);
+                  const chain = chainId === 137 ? 'polygon' : chainId === 8453 ? 'base' : 'ethereum';
+
+                  setWalletsLoading(true);
+                  const res = await verifyWallet(address, signature, chain, message);
+                  if (res.error) {
+                    if (Platform.OS === 'web') window.alert(res.error);
+                  } else {
+                    const data = await getMyWallets();
+                    setWallets(data.wallets);
+                    setTotalNetWorth(data.totalNetWorth);
+                  }
+                } catch (e: any) {
+                  if (Platform.OS === 'web') window.alert(e?.message ?? 'Wallet verification failed');
+                } finally { setWalletsLoading(false); }
+              }}
+            >
+              <Ionicons name="wallet-outline" size={16} color={COLORS.bg} />
+              <Text style={styles.verifyWalletBtnText}>Verify Wallet</Text>
+            </TouchableOpacity>
           </View>
 
           {/* ── Tab bar: Posts / Compare ── */}
@@ -583,6 +706,23 @@ const styles = StyleSheet.create({
   percentileLabel: { color: COLORS.muted, fontSize: 9, fontWeight: '800', letterSpacing: 2 },
   percentileVal: { color: COLORS.gold, fontSize: 48, fontWeight: '900', lineHeight: 54 },
   percentileSub: { color: COLORS.muted, fontSize: SIZES.sm },
+
+  // Wallet & Net Worth
+  walletSection: { marginHorizontal: 16, marginBottom: 16, backgroundColor: COLORS.card, borderRadius: RADIUS.lg, borderWidth: 1, borderColor: COLORS.cardBorder, overflow: 'hidden' },
+  walletHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: COLORS.cardBorder },
+  walletHeaderText: { color: COLORS.muted, fontSize: 10, fontWeight: '800', letterSpacing: 2 },
+  walletHeaderBtns: { flexDirection: 'row', gap: 8 },
+  walletRefreshBtn: { width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: COLORS.cardBorder },
+  netWorthCard: { paddingHorizontal: 16, paddingVertical: 16, alignItems: 'center', borderBottomWidth: 1, borderBottomColor: COLORS.cardBorder },
+  netWorthLabel: { color: COLORS.muted, fontSize: SIZES.xs, fontWeight: '700', letterSpacing: 1, marginBottom: 4 },
+  netWorthVal: { color: COLORS.gold, fontSize: 28, fontWeight: '900' },
+  walletRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: COLORS.cardBorder },
+  walletAddr: { color: COLORS.white, fontSize: SIZES.sm, fontWeight: '700', fontFamily: Platform.OS === 'web' ? 'monospace' : undefined },
+  walletChain: { color: COLORS.muted, fontSize: SIZES.xs, marginTop: 1, textTransform: 'capitalize' },
+  walletBal: { color: COLORS.gold, fontSize: SIZES.sm, fontWeight: '800' },
+  walletRemoveBtn: { width: 24, height: 24, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  verifyWalletBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 14, backgroundColor: COLORS.gold, margin: 12, borderRadius: RADIUS.md },
+  verifyWalletBtnText: { color: COLORS.bg, fontWeight: '800', fontSize: SIZES.sm },
 
   // Invite
   inviteBtn: { flexDirection: 'row', alignItems: 'center', gap: 14, marginHorizontal: 16, marginTop: 20, paddingVertical: 16, paddingHorizontal: 18, backgroundColor: `${COLORS.gold}10`, borderRadius: RADIUS.lg, borderWidth: 1, borderColor: `${COLORS.gold}40`, marginBottom: 10 },

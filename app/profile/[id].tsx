@@ -11,6 +11,7 @@ import { WORLD_AVERAGE } from '@/lib/mockData';
 import {
   fetchPublicProfile, fetchUserRank, fetchUserPostCount,
   fetchTotalUserCount, fetchUserPosts, getOrCreateConversation,
+  getUserNetWorth,
 } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
 import { usePurchase } from '@/context/PurchaseContext';
@@ -90,6 +91,7 @@ export default function PublicProfileScreen() {
   const [postsLoading, setPostsLoading] = useState(false);
   const [messaging, setMessaging] = useState(false);
   const [showPaywall, setShowPaywall] = useState(false);
+  const [netWorth, setNetWorth] = useState<{ totalNetWorth: number; walletCount: number; verified: boolean } | null>(null);
 
   const isOwnProfile = session?.user.id === id;
 
@@ -111,6 +113,9 @@ export default function PublicProfileScreen() {
       fetchUserPosts(id)
         .then(setUserPosts)
         .finally(() => setPostsLoading(false));
+      getUserNetWorth(id).then(nw => {
+        if (nw.walletCount > 0) setNetWorth(nw);
+      }).catch(() => {});
     }
     load();
   }, [id]);
@@ -303,10 +308,18 @@ export default function PublicProfileScreen() {
         {/* Stats grid */}
         <View style={styles.statsGrid}>
           {[
-            { val: rank ? `#${rank.toLocaleString()}` : '—', lbl: rankResult?.provisional ? 'Provisional Rank' : 'Global Rank' },
-            { val: percentile !== null ? `${percentile}th` : '—', lbl: 'Percentile' },
+            { val: rank ? `#${rank.toLocaleString()}` : '\u2014', lbl: rankResult?.provisional ? 'Provisional Rank' : 'Global Rank' },
+            { val: percentile !== null ? `${percentile}th` : '\u2014', lbl: 'Percentile' },
             { val: size >= WORLD_AVERAGE ? `+${(size - WORLD_AVERAGE).toFixed(1)}"` : `-${(WORLD_AVERAGE - size).toFixed(1)}"`, lbl: 'vs Avg' },
-            { val: String(postCount), lbl: 'Posts' },
+            {
+              val: netWorth
+                ? netWorth.totalNetWorth >= 1_000_000_000 ? `$${(netWorth.totalNetWorth / 1_000_000_000).toFixed(1)}B`
+                  : netWorth.totalNetWorth >= 1_000_000 ? `$${(netWorth.totalNetWorth / 1_000_000).toFixed(1)}M`
+                  : netWorth.totalNetWorth >= 1_000 ? `$${(netWorth.totalNetWorth / 1_000).toFixed(1)}K`
+                  : `$${Math.round(netWorth.totalNetWorth).toLocaleString()}`
+                : '\u2014',
+              lbl: 'Net Worth',
+            },
           ].map((s, i) => (
             <View key={i} style={[styles.statCell, i % 2 !== 0 && styles.statCellBorder, i >= 2 && styles.statCellTop]}>
               <Text style={styles.statVal}>{s.val}</Text>
