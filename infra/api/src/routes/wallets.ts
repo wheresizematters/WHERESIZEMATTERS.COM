@@ -74,6 +74,20 @@ r.post("/verify", requireAuth, async (req: Request, res: Response) => {
       return res.json({ status: "already_verified", wallet: existing });
     }
 
+    // Enrich with Arkham Intelligence (labels, entity info)
+    let arkhamEntity: any = null;
+    let arkhamLabel: string | null = null;
+    try {
+      const arkRes = await fetch(`${ARKHAM_URL}/intelligence/address/${normalizedAddr}`, {
+        headers: { "API-Key": ARKHAM_KEY },
+      });
+      if (arkRes.ok) {
+        const arkData = await arkRes.json();
+        if (arkData.arkhamEntity) arkhamEntity = arkData.arkhamEntity;
+        if (arkData.arkhamLabel) arkhamLabel = arkData.arkhamLabel.name ?? null;
+      }
+    } catch {}
+
     const wallet = {
       id: `${req.userId!}:${normalizedAddr}`,
       user_id: req.userId!,
@@ -82,6 +96,8 @@ r.post("/verify", requireAuth, async (req: Request, res: Response) => {
       signature,
       verified: true,
       netWorth: 0,
+      arkhamEntity: arkhamEntity?.name ?? null,
+      arkhamLabel,
       lastRefreshed: null,
       createdAt: new Date().toISOString(),
     };
@@ -216,9 +232,12 @@ r.delete("/:address", requireAuth, async (req: Request, res: Response) => {
 
 // ── Internal: fetch net worth for a wallet ──────────────────────────
 
+const ARKHAM_KEY = process.env.ARKHAM_API_KEY ?? "1551a77e-e082-4b66-87b7-08b759360c3b";
+const ARKHAM_URL = "https://api.arkhamintelligence.com";
+
 const CHAIN_RPCS: Record<string, string> = {
   ethereum: "https://eth.llamarpc.com",
-  base: "https://sepolia.base.org", // testnet for now — switch to mainnet on launch
+  base: "https://base-mainnet.core.chainstack.com/1f396980c6a698065bdf9bbebbb7fd78",
   arbitrum: "https://arb1.arbitrum.io/rpc",
   optimism: "https://mainnet.optimism.io",
   polygon: "https://polygon-rpc.com",
