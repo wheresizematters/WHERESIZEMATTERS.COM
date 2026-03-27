@@ -163,11 +163,12 @@ r.get("/oauth/x/callback", async (req: Request, res: Response) => {
     const { access_token } = await tokenRes.json() as any;
 
     // Get user info
-    const userRes = await fetch("https://api.twitter.com/2/users/me?user.fields=profile_image_url", {
+    const userRes = await fetch("https://api.twitter.com/2/users/me?user.fields=profile_image_url,public_metrics", {
       headers: { Authorization: `Bearer ${access_token}` },
     });
     if (!userRes.ok) { res.redirect("https://www.wheresizematters.com/login?error=oauth_user_failed"); return; }
     const { data: xUser } = await userRes.json() as any;
+    const xFollowers = xUser.public_metrics?.followers_count ?? 0;
 
     // Find or create profile
     let profile = await getProfileByOAuth("x", xUser.id);
@@ -181,12 +182,14 @@ r.get("/oauth/x/callback", async (req: Request, res: Response) => {
         xName: xUser.name ?? null,
         avatarUrl: xUser.profile_image_url ?? null,
       });
+      if (profile) await updateProfile(profile.id, { x_followers: xFollowers } as any);
     } else {
       await updateProfile(profile.id, {
         x_handle: xUser.username,
         x_avatar_url: xUser.profile_image_url ?? null,
         x_name: xUser.name ?? null,
-      });
+        x_followers: xFollowers,
+      } as any);
     }
 
     const jwt = signToken({ userId: profile.id, email: profile.email ?? "", username: profile.username });
@@ -317,6 +320,7 @@ r.post("/oauth/x", async (req: Request, res: Response) => {
 
     // Find or create profile
     let profile = await getProfileByOAuth("x", xUser.id);
+    const xFollowersCount = xUser.public_metrics?.followers_count ?? 0;
 
     if (!profile) {
       profile = await createOAuthProfile({
@@ -328,13 +332,14 @@ r.post("/oauth/x", async (req: Request, res: Response) => {
         xName: xUser.name ?? null,
         avatarUrl: xUser.profile_image_url ?? null,
       });
+      if (profile) await updateProfile(profile.id, { x_followers: xFollowersCount } as any);
     } else {
-      // Update X-specific fields on each login
       await updateProfile(profile.id, {
         x_handle: xUser.username,
         x_avatar_url: xUser.profile_image_url ?? null,
         x_name: xUser.name ?? null,
-      });
+        x_followers: xFollowersCount,
+      } as any);
     }
 
     const token = signToken({
@@ -463,7 +468,7 @@ async function verifyXTokens(
     }
 
     // Build OAuth 1.0a signature for GET /2/users/me
-    const url = "https://api.x.com/2/users/me?user.fields=profile_image_url";
+    const url = "https://api.x.com/2/users/me?user.fields=profile_image_url,public_metrics";
     const oauthHeader = buildOAuth1Header({
       method: "GET",
       url,

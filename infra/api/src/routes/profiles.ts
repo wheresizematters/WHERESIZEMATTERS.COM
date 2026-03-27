@@ -24,6 +24,16 @@ r.delete("/me", requireAuth, async (req, res) => {
   }
 });
 
+r.get("/leaderboard/followers", async (_req, res) => {
+  try {
+    const entries = await svc.getFollowersLeaderboard();
+    res.json(entries);
+  } catch (err: any) {
+    console.error("Followers leaderboard error:", err);
+    res.json([]);
+  }
+});
+
 r.get("/leaderboard", async (req, res) => {
   const { country, ageRange } = req.query as any;
   const verifiedOnly = req.query.verifiedOnly !== 'false';

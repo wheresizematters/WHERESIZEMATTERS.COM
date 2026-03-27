@@ -135,6 +135,23 @@ export async function getLeaderboard(filter?: {
   }));
 }
 
+export async function getFollowersLeaderboard(): Promise<{
+  rank: number; id: string; username: string; x_handle: string; x_followers: number; is_verified: boolean; x_avatar_url: string | null;
+}[]> {
+  const all = await scanAll<Profile & { x_followers?: number }>(T.profiles);
+  const withX = all.filter((p) => p.x_handle && (p as any).x_followers > 0);
+  withX.sort((a, b) => ((b as any).x_followers ?? 0) - ((a as any).x_followers ?? 0));
+  return withX.slice(0, 100).map((p, i) => ({
+    rank: i + 1,
+    id: p.id,
+    username: p.username,
+    x_handle: p.x_handle!,
+    x_followers: (p as any).x_followers ?? 0,
+    is_verified: p.is_verified,
+    x_avatar_url: p.x_avatar_url ?? null,
+  }));
+}
+
 export async function getUserRank(userId: string): Promise<{ rank: number; provisional: boolean; totalVerified: number }> {
   const all = await scanAll<Profile>(T.profiles);
   const user = all.find((p) => p.id === userId);

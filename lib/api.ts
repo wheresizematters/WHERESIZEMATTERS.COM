@@ -364,3 +364,19 @@ export async function refreshMyNetWorth(): Promise<{ totalNetWorth: number; refr
 export async function removeWallet(address: string): Promise<{ error: string | null }> {
   return (await del(`/api/v1/wallets/${address}`)) ?? { error: 'API unavailable' };
 }
+
+// ── X Followers Leaderboard ──────────────────────────────────────
+
+export interface FollowersEntry {
+  rank: number;
+  id: string;
+  username: string;
+  x_handle: string;
+  x_followers: number;
+  is_verified: boolean;
+  x_avatar_url: string | null;
+}
+
+export async function fetchFollowersLeaderboard(): Promise<FollowersEntry[]> {
+  return (await api<FollowersEntry[]>('/api/v1/profiles/leaderboard/followers')) ?? [];
+}

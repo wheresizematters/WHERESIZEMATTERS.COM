@@ -7,7 +7,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { COLORS, SIZES, RADIUS, getSizeTier } from '@/constants/theme';
-import { fetchLeaderboard, fetchUserRank, fetchTotalUserCount, fetchLeaderboardByRadius, NearbyEntry, RankResult, getNetWorthLeaderboard } from '@/lib/api';
+import { fetchLeaderboard, fetchUserRank, fetchTotalUserCount, fetchLeaderboardByRadius, NearbyEntry, RankResult, getNetWorthLeaderboard, fetchFollowersLeaderboard, FollowersEntry } from '@/lib/api';
 import PageContainer from '@/components/PageContainer';
 import { usePurchase } from '@/context/PurchaseContext';
 import { useAuth } from '@/context/AuthContext';
@@ -167,10 +167,12 @@ export default function LeaderboardScreen() {
   const [verifiedOnly, setVerifiedOnly] = useState(true);
 
   // Mode: 'global' | 'nearby' | 'dickcoins' | 'networth'
-  const [mode, setMode] = useState<'global' | 'nearby' | 'dickcoins' | 'networth'>('global');
+  const [mode, setMode] = useState<'global' | 'nearby' | 'dickcoins' | 'networth' | 'clout'>('global');
   const [dickCoins, setDickCoins] = useState<any[]>([]);
   const [netWorthEntries, setNetWorthEntries] = useState<any[]>([]);
   const [netWorthLoading, setNetWorthLoading] = useState(false);
+  const [followersEntries, setFollowersEntries] = useState<FollowersEntry[]>([]);
+  const [followersLoading, setFollowersLoading] = useState(false);
 
   // Nearby state
   const [location, setLocation] = useState<UserLocation | null>(null);
@@ -537,9 +539,56 @@ export default function LeaderboardScreen() {
             <Ionicons name="cash-outline" size={14} color={mode === 'networth' ? COLORS.gold : COLORS.muted} />
             <Text style={[styles.modeBtnText, mode === 'networth' && styles.modeBtnTextActive]}>Net Worth</Text>
           </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.modeBtn, mode === 'clout' && styles.modeBtnActive]}
+            onPress={async () => {
+              setMode('clout');
+              if (followersEntries.length === 0) {
+                setFollowersLoading(true);
+                try {
+                  const data = await fetchFollowersLeaderboard();
+                  setFollowersEntries(data);
+                } catch {} finally { setFollowersLoading(false); }
+              }
+            }}
+          >
+            <Ionicons name="logo-twitter" size={14} color={mode === 'clout' ? COLORS.gold : COLORS.muted} />
+            <Text style={[styles.modeBtnText, mode === 'clout' && styles.modeBtnTextActive]}>Clout</Text>
+          </TouchableOpacity>
         </View>
 
-        {mode === 'global' ? renderGlobalContent() : mode === 'nearby' ? renderNearbyContent() : mode === 'networth' ? (
+        {mode === 'global' ? renderGlobalContent() : mode === 'nearby' ? renderNearbyContent() : mode === 'clout' ? (
+          followersLoading ? (
+            <View style={styles.loadingWrap}><ActivityIndicator size="large" color={COLORS.gold} /></View>
+          ) : (
+            <FlatList
+              data={followersEntries}
+              keyExtractor={item => item.id}
+              contentContainerStyle={styles.list}
+              showsVerticalScrollIndicator={false}
+              renderItem={({ item }) => (
+                <TouchableOpacity style={styles.row} onPress={() => router.push(`/profile/${item.id}` as any)} activeOpacity={0.7}>
+                  <View style={styles.rankNumWrap}><Text style={styles.rankNum}>#{item.rank}</Text></View>
+                  <View style={styles.userInfo}>
+                    <View style={styles.usernameRow}>
+                      <Text style={styles.username}>@{item.username}</Text>
+                      {item.is_verified && (
+                        <View style={styles.verifiedDot}><Text style={styles.verifiedDotText}>✓</Text></View>
+                      )}
+                    </View>
+                    <Text style={styles.countryText}>@{item.x_handle} on X</Text>
+                  </View>
+                  <View style={{ alignItems: 'flex-end' }}>
+                    <Text style={{ color: COLORS.gold, fontWeight: '900', fontSize: SIZES.md }}>{item.x_followers >= 1000000 ? `${(item.x_followers / 1000000).toFixed(1)}M` : item.x_followers >= 1000 ? `${(item.x_followers / 1000).toFixed(1)}K` : item.x_followers.toLocaleString()}</Text>
+                    <Text style={{ color: COLORS.muted, fontSize: SIZES.xs }}>followers</Text>
+                  </View>
+                </TouchableOpacity>
+              )}
+              ListEmptyComponent={<View style={{ alignItems: 'center', paddingTop: 60 }}><Text style={{ color: COLORS.muted }}>No X-connected users yet. Sign in with X to appear here.</Text></View>}
+              ListHeaderComponent={<Text style={styles.listHeader}>TOP X CLOUT</Text>}
+            />
+          )
+        ) : mode === 'networth' ? (
           netWorthLoading ? (
             <View style={styles.loadingWrap}><ActivityIndicator size="large" color={COLORS.gold} /></View>
           ) : (
