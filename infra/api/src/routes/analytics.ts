@@ -266,6 +266,58 @@ r.post("/gate-toggle", async (req: Request, res: Response) => {
   res.json({ enabled: !!enabled });
 });
 
+// ── Feature flags ───────────────────────────────────────────────
+const FEATURES_FILE = "/tmp/size-features.json";
+const DEFAULT_FEATURES: Record<string, boolean> = {
+  staking: true,
+  quickBuy: true,
+  launchDickCoin: true,
+  charting: true,
+  circleJerks: true,
+  discussions: true,
+  media: true,
+  verification: true,
+  gifting: true,
+  walletVerify: true,
+  netWorthLeaderboard: true,
+  cloutLeaderboard: true,
+};
+
+function getFeatures(): Record<string, boolean> {
+  try {
+    const raw = fs.readFileSync(FEATURES_FILE, "utf8");
+    return { ...DEFAULT_FEATURES, ...JSON.parse(raw) };
+  } catch {
+    return { ...DEFAULT_FEATURES };
+  }
+}
+
+function saveFeatures(flags: Record<string, boolean>): void {
+  fs.writeFileSync(FEATURES_FILE, JSON.stringify(flags, null, 2));
+}
+
+r.get("/features", (_req: Request, res: Response) => {
+  res.json(getFeatures());
+});
+
+r.post("/features", (req: Request, res: Response) => {
+  const { token, flags } = req.body;
+  if (!isValidAdminToken(token)) {
+    return res.status(403).json({ error: "Invalid authentication" });
+  }
+  if (!flags || typeof flags !== "object") {
+    return res.status(400).json({ error: "flags object required" });
+  }
+  const current = getFeatures();
+  for (const [key, val] of Object.entries(flags)) {
+    if (key in current && typeof val === "boolean") {
+      current[key] = val;
+    }
+  }
+  saveFeatures(current);
+  res.json(current);
+});
+
 // ── Rewards distribution (admin only) ───────────────────────────
 import { previewDistribution, simulateFromVolume, REWARDS_CONFIG } from "../services/rewards-engine";
 
