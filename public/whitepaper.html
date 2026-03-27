@@ -1215,22 +1215,89 @@
   <div class="section">
     <span class="section-number">04</span>
     <h2 class="section-title">Fee Architecture</h2>
-    <p class="section-subtitle">Volume-driven yield. No emissions. No unlocks.</p>
+    <p class="section-subtitle">Volume-driven yield. No emissions. No unlocks. Every dollar of reward comes from real trading fees.</p>
 
-    <p>Every $SIZE trade on Uniswap V4 generates LP fees. Those fees are split:</p>
+    <p>Every trade through SIZE. generates a 1% swap fee. DickCoin trades on Uniswap generate LP fees via Clanker. All fees flow deterministically through two on-chain contracts:</p>
 
+    <h3 class="sub-title">4.1 &mdash; DickCoin Fee Split</h3>
+    <div class="fee-bar-wrap">
+      <div class="fee-bar">
+        <div class="fee-segment" style="width:90%;background:var(--accent)">90% &mdash; Creator</div>
+        <div class="fee-segment" style="width:8%;background:var(--blue)">8%</div>
+        <div class="fee-segment dark" style="width:2%">2%</div>
+      </div>
+      <div class="fee-labels">
+        <span class="fee-label">Creator wallet (instant)</span>
+        <span class="fee-label">Protocol</span>
+        <span class="fee-label">Gas</span>
+      </div>
+    </div>
+    <p>Handled by <span class="inline-code">SizeDickCoinFactory.sol</span> with pull-pattern safety. Failed transfers are credited for later withdrawal.</p>
+
+    <h3 class="sub-title">4.2 &mdash; Protocol Fee Distribution</h3>
+    <p>The 8% protocol share is further split into staking rewards and epoch-based activity rewards:</p>
     <div class="fee-bar-wrap">
       <div class="fee-bar">
         <div class="fee-segment purple" style="width:75%">75% &mdash; Stakers</div>
-        <div class="fee-segment dark" style="width:25%">25% &mdash; Protocol</div>
+        <div class="fee-segment" style="width:25%;background:var(--green)">25% &mdash; Rewards</div>
       </div>
       <div class="fee-labels">
-        <span class="fee-label">$SIZE tokens, proportional to effective stake</span>
-        <span class="fee-label">ETH &rarr; dev / infra / growth</span>
+        <span class="fee-label">Deposited to SizeStaking.sol, proportional to effective stake</span>
+        <span class="fee-label">Deposited to SizeRewards.sol, distributed by rank + activity</span>
       </div>
     </div>
 
-    <p>Fees are distributed once daily by an EC2 indexer and deposited to <span class="inline-code">SizeStaking.sol</span>. No emission schedule. No team unlocks. Staker yield is a pure function of trading volume.</p>
+    <h3 class="sub-title">4.3 &mdash; Epoch Rewards Breakdown</h3>
+    <p>The 25% rewards portion is distributed daily through epochs. Each epoch splits the pool:</p>
+    <div class="fee-bar-wrap">
+      <div class="fee-bar">
+        <div class="fee-segment" style="width:75%;background:var(--gold)">75% &mdash; Top 10 Leaderboard</div>
+        <div class="fee-segment" style="width:25%;background:var(--blue)">25% &mdash; Active Users</div>
+      </div>
+    </div>
+
+    <p><strong>Top 10 rank weights</strong> (share of the 75% epoch pool):</p>
+    <table class="earn-table">
+      <tr><th>Rank</th><th style="text-align:right">Weight</th><th style="text-align:right">Share</th></tr>
+      <tr><td>#1</td><td style="text-align:right">200</td><td style="text-align:right">23.1%</td></tr>
+      <tr><td>#2</td><td style="text-align:right">150</td><td style="text-align:right">17.3%</td></tr>
+      <tr><td>#3</td><td style="text-align:right">120</td><td style="text-align:right">13.9%</td></tr>
+      <tr><td>#4</td><td style="text-align:right">100</td><td style="text-align:right">11.6%</td></tr>
+      <tr><td>#5</td><td style="text-align:right">80</td><td style="text-align:right">9.2%</td></tr>
+      <tr><td>#6</td><td style="text-align:right">60</td><td style="text-align:right">6.9%</td></tr>
+      <tr><td>#7</td><td style="text-align:right">50</td><td style="text-align:right">5.8%</td></tr>
+      <tr><td>#8</td><td style="text-align:right">40</td><td style="text-align:right">4.6%</td></tr>
+      <tr><td>#9</td><td style="text-align:right">35</td><td style="text-align:right">4.0%</td></tr>
+      <tr><td>#10</td><td style="text-align:right">30</td><td style="text-align:right">3.5%</td></tr>
+    </table>
+
+    <p style="margin-top:16px"><strong>Activity scoring</strong> (share of the 25% epoch pool):</p>
+    <table class="earn-table">
+      <tr><th>Action</th><th style="text-align:right">Points</th><th style="text-align:right">Daily Cap</th></tr>
+      <tr><td>Verified Account</td><td style="text-align:right">10 pts</td><td style="text-align:right">1x</td></tr>
+      <tr><td>Upvote Received</td><td style="text-align:right">5 pts</td><td style="text-align:right">20x</td></tr>
+      <tr><td>Referral</td><td style="text-align:right">8 pts</td><td style="text-align:right">&infin;</td></tr>
+      <tr><td>Post Content</td><td style="text-align:right">3 pts</td><td style="text-align:right">5x</td></tr>
+      <tr><td>Send Message</td><td style="text-align:right">1 pt</td><td style="text-align:right">10x</td></tr>
+      <tr><td>Daily Login</td><td style="text-align:right">1 pt</td><td style="text-align:right">1x</td></tr>
+    </table>
+
+    <h3 class="sub-title">4.4 &mdash; Volume Simulations</h3>
+    <p>All rewards are deterministic. Here&rsquo;s what different daily volume scenarios produce (assuming ETH = $2,500, $SIZE = $0.001):</p>
+
+    <table class="earn-table">
+      <tr><th>Daily Volume</th><th style="text-align:right">Total Fees</th><th style="text-align:right">Staker Pool</th><th style="text-align:right">Epoch Pool</th><th style="text-align:right">#1 Gets</th></tr>
+      <tr><td>10 ETH ($25K)</td><td style="text-align:right">0.1 ETH</td><td style="text-align:right">$15</td><td style="text-align:right">5,000 $SIZE</td><td style="text-align:right">867 $SIZE</td></tr>
+      <tr><td>100 ETH ($250K)</td><td style="text-align:right">1 ETH</td><td style="text-align:right">$150</td><td style="text-align:right">50,000 $SIZE</td><td style="text-align:right">8,671 $SIZE</td></tr>
+      <tr><td>1,000 ETH ($2.5M)</td><td style="text-align:right">10 ETH</td><td style="text-align:right">$1,500</td><td style="text-align:right">500,000 $SIZE</td><td style="text-align:right">86,705 $SIZE</td></tr>
+      <tr><td>10,000 ETH ($25M)</td><td style="text-align:right">100 ETH</td><td style="text-align:right">$15,000</td><td style="text-align:right">5,000,000 $SIZE</td><td style="text-align:right">867,052 $SIZE</td></tr>
+    </table>
+
+    <div class="formula-block" style="margin-top:24px">
+      your_daily_reward = (your_weight / total_weight) &times; epoch_pool<br>
+      epoch_pool = daily_volume &times; 0.01 &times; 0.08 &times; 0.25 / $SIZE_price<br>
+      <em style="color:var(--text-tertiary);font-size:13px">No fixed emissions. No team unlocks. Pure function of trading volume.</em>
+    </div>
   </div>
 </div>
 
@@ -1313,6 +1380,25 @@
     </div>
 
     <p style="margin-top:24px;">APY is variable, driven entirely by trading volume. Higher volume = higher yield for all stakers.</p>
+
+    <h3 class="sub-title">5.2 &mdash; Early Withdrawal Penalty</h3>
+    <p>To reward conviction and discourage mercenary capital, early unstaking incurs a cubic-decay penalty. Penalized tokens are redistributed to remaining stakers &mdash; paper hands subsidize diamond hands.</p>
+
+    <div class="formula-block">
+      penalty = 50% &times; (days_remaining / 365)&sup3;
+    </div>
+
+    <table class="earn-table">
+      <tr><th>Time Staked</th><th style="text-align:right">Penalty</th><th style="text-align:right">You Keep</th></tr>
+      <tr><td>Day 0</td><td style="text-align:right;color:var(--red)">50.0%</td><td style="text-align:right">50.0%</td></tr>
+      <tr><td>1 month</td><td style="text-align:right;color:var(--red)">45.0%</td><td style="text-align:right">55.0%</td></tr>
+      <tr><td>3 months</td><td style="text-align:right;color:var(--orange)">21.1%</td><td style="text-align:right">78.9%</td></tr>
+      <tr><td>6 months</td><td style="text-align:right;color:var(--gold)">6.25%</td><td style="text-align:right">93.75%</td></tr>
+      <tr><td>9 months</td><td style="text-align:right;color:var(--green)">0.78%</td><td style="text-align:right">99.22%</td></tr>
+      <tr><td>12 months</td><td style="text-align:right;color:var(--green)">0%</td><td style="text-align:right">100%</td></tr>
+    </table>
+
+    <p style="margin-top:16px;">The cubic curve is <em>frontloaded</em>: penalty drops fast early (incentivizes patience over the first few months), then flattens near zero. At 365 days, the penalty is eliminated entirely. Emergency withdrawals also incur the penalty but forfeit unclaimed rewards.</p>
   </div>
 </div>
 
@@ -1325,16 +1411,17 @@
     <h2 class="section-title">In-App Economy</h2>
     <p class="section-subtitle">Earn $SIZE for every meaningful action.</p>
 
-    <h3 class="sub-title">6.1 &mdash; Earn Rates</h3>
-    <table class="earn-table">
-      <tr><th>Action</th><th style="text-align:right">$SIZE Earned</th></tr>
-      <tr><td>Verify</td><td>0.001%</td></tr>
-      <tr><td>Refer a user</td><td>0.0008%</td></tr>
-      <tr><td>Daily login</td><td>0.0001%/day</td></tr>
-      <tr><td>Post (daily cap)</td><td>0.0003%/day</td></tr>
-      <tr><td>Receive upvote</td><td>0.0005%</td></tr>
-      <tr><td>Send message</td><td>500</td></tr>
-    </table>
+    <h3 class="sub-title">6.1 &mdash; How Earnings Work</h3>
+    <p>There are no fixed token emissions. All rewards are a <em>proportion</em> of the daily fee pool, determined by your activity score relative to all other users. The more volume the platform generates, the more everyone earns.</p>
+
+    <p style="margin-top:12px"><strong>Two earning paths:</strong></p>
+    <p><span style="color:var(--gold)">1. Top 10 Leaderboard</span> &mdash; 75% of the daily epoch pool flows to the top 10 verified users by size. Ranking higher = exponentially higher rewards. Getting verified and climbing the leaderboard is the single highest-yield action.</p>
+    <p><span style="color:var(--blue)">2. Activity Rewards</span> &mdash; 25% of the daily epoch pool is split among all active users by their daily activity score. The more you post, engage, and refer &mdash; the larger your slice.</p>
+
+    <div class="formula-block" style="margin-top:16px">
+      your_daily_reward = (your_activity_score / total_activity_scores) &times; 25% of epoch pool<br>
+      <em style="color:var(--text-tertiary);font-size:13px">+ top 10 bonus if you&rsquo;re on the leaderboard</em>
+    </div>
 
     <h3 class="sub-title">6.2 &mdash; Multiplier Formula</h3>
     <div class="formula-block">
