@@ -107,10 +107,11 @@ r.get("/signed-url", requireAuth, async (req: Request, res: Response) => {
   }
 });
 
-// ── GET /media/* — Proxy S3 media to browser (no public access needed) ──
-r.get("/media/*", async (req: Request, res: Response) => {
+// ── GET /media/* — Proxy S3 media to browser ──
+r.use("/media", async (req: Request, res: Response) => {
+  if (req.method !== "GET") { res.status(405).send("Method not allowed"); return; }
   try {
-    const key = req.params[0];
+    const key = req.path.startsWith("/") ? req.path.slice(1) : req.path;
     if (!key || key.includes("..")) {
       res.status(400).send("Invalid path");
       return;
