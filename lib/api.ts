@@ -253,6 +253,11 @@ export async function followUser(followerId: string, followingId: string): Promi
   await post(`/api/v1/users/${followingId}/follow`, {});
 }
 
+export async function unfollowUser(followerId: string, followingId: string): Promise<void> {
+  if (followerId === followingId) return;
+  await del(`/api/v1/users/${followingId}/follow`);
+}
+
 export async function isFollowing(followerId: string, followingId: string): Promise<boolean> {
   const data = await api<{ following: boolean }>(`/api/v1/users/${followingId}/is-following`);
   return data?.following ?? false;

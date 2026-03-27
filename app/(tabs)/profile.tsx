@@ -333,6 +333,21 @@ export default function ProfileScreen() {
               </TouchableOpacity>
             ) : null}
 
+            {(profile as any).wallet_address ? (
+              <TouchableOpacity onPress={() => {
+                const addr = (profile as any).wallet_address;
+                if (typeof navigator !== 'undefined' && navigator.clipboard) {
+                  navigator.clipboard.writeText(addr).then(() => { if (typeof window !== 'undefined') window.alert('Wallet address copied!'); }).catch(() => {});
+                }
+              }}>
+                <View style={styles.metaRow}>
+                  <Ionicons name="wallet-outline" size={14} color={COLORS.muted} />
+                  <Text style={styles.metaText}>{`${(profile as any).wallet_address.slice(0, 6)}...${(profile as any).wallet_address.slice(-4)}`}</Text>
+                  <Ionicons name="copy-outline" size={12} color={COLORS.muted} />
+                </View>
+              </TouchableOpacity>
+            ) : null}
+
             <View style={styles.metaRowGroup}>
               {profile.country ? (
                 <View style={styles.metaRow}>

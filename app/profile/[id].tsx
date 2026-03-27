@@ -11,7 +11,7 @@ import { WORLD_AVERAGE } from '@/lib/mockData';
 import {
   fetchPublicProfile, fetchUserRank, fetchUserPostCount,
   fetchTotalUserCount, fetchUserPosts, getOrCreateConversation,
-  getUserNetWorth,
+  getUserNetWorth, followUser, unfollowUser, isFollowing,
 } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
 import { usePurchase } from '@/context/PurchaseContext';
@@ -92,6 +92,8 @@ export default function PublicProfileScreen() {
   const [messaging, setMessaging] = useState(false);
   const [showPaywall, setShowPaywall] = useState(false);
   const [netWorth, setNetWorth] = useState<{ totalNetWorth: number; walletCount: number; verified: boolean } | null>(null);
+  const [following, setFollowing] = useState(false);
+  const [followLoading, setFollowLoading] = useState(false);
 
   const isOwnProfile = session?.user.id === id;
 
@@ -116,9 +118,27 @@ export default function PublicProfileScreen() {
       getUserNetWorth(id).then(nw => {
         if (nw.walletCount > 0) setNetWorth(nw);
       }).catch(() => {});
+      if (session?.user.id && session.user.id !== id) {
+        isFollowing(session.user.id, id).then(setFollowing).catch(() => {});
+      }
     }
     load();
   }, [id]);
+
+  async function handleFollow() {
+    if (!session?.user.id || isOwnProfile) return;
+    setFollowLoading(true);
+    try {
+      if (following) {
+        await unfollowUser(session.user.id, id);
+        setFollowing(false);
+      } else {
+        await followUser(session.user.id, id);
+        setFollowing(true);
+      }
+    } catch {}
+    setFollowLoading(false);
+  }
 
   async function handleMessage() {
     if (!session) return;
@@ -199,17 +219,30 @@ export default function PublicProfileScreen() {
                 <Text style={styles.outlineBtnText}>Your Profile</Text>
               </TouchableOpacity>
             ) : session ? (
-              <TouchableOpacity
-                style={styles.messageBtn}
-                onPress={handleMessage}
-                disabled={messaging}
-                activeOpacity={0.85}
-              >
-                {messaging
-                  ? <ActivityIndicator size="small" color={COLORS.bg} />
-                  : <><Ionicons name="chatbubble-outline" size={15} color={COLORS.bg} /><Text style={styles.messageBtnText}>Message</Text></>
-                }
-              </TouchableOpacity>
+              <>
+                <TouchableOpacity
+                  style={following ? styles.followBtnFollowing : styles.followBtn}
+                  onPress={handleFollow}
+                  disabled={followLoading}
+                  activeOpacity={0.85}
+                >
+                  {followLoading
+                    ? <ActivityIndicator size="small" color={following ? COLORS.gold : COLORS.bg} />
+                    : <Text style={following ? styles.followBtnTextFollowing : styles.followBtnText}>{following ? 'Following' : 'Follow'}</Text>
+                  }
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.messageBtn}
+                  onPress={handleMessage}
+                  disabled={messaging}
+                  activeOpacity={0.85}
+                >
+                  {messaging
+                    ? <ActivityIndicator size="small" color={COLORS.bg} />
+                    : <><Ionicons name="chatbubble-outline" size={15} color={COLORS.bg} /><Text style={styles.messageBtnText}>Message</Text></>
+                  }
+                </TouchableOpacity>
+              </>
             ) : null}
           </View>
         </View>
@@ -381,6 +414,10 @@ const styles = StyleSheet.create({
   actionBtns: { flexDirection: 'row', gap: 10, alignItems: 'center' },
   messageBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: COLORS.gold, borderRadius: RADIUS.full, paddingHorizontal: 16, paddingVertical: 9 },
   messageBtnText: { color: COLORS.bg, fontWeight: '800', fontSize: SIZES.sm },
+  followBtn: { backgroundColor: COLORS.gold, borderRadius: RADIUS.full, paddingHorizontal: 16, paddingVertical: 9 },
+  followBtnFollowing: { borderWidth: 1, borderColor: COLORS.gold, borderRadius: RADIUS.full, paddingHorizontal: 16, paddingVertical: 9, backgroundColor: 'transparent' },
+  followBtnText: { color: COLORS.bg, fontWeight: '800', fontSize: SIZES.sm },
+  followBtnTextFollowing: { color: COLORS.gold, fontWeight: '700', fontSize: SIZES.sm },
   outlineBtn: { borderWidth: 1, borderColor: COLORS.cardBorder, borderRadius: RADIUS.full, paddingHorizontal: 16, paddingVertical: 9 },
   outlineBtnText: { color: COLORS.white, fontWeight: '700', fontSize: SIZES.sm },
 

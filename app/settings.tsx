@@ -45,6 +45,8 @@ export default function SettingsScreen() {
   const [editingGirth, setEditingGirth] = useState(false);
   const [newGirth, setNewGirth] = useState(profile?.girth_inches?.toString() ?? '');
   const [notifications, setNotifications] = useState(profile?.notifications_enabled ?? true);
+  const [editingXHandle, setEditingXHandle] = useState(false);
+  const [newXHandle, setNewXHandle] = useState((profile as any)?.x_handle ?? '');
   const [saving, setSaving] = useState(false);
   const [showPaywall, setShowPaywall] = useState(false);
 
@@ -63,6 +65,15 @@ export default function SettingsScreen() {
     await updateProfile({ size_inches: inches });
     setSaving(false);
     setEditingSize(false);
+  }
+
+  async function saveXHandle() {
+    const handle = newXHandle.trim().replace(/^@/, '');
+    if (handle === ((profile as any)?.x_handle ?? '')) { setEditingXHandle(false); return; }
+    setSaving(true);
+    await updateProfile({ x_handle: handle || null } as any);
+    setSaving(false);
+    setEditingXHandle(false);
   }
 
   async function saveGirth() {
@@ -187,6 +198,42 @@ export default function SettingsScreen() {
               value={profile?.girth_inches ? `${profile.girth_inches.toFixed(1)}"` : 'Not set'}
               onPress={() => setEditingGirth(true)}
             />
+          )}
+
+          <View style={styles.divider} />
+
+          {editingXHandle ? (
+            <View style={styles.editRow}>
+              <Text style={{ color: COLORS.muted, fontSize: SIZES.md }}>@</Text>
+              <TextInput
+                style={styles.editInput}
+                value={newXHandle}
+                onChangeText={setNewXHandle}
+                autoFocus
+                autoCapitalize="none"
+                placeholder="handle"
+                placeholderTextColor={COLORS.muted}
+                onSubmitEditing={saveXHandle}
+              />
+              <TouchableOpacity onPress={saveXHandle} disabled={saving}>
+                {saving ? <ActivityIndicator size="small" color={COLORS.gold} /> : <Text style={styles.saveBtn}>Save</Text>}
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => setEditingXHandle(false)}>
+                <Text style={styles.cancelBtn}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <View>
+              <SettingsRow
+                icon="logo-twitter"
+                label="X (Twitter)"
+                value={(profile as any)?.x_handle ? `@${(profile as any).x_handle}` : 'Not set'}
+                onPress={() => setEditingXHandle(true)}
+              />
+              {(profile as any)?.auth_provider === 'twitter' && (profile as any)?.x_handle ? (
+                <Text style={{ color: COLORS.muted, fontSize: SIZES.xs, paddingHorizontal: 60, paddingBottom: 8 }}>Linked via X login</Text>
+              ) : null}
+            </View>
           )}
         </View>
 
