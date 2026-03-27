@@ -96,7 +96,7 @@ export default function CommunitiesScreen() {
             renderItem={({ item }) => (
               <TouchableOpacity
                 style={styles.coinRow}
-                onPress={() => (() => { if (typeof window !== 'undefined') window.location.href = `/coin/${item.contractAddress}`; })()}
+                onPress={() => router.push(`/coin/${item.contractAddress}` as any)}
                 activeOpacity={0.7}
               >
                 <View style={styles.coinInfo}>

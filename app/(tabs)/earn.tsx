@@ -13,6 +13,10 @@ import { getToken, getApiUrl } from '@/lib/supabase';
 import PageContainer from '@/components/PageContainer';
 import PaywallModal from '@/components/PaywallModal';
 import { switchToBase } from '@/lib/web3';
+import {
+  getStakeInfo, StakeInfoResult, TIER_NAMES, formatTokenAmount,
+  claimStakingRewards,
+} from '@/lib/staking';
 
 const EARN_ACTIONS = [
   { icon: 'shield-checkmark', label: 'Get Verified',       pct: '0.001%', desc: 'Highest share of the daily reward pool',                key: 'is_verified' },
@@ -41,6 +45,7 @@ export default function EarnScreen() {
   const [showPaywall, setShowPaywall] = useState(false);
   const [walletAddress, setWalletAddress] = useState<string | null>(profile?.wallet_address ?? null);
   const [connectingWallet, setConnectingWallet] = useState(false);
+  const [stakeInfo, setStakeInfo] = useState<StakeInfoResult | null>(null);
 
   const loadCoins = useCallback(async () => {
     if (!session?.user.id) { setLoading(false); return; }
@@ -50,6 +55,12 @@ export default function EarnScreen() {
   }, [session?.user.id, profile?.size_coins]);
 
   useEffect(() => { loadCoins(); }, [loadCoins]);
+
+  // Load staking info when wallet is connected
+  useEffect(() => {
+    if (!walletAddress) { setStakeInfo(null); return; }
+    getStakeInfo(walletAddress).then(info => setStakeInfo(info)).catch(() => {});
+  }, [walletAddress]);
 
   async function connectWallet() {
     if (Platform.OS !== 'web') return;
@@ -207,19 +218,31 @@ export default function EarnScreen() {
               <View style={styles.stakingRow}>
                 <View style={styles.stakingStat}>
                   <Text style={styles.stakingStatLabel}>YOUR TIER</Text>
-                  <Text style={styles.stakingStatValue}>--</Text>
+                  <Text style={styles.stakingStatValue}>{stakeInfo ? TIER_NAMES[stakeInfo.tier] ?? '--' : '--'}</Text>
                 </View>
                 <View style={styles.stakingStatDivider} />
                 <View style={styles.stakingStat}>
                   <Text style={styles.stakingStatLabel}>STAKED</Text>
-                  <Text style={styles.stakingStatValue}>0</Text>
+                  <Text style={styles.stakingStatValue}>{stakeInfo ? formatTokenAmount(stakeInfo.stakedAmount) : '0'}</Text>
                 </View>
                 <View style={styles.stakingStatDivider} />
                 <View style={styles.stakingStat}>
                   <Text style={styles.stakingStatLabel}>REWARDS</Text>
-                  <Text style={styles.stakingStatValue}>0</Text>
+                  <Text style={styles.stakingStatValue}>{stakeInfo ? formatTokenAmount(stakeInfo.pendingRewards) : '0'}</Text>
                 </View>
               </View>
+              {stakeInfo && stakeInfo.pendingRewards > 0n && (
+                <TouchableOpacity
+                  style={[styles.stakingBtn, { marginBottom: 4 }]}
+                  onPress={async () => {
+                    try { await claimStakingRewards(); } catch (e: any) {
+                      if (typeof window !== 'undefined') window.alert(e?.message ?? 'Claim failed');
+                    }
+                  }}
+                >
+                  <Text style={styles.stakingBtnText}>Claim Rewards</Text>
+                </TouchableOpacity>
+              )}
               <TouchableOpacity style={styles.stakingBtn} onPress={() => router.push('/staking' as any)}>
                 <Text style={styles.stakingBtnText}>Manage Staking</Text>
               </TouchableOpacity>
@@ -232,7 +255,7 @@ export default function EarnScreen() {
             <TouchableOpacity
               style={styles.tokenCard}
               activeOpacity={0.85}
-              onPress={() => { if (typeof window !== 'undefined') window.location.href = '/coin/0xacfe6019ed1a7dc6f7b508c02d1b04ec88cc21bf'; }}
+              onPress={() => router.push('/coin/0xacfe6019ed1a7dc6f7b508c02d1b04ec88cc21bf' as any)}
             >
               <View style={styles.tokenCardHeader}>
                 <Ionicons name="analytics" size={20} color={COLORS.gold} />
@@ -254,7 +277,7 @@ export default function EarnScreen() {
                       const eth = (window as any)?.ethereum;
                       if (!eth) { window.alert('Connect a wallet to buy'); return; }
                       if (window.confirm(`Buy $SIZE with ${amt} ETH? (1% fee to protocol)`)) {
-                        window.location.href = '/coin/0xacfe6019ed1a7dc6f7b508c02d1b04ec88cc21bf';
+                        router.push('/coin/0xacfe6019ed1a7dc6f7b508c02d1b04ec88cc21bf' as any);
                       }
                     }}
                   >

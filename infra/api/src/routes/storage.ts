@@ -33,6 +33,12 @@ r.post("/upload-url", requireAuth, async (req: Request, res: Response) => {
       return;
     }
 
+    // Path traversal protection
+    if (objectPath.includes("..") || objectPath.startsWith("/")) {
+      res.status(400).json({ error: "Invalid path" });
+      return;
+    }
+
     if (!BUCKET) {
       res.status(500).json({ error: "S3_MEDIA_BUCKET not configured" });
       return;
@@ -69,6 +75,12 @@ r.get("/signed-url", requireAuth, async (req: Request, res: Response) => {
 
     if (!ALLOWED_BUCKETS.has(bucket)) {
       res.status(400).json({ error: `Invalid bucket. Allowed: ${[...ALLOWED_BUCKETS].join(", ")}` });
+      return;
+    }
+
+    // Path traversal protection
+    if (objectPath.includes("..") || objectPath.startsWith("/")) {
+      res.status(400).json({ error: "Invalid path" });
       return;
     }
 

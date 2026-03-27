@@ -56,9 +56,20 @@ r.get("/:userId/rank", async (req, res) => {
 });
 
 r.post("/:userId/coins", requireAuth, async (req, res) => {
-  const { amount } = req.body;
-  await svc.awardCoins(req.params.userId, amount);
-  res.json({ success: true });
+  try {
+    // Admin check — only admins can award coins
+    const caller = await svc.getProfile(req.userId!);
+    if (!caller?.is_admin) {
+      res.status(403).json({ error: "Admin access required" });
+      return;
+    }
+    const { amount } = req.body;
+    await svc.awardCoins(req.params.userId, amount);
+    res.json({ success: true });
+  } catch (err: any) {
+    console.error("Award coins error:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
 });
 
 export default r;

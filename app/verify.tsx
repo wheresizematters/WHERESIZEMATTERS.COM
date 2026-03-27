@@ -139,7 +139,7 @@ export default function VerifyScreen() {
   return (
     <SafeAreaView style={s.container}>
       <View style={s.header}>
-        <TouchableOpacity onPress={() => { window.location.href = '/profile'; }} style={s.backBtn}>
+        <TouchableOpacity onPress={() => router.push('/profile' as any)} style={s.backBtn}>
           <Ionicons name="chevron-back" size={24} color={COLORS.white} />
         </TouchableOpacity>
         <Text style={s.headerTitle}>VERIFY SIZE</Text>
@@ -163,7 +163,7 @@ export default function VerifyScreen() {
             </View>
             <Text style={s.resultTitle}>Already Verified</Text>
             <Text style={s.resultSub}>Your size has been confirmed. The verified badge is active on your profile and leaderboard entry.</Text>
-            <TouchableOpacity style={s.primaryBtn} onPress={() => { window.location.href = '/profile'; }}>
+            <TouchableOpacity style={s.primaryBtn} onPress={() => router.replace('/profile' as any)}>
               <Text style={s.primaryBtnText}>Back to Profile</Text>
             </TouchableOpacity>
           </View>
@@ -177,7 +177,7 @@ export default function VerifyScreen() {
             </View>
             <Text style={s.resultTitle}>Under Review</Text>
             <Text style={s.resultSub}>Your verification photo has been submitted and is awaiting manual review. You'll be verified shortly.</Text>
-            <TouchableOpacity style={s.primaryBtn} onPress={() => { window.location.href = '/profile'; }}>
+            <TouchableOpacity style={s.primaryBtn} onPress={() => router.replace('/profile' as any)}>
               <Text style={s.primaryBtnText}>Back to Profile</Text>
             </TouchableOpacity>
           </View>
@@ -412,7 +412,7 @@ export default function VerifyScreen() {
             </View>
             <Text style={s.resultTitle}>Verified!</Text>
             <Text style={s.resultSub}>Your size has been confirmed by our AI. The verified badge is now active on your profile.</Text>
-            <TouchableOpacity style={s.primaryBtn} onPress={() => { window.location.href = '/profile'; }}>
+            <TouchableOpacity style={s.primaryBtn} onPress={() => router.replace('/profile' as any)}>
               <Text style={s.primaryBtnText}>Back to Profile</Text>
             </TouchableOpacity>
           </View>
@@ -426,7 +426,7 @@ export default function VerifyScreen() {
             </View>
             <Text style={s.resultTitle}>Under Review</Text>
             <Text style={s.resultSub}>Our AI couldn't auto-verify from this photo. Your submission has been queued for manual review — you'll be verified shortly.</Text>
-            <TouchableOpacity style={s.primaryBtn} onPress={() => { window.location.href = '/profile'; }}>
+            <TouchableOpacity style={s.primaryBtn} onPress={() => router.replace('/profile' as any)}>
               <Text style={s.primaryBtnText}>Back to Profile</Text>
             </TouchableOpacity>
           </View>

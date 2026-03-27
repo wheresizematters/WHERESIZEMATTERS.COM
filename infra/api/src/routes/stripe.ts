@@ -1,14 +1,55 @@
 import { Router, Request, Response } from "express";
+import crypto from "crypto";
 import { updateProfile, getProfile } from "../services/profiles";
 import { scanAll } from "../db";
 
 const r = Router();
 
+const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET ?? "";
+
+function verifyStripeSignature(payload: string | Buffer, sig: string, secret: string): boolean {
+  const parts = sig.split(",").reduce((acc: Record<string, string>, part) => {
+    const [k, v] = part.split("=");
+    acc[k] = v;
+    return acc;
+  }, {});
+
+  const timestamp = parts["t"];
+  const v1 = parts["v1"];
+  if (!timestamp || !v1) return false;
+
+  // Reject signatures older than 5 minutes
+  const age = Math.floor(Date.now() / 1000) - parseInt(timestamp, 10);
+  if (age > 300) return false;
+
+  const signedPayload = `${timestamp}.${typeof payload === "string" ? payload : payload.toString("utf8")}`;
+  const expected = crypto.createHmac("sha256", secret).update(signedPayload).digest("hex");
+
+  return crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(v1));
+}
+
 // Stripe webhook — called by Stripe after successful payment
 // Grants premium to the user identified by client_reference_id
 r.post("/webhook", async (req: Request, res: Response) => {
   try {
-    const event = req.body;
+    let event: any;
+
+    // Verify Stripe signature if webhook secret is configured
+    if (STRIPE_WEBHOOK_SECRET) {
+      const sig = req.headers["stripe-signature"] as string | undefined;
+      if (!sig) {
+        res.status(400).json({ error: "Missing stripe-signature header" });
+        return;
+      }
+      if (!verifyStripeSignature(req.body, sig, STRIPE_WEBHOOK_SECRET)) {
+        console.error("Stripe signature verification failed");
+        res.status(400).json({ error: "Invalid signature" });
+        return;
+      }
+      event = typeof req.body === "string" ? JSON.parse(req.body) : req.body;
+    } else {
+      event = req.body;
+    }
 
     // Handle checkout.session.completed
     if (event.type === "checkout.session.completed") {
