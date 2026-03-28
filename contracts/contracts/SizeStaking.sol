@@ -63,10 +63,16 @@ contract SizeStaking is ReentrancyGuard, Pausable, Ownable2Step {
 
     mapping(address => bool) public isDepositor;
 
+    // Referral revenue share: referrer gets 5% of their referral's staking rewards forever
+    uint256 public constant REFERRAL_BPS = 500; // 5%
+    mapping(address => address) public referrer;          // user => their referrer
+    mapping(address => uint256) public referralEarnings;  // referrer => total earned from referrals
+
     event Staked(address indexed user, uint256 amount, uint256 newTier);
     event Unstaked(address indexed user, uint256 amount, uint256 penalty, uint256 newTier);
     event RewardsClaimed(address indexed user, uint256 amount);
     event RewardsDeposited(address indexed depositor, uint256 amount);
+    event ReferralReward(address indexed referrer, address indexed user, uint256 amount);
     event PenaltyRedistributed(address indexed user, uint256 penaltyAmount);
     event EmergencyWithdraw(address indexed user, uint256 amount, uint256 penalty);
     event DepositorUpdated(address indexed depositor, bool status);
@@ -98,6 +104,24 @@ contract SizeStaking is ReentrancyGuard, Pausable, Ownable2Step {
 
     function pause() external onlyOwner { _pause(); }
     function unpause() external onlyOwner { _unpause(); }
+
+    /// @notice Set referrer for a user (one-time, irreversible). Called by backend after signup.
+    function setReferrer(address _user, address _referrer) external onlyOwner {
+        if (_user == address(0) || _referrer == address(0)) revert ZeroAddress();
+        if (_user == _referrer) revert ZeroAddress(); // can't refer yourself
+        if (referrer[_user] != address(0)) return; // already set, don't overwrite
+        referrer[_user] = _referrer;
+    }
+
+    /// @notice Batch set referrers (for initial migration)
+    function setReferrerBatch(address[] calldata _users, address[] calldata _referrers) external onlyOwner {
+        require(_users.length == _referrers.length, "Length mismatch");
+        for (uint256 i = 0; i < _users.length; i++) {
+            if (_users[i] != address(0) && _referrers[i] != address(0) && _users[i] != _referrers[i] && referrer[_users[i]] == address(0)) {
+                referrer[_users[i]] = _referrers[i];
+            }
+        }
+    }
 
     // ── Stake ────────────────────────────────────────────────────────
 
@@ -163,10 +187,23 @@ contract SizeStaking is ReentrancyGuard, Pausable, Ownable2Step {
         totalEffectiveStaked += _effectiveStake(remaining);
         s.rewardDebt = (_effectiveStake(remaining) * accRewardPerShare) / PRECISION;
 
-        // Transfer principal (minus penalty) + any accrued rewards
+        // Split referral reward from pending rewards (not from principal)
+        uint256 refReward = 0;
+        address ref = referrer[msg.sender];
+        if (ref != address(0) && pendingReward > 0) {
+            refReward = (pendingReward * REFERRAL_BPS) / BPS;
+            pendingReward -= refReward;
+        }
+
+        // Transfer principal (minus penalty) + rewards (minus referral cut)
         uint256 totalOut = principalOut + pendingReward;
         if (totalOut > 0) {
             sizeToken.safeTransfer(msg.sender, totalOut);
+        }
+        if (refReward > 0) {
+            sizeToken.safeTransfer(ref, refReward);
+            referralEarnings[ref] += refReward;
+            emit ReferralReward(ref, msg.sender, refReward);
         }
 
         // Redistribute penalty to remaining stakers
@@ -200,9 +237,21 @@ contract SizeStaking is ReentrancyGuard, Pausable, Ownable2Step {
         s.rewardDebt = (_effectiveStake(s.amount) * accRewardPerShare) / PRECISION;
         s.lastClaimAt = uint64(block.timestamp);
 
-        sizeToken.safeTransfer(msg.sender, rewards);
+        // Split: 5% to referrer if exists, 95% to user
+        uint256 userReward = rewards;
+        address ref = referrer[msg.sender];
+        if (ref != address(0)) {
+            uint256 refReward = (rewards * REFERRAL_BPS) / BPS;
+            userReward = rewards - refReward;
+            if (refReward > 0) {
+                sizeToken.safeTransfer(ref, refReward);
+                referralEarnings[ref] += refReward;
+                emit ReferralReward(ref, msg.sender, refReward);
+            }
+        }
 
-        emit RewardsClaimed(msg.sender, rewards);
+        sizeToken.safeTransfer(msg.sender, userReward);
+        emit RewardsClaimed(msg.sender, userReward);
     }
 
     // ── Deposit Rewards (from trading fees) ──────────────────────────
@@ -306,6 +355,12 @@ contract SizeStaking is ReentrancyGuard, Pausable, Ownable2Step {
 
     function getBoost(address _user) external view returns (uint256) {
         return _getBoost(stakes[_user].amount);
+    }
+
+    function getReferralInfo(address _user) external view returns (
+        address userReferrer, uint256 totalReferralEarnings
+    ) {
+        return (referrer[_user], referralEarnings[_user]);
     }
 
     // ── Internal ─────────────────────────────────────────────────────

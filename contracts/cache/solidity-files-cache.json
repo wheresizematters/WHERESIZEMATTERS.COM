@@ -426,8 +426,8 @@
       ]
     },
     "/Users/ebk/size-app/contracts/contracts/SizeStaking.sol": {
-      "lastModificationDate": 1774618599637,
-      "contentHash": "98ecefbcd9e0441fe32056d4029712e4",
+      "lastModificationDate": 1774736534510,
+      "contentHash": "b16375c3e29c9aecef33862591ffd792",
       "sourceName": "contracts/SizeStaking.sol",
       "solcConfig": {
         "version": "0.8.24",

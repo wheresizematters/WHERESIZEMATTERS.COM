@@ -30,6 +30,7 @@ export interface SizeStakingInterface extends Interface {
       | "GROWER_MIN"
       | "LOCK_PERIOD"
       | "MAX_PENALTY_BPS"
+      | "REFERRAL_BPS"
       | "SHLONG_BOOST"
       | "SHLONG_MIN"
       | "SHOWER_BOOST"
@@ -44,6 +45,7 @@ export interface SizeStakingInterface extends Interface {
       | "emergencyWithdraw"
       | "getBoost"
       | "getEarlyWithdrawalPenalty"
+      | "getReferralInfo"
       | "getStakeInfo"
       | "getTier"
       | "isDepositor"
@@ -52,8 +54,12 @@ export interface SizeStakingInterface extends Interface {
       | "paused"
       | "pendingOwner"
       | "previewUnstake"
+      | "referralEarnings"
+      | "referrer"
       | "renounceOwnership"
       | "setDepositor"
+      | "setReferrer"
+      | "setReferrerBatch"
       | "sizeToken"
       | "stake"
       | "stakes"
@@ -73,6 +79,7 @@ export interface SizeStakingInterface extends Interface {
       | "OwnershipTransferred"
       | "Paused"
       | "PenaltyRedistributed"
+      | "ReferralReward"
       | "RewardsClaimed"
       | "RewardsDeposited"
       | "Staked"
@@ -94,6 +101,10 @@ export interface SizeStakingInterface extends Interface {
   ): string;
   encodeFunctionData(
     functionFragment: "MAX_PENALTY_BPS",
+    values?: undefined
+  ): string;
+  encodeFunctionData(
+    functionFragment: "REFERRAL_BPS",
     values?: undefined
   ): string;
   encodeFunctionData(
@@ -150,6 +161,10 @@ export interface SizeStakingInterface extends Interface {
     values: [AddressLike]
   ): string;
   encodeFunctionData(
+    functionFragment: "getReferralInfo",
+    values: [AddressLike]
+  ): string;
+  encodeFunctionData(
     functionFragment: "getStakeInfo",
     values: [AddressLike]
   ): string;
@@ -173,12 +188,28 @@ export interface SizeStakingInterface extends Interface {
     values: [AddressLike, BigNumberish]
   ): string;
   encodeFunctionData(
+    functionFragment: "referralEarnings",
+    values: [AddressLike]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "referrer",
+    values: [AddressLike]
+  ): string;
+  encodeFunctionData(
     functionFragment: "renounceOwnership",
     values?: undefined
   ): string;
   encodeFunctionData(
     functionFragment: "setDepositor",
     values: [AddressLike, boolean]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "setReferrer",
+    values: [AddressLike, AddressLike]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "setReferrerBatch",
+    values: [AddressLike[], AddressLike[]]
   ): string;
   encodeFunctionData(functionFragment: "sizeToken", values?: undefined): string;
   encodeFunctionData(functionFragment: "stake", values: [BigNumberish]): string;
@@ -216,6 +247,10 @@ export interface SizeStakingInterface extends Interface {
   ): Result;
   decodeFunctionResult(
     functionFragment: "MAX_PENALTY_BPS",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "REFERRAL_BPS",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
@@ -263,6 +298,10 @@ export interface SizeStakingInterface extends Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(
+    functionFragment: "getReferralInfo",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
     functionFragment: "getStakeInfo",
     data: BytesLike
   ): Result;
@@ -283,11 +322,24 @@ export interface SizeStakingInterface extends Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(
+    functionFragment: "referralEarnings",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(functionFragment: "referrer", data: BytesLike): Result;
+  decodeFunctionResult(
     functionFragment: "renounceOwnership",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
     functionFragment: "setDepositor",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "setReferrer",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "setReferrerBatch",
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "sizeToken", data: BytesLike): Result;
@@ -388,6 +440,24 @@ export namespace PenaltyRedistributedEvent {
   export interface OutputObject {
     user: string;
     penaltyAmount: bigint;
+  }
+  export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
+  export type Filter = TypedDeferredTopicFilter<Event>;
+  export type Log = TypedEventLog<Event>;
+  export type LogDescription = TypedLogDescription<Event>;
+}
+
+export namespace ReferralRewardEvent {
+  export type InputTuple = [
+    referrer: AddressLike,
+    user: AddressLike,
+    amount: BigNumberish
+  ];
+  export type OutputTuple = [referrer: string, user: string, amount: bigint];
+  export interface OutputObject {
+    referrer: string;
+    user: string;
+    amount: bigint;
   }
   export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
   export type Filter = TypedDeferredTopicFilter<Event>;
@@ -527,6 +597,8 @@ export interface SizeStaking extends BaseContract {
 
   MAX_PENALTY_BPS: TypedContractMethod<[], [bigint], "view">;
 
+  REFERRAL_BPS: TypedContractMethod<[], [bigint], "view">;
+
   SHLONG_BOOST: TypedContractMethod<[], [bigint], "view">;
 
   SHLONG_MIN: TypedContractMethod<[], [bigint], "view">;
@@ -570,6 +642,14 @@ export interface SizeStaking extends BaseContract {
     "view"
   >;
 
+  getReferralInfo: TypedContractMethod<
+    [_user: AddressLike],
+    [
+      [string, bigint] & { userReferrer: string; totalReferralEarnings: bigint }
+    ],
+    "view"
+  >;
+
   getStakeInfo: TypedContractMethod<
     [_user: AddressLike],
     [
@@ -608,10 +688,26 @@ export interface SizeStaking extends BaseContract {
     "view"
   >;
 
+  referralEarnings: TypedContractMethod<[arg0: AddressLike], [bigint], "view">;
+
+  referrer: TypedContractMethod<[arg0: AddressLike], [string], "view">;
+
   renounceOwnership: TypedContractMethod<[], [void], "nonpayable">;
 
   setDepositor: TypedContractMethod<
     [_depositor: AddressLike, _status: boolean],
+    [void],
+    "nonpayable"
+  >;
+
+  setReferrer: TypedContractMethod<
+    [_user: AddressLike, _referrer: AddressLike],
+    [void],
+    "nonpayable"
+  >;
+
+  setReferrerBatch: TypedContractMethod<
+    [_users: AddressLike[], _referrers: AddressLike[]],
     [void],
     "nonpayable"
   >;
@@ -668,6 +764,9 @@ export interface SizeStaking extends BaseContract {
     nameOrSignature: "MAX_PENALTY_BPS"
   ): TypedContractMethod<[], [bigint], "view">;
   getFunction(
+    nameOrSignature: "REFERRAL_BPS"
+  ): TypedContractMethod<[], [bigint], "view">;
+  getFunction(
     nameOrSignature: "SHLONG_BOOST"
   ): TypedContractMethod<[], [bigint], "view">;
   getFunction(
@@ -721,6 +820,15 @@ export interface SizeStaking extends BaseContract {
     "view"
   >;
   getFunction(
+    nameOrSignature: "getReferralInfo"
+  ): TypedContractMethod<
+    [_user: AddressLike],
+    [
+      [string, bigint] & { userReferrer: string; totalReferralEarnings: bigint }
+    ],
+    "view"
+  >;
+  getFunction(
     nameOrSignature: "getStakeInfo"
   ): TypedContractMethod<
     [_user: AddressLike],
@@ -767,12 +875,32 @@ export interface SizeStaking extends BaseContract {
     "view"
   >;
   getFunction(
+    nameOrSignature: "referralEarnings"
+  ): TypedContractMethod<[arg0: AddressLike], [bigint], "view">;
+  getFunction(
+    nameOrSignature: "referrer"
+  ): TypedContractMethod<[arg0: AddressLike], [string], "view">;
+  getFunction(
     nameOrSignature: "renounceOwnership"
   ): TypedContractMethod<[], [void], "nonpayable">;
   getFunction(
     nameOrSignature: "setDepositor"
   ): TypedContractMethod<
     [_depositor: AddressLike, _status: boolean],
+    [void],
+    "nonpayable"
+  >;
+  getFunction(
+    nameOrSignature: "setReferrer"
+  ): TypedContractMethod<
+    [_user: AddressLike, _referrer: AddressLike],
+    [void],
+    "nonpayable"
+  >;
+  getFunction(
+    nameOrSignature: "setReferrerBatch"
+  ): TypedContractMethod<
+    [_users: AddressLike[], _referrers: AddressLike[]],
     [void],
     "nonpayable"
   >;
@@ -858,6 +986,13 @@ export interface SizeStaking extends BaseContract {
     PenaltyRedistributedEvent.InputTuple,
     PenaltyRedistributedEvent.OutputTuple,
     PenaltyRedistributedEvent.OutputObject
+  >;
+  getEvent(
+    key: "ReferralReward"
+  ): TypedContractEvent<
+    ReferralRewardEvent.InputTuple,
+    ReferralRewardEvent.OutputTuple,
+    ReferralRewardEvent.OutputObject
   >;
   getEvent(
     key: "RewardsClaimed"
@@ -960,6 +1095,17 @@ export interface SizeStaking extends BaseContract {
       PenaltyRedistributedEvent.InputTuple,
       PenaltyRedistributedEvent.OutputTuple,
       PenaltyRedistributedEvent.OutputObject
+    >;
+
+    "ReferralReward(address,address,uint256)": TypedContractEvent<
+      ReferralRewardEvent.InputTuple,
+      ReferralRewardEvent.OutputTuple,
+      ReferralRewardEvent.OutputObject
+    >;
+    ReferralReward: TypedContractEvent<
+      ReferralRewardEvent.InputTuple,
+      ReferralRewardEvent.OutputTuple,
+      ReferralRewardEvent.OutputObject
     >;
 
     "RewardsClaimed(address,uint256)": TypedContractEvent<
