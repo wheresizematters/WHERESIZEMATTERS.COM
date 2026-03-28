@@ -700,13 +700,13 @@ const styles = StyleSheet.create({
   rankBadge: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
   rankBadgeText: { fontSize: 18 },
   rankNumWrap: { width: 40, alignItems: 'center' },
-  rankNum: { color: COLORS.muted, fontSize: SIZES.md, fontWeight: '700' },
+  rankNum: { color: COLORS.muted, fontSize: SIZES.lg, fontWeight: '700' },
 
   // List
   listHeader: { color: COLORS.muted, fontSize: 10, fontWeight: '800', letterSpacing: 2, paddingHorizontal: 16, paddingBottom: 10, paddingTop: 4 },
   list: { paddingHorizontal: 16, paddingBottom: 100 },
   sep: { height: 1, backgroundColor: COLORS.cardBorder, marginHorizontal: 4 },
-  row: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, gap: 12 },
+  row: { flexDirection: 'row', alignItems: 'center', paddingVertical: 14, gap: 12 },
   userInfo: { flex: 1 },
   usernameRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   username: { color: COLORS.white, fontWeight: '700', fontSize: SIZES.md },

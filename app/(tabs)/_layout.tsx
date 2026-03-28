@@ -83,17 +83,17 @@ const styles = StyleSheet.create({
     backgroundColor: '#111111',
     borderTopColor: '#222222',
     borderTopWidth: 1,
-    height: 70,
-    paddingBottom: 10,
+    height: 60,
+    paddingBottom: 8,
     paddingTop: 6,
   },
   tabBarHidden: {
     display: 'none' as any,
     height: 0,
   },
-  tabItem: { alignItems: 'center', gap: 2, width: 60 },
+  tabItem: { alignItems: 'center', gap: 4, width: 60 },
   badgeDot: { position: 'absolute', top: -1, right: -4, width: 8, height: 8, borderRadius: 4, backgroundColor: COLORS.gold, borderWidth: 1.5, borderColor: '#111111' },
-  tabLabel: { fontSize: 9, color: COLORS.muted, fontWeight: '600', letterSpacing: 0.3 },
+  tabLabel: { fontSize: 10, color: COLORS.muted, fontWeight: '600', letterSpacing: 0.3 },
   tabLabelActive: { color: COLORS.gold },
 
   // EARN center button

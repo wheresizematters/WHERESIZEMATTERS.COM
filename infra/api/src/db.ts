@@ -29,6 +29,7 @@ export const T = {
   community_posts: process.env.TABLE_COMMUNITY_POSTS ?? "size-community-posts",
   analytics:       process.env.TABLE_ANALYTICS        ?? "size-analytics",
   wallets:         process.env.TABLE_WALLETS          ?? "size-wallets",
+  referrals:       process.env.TABLE_REFERRALS        ?? "size-referrals",
 };
 
 // ── Generic helpers ────────────────────────────────────────────────

@@ -19,6 +19,7 @@ import analyticsRoutes from "./routes/analytics";
 import walletRoutes from "./routes/wallets";
 import custodialRoutes from "./routes/custodial";
 import logoGenRoutes from "./routes/logo-gen";
+import referralRoutes from "./routes/referrals";
 
 const app = express();
 const PORT = parseInt(process.env.PORT ?? "3000", 10);
@@ -57,6 +58,7 @@ app.use("/api/v1/analytics", analyticsRoutes);
 app.use("/api/v1/wallets", walletRoutes);
 app.use("/api/v1/custodial", custodialRoutes);
 app.use("/api/v1/logo", logoGenRoutes);
+app.use("/api/v1/referrals", referralRoutes);
 
 app.listen(PORT, () => {
   console.log("=== SIZE. API ===");

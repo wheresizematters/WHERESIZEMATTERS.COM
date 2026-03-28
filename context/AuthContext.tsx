@@ -125,11 +125,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     email: string, password: string, username: string,
     sizeInches: number, ageRange?: string, girthInches?: number,
   ) {
+    // Check for referral code stored by invite page
+    let referralCode: string | undefined;
+    if (typeof window !== 'undefined') {
+      referralCode = sessionStorage.getItem('size_invite_from') ?? undefined;
+    }
+
     const data = await apiFetch<{ token: string; profile: Profile; error?: string }>(
       '/api/v1/auth/signup',
-      { method: 'POST', body: { email, password, username, sizeInches, ageRange, girthInches } },
+      { method: 'POST', body: { email, password, username, sizeInches, ageRange, girthInches, referralCode } },
     );
     if (data?.error) return { error: data.error };
+
+    // Clear referral code after successful signup
+    if (typeof window !== 'undefined') {
+      sessionStorage.removeItem('size_invite_from');
+    }
+
     setToken(data.token);
     if (typeof window !== 'undefined') {
       window.location.href = '/earn';
@@ -144,7 +156,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Use same-origin path — Vercel proxies /api/* to the API server
     // This gives us HTTPS which Google/X OAuth require
     if (typeof window !== 'undefined') {
-      window.location.href = `/api/v1/auth/oauth/${provider}/redirect`;
+      const ref = sessionStorage.getItem('size_invite_from') ?? '';
+      sessionStorage.removeItem('size_invite_from');
+      const refParam = ref ? `?ref=${encodeURIComponent(ref)}` : '';
+      window.location.href = `/api/v1/auth/oauth/${provider}/redirect${refParam}`;
     }
     return { error: null };
   }

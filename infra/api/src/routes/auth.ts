@@ -11,6 +11,8 @@ import {
   updateProfile,
 } from "../services/profiles";
 import { createCustodialWallet } from "../services/custodial-wallet";
+import { createReferral } from "../services/referrals";
+import { awardCoins } from "../services/profiles";
 
 const r = Router();
 
@@ -20,7 +22,7 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 // ── POST /signup ────────────────────────────────────────────────────
 r.post("/signup", async (req: Request, res: Response) => {
   try {
-    const { email, password, username, sizeInches, ageRange, girthInches } = req.body;
+    const { email, password, username, sizeInches, ageRange, girthInches, referralCode } = req.body;
 
     // Validate required fields
     if (!email || !password || !username || sizeInches == null) {
@@ -75,6 +77,17 @@ r.post("/signup", async (req: Request, res: Response) => {
       if (w) updateProfile(profile.id, { wallet_address: w.address } as any).catch(() => {});
     }).catch(() => {});
 
+    // Process referral if present
+    if (referralCode && referralCode !== profile.id) {
+      try {
+        await createReferral(referralCode, profile.id);
+        await updateProfile(profile.id, { referred_by: referralCode } as any);
+        await awardCoins(referralCode, 500);
+      } catch (e) {
+        console.error("Referral processing error:", e);
+      }
+    }
+
     const token = signToken({ userId: profile.id, email: profile.email!, username: profile.username });
 
     res.status(201).json({
@@ -122,7 +135,7 @@ r.post("/login", async (req: Request, res: Response) => {
 });
 
 // ── GET /oauth/x/redirect — initiate X OAuth flow ──────────────────
-r.get("/oauth/x/redirect", (_req: Request, res: Response) => {
+r.get("/oauth/x/redirect", (req: Request, res: Response) => {
   const clientId = process.env.X_CLIENT_ID ?? process.env.X_CONSUMER_KEY ?? "";
   const redirectUri = `${process.env.API_BASE_URL ?? "https://www.wheresizematters.com"}/api/v1/auth/oauth/x/callback`;
   const state = require("crypto").randomBytes(16).toString("hex");
@@ -130,9 +143,10 @@ r.get("/oauth/x/redirect", (_req: Request, res: Response) => {
   const scope = "users.read tweet.read offline.access";
   const codeVerifier = require("crypto").randomBytes(32).toString("base64url");
   const codeChallenge = require("crypto").createHash("sha256").update(codeVerifier).digest("base64url");
+  const referralCode = (req.query.ref as string) || "";
   // Store verifier in a short-lived way (in production use Redis/DynamoDB)
   (global as any).__xOauthVerifiers = (global as any).__xOauthVerifiers ?? {};
-  (global as any).__xOauthVerifiers[state] = codeVerifier;
+  (global as any).__xOauthVerifiers[state] = { codeVerifier, referralCode };
   setTimeout(() => delete (global as any).__xOauthVerifiers?.[state], 600_000);
 
   const url = `https://twitter.com/i/oauth2/authorize?response_type=code&client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scope)}&state=${state}&code_challenge=${codeChallenge}&code_challenge_method=S256`;
@@ -143,7 +157,9 @@ r.get("/oauth/x/redirect", (_req: Request, res: Response) => {
 r.get("/oauth/x/callback", async (req: Request, res: Response) => {
   try {
     const { code, state } = req.query as { code: string; state: string };
-    const codeVerifier = (global as any).__xOauthVerifiers?.[state];
+    const stored = (global as any).__xOauthVerifiers?.[state];
+    const codeVerifier = typeof stored === 'string' ? stored : stored?.codeVerifier;
+    const referralCode = typeof stored === 'string' ? '' : (stored?.referralCode ?? '');
     if (!code || !codeVerifier) { res.redirect("https://www.wheresizematters.com/login?error=oauth_failed"); return; }
     delete (global as any).__xOauthVerifiers?.[state];
 
@@ -194,6 +210,14 @@ r.get("/oauth/x/callback", async (req: Request, res: Response) => {
         createCustodialWallet(profile.id).then(w => {
           if (w) updateProfile(profile.id, { wallet_address: w.address } as any).catch(() => {});
         }).catch(() => {});
+        // Process referral for new OAuth user
+        if (referralCode && referralCode !== profile.id) {
+          try {
+            await createReferral(referralCode, profile.id);
+            await updateProfile(profile.id, { referred_by: referralCode } as any);
+            await awardCoins(referralCode, 500);
+          } catch (e) { console.error("Referral processing error:", e); }
+        }
       }
     } else {
       await updateProfile(profile.id, {
@@ -294,11 +318,16 @@ r.get("/link-x/callback", async (req: Request, res: Response) => {
 });
 
 // ── GET /oauth/google/redirect — initiate Google OAuth flow ────────
-r.get("/oauth/google/redirect", (_req: Request, res: Response) => {
+r.get("/oauth/google/redirect", (req: Request, res: Response) => {
   const clientId = process.env.GOOGLE_CLIENT_ID ?? "";
   const redirectUri = `${process.env.API_BASE_URL ?? "https://www.wheresizematters.com"}/api/v1/auth/oauth/google/callback`;
   const scope = "openid email profile";
+  const referralCode = (req.query.ref as string) || "";
   const state = require("crypto").randomBytes(16).toString("hex");
+  // Store referral code with state
+  (global as any).__googleOauthState = (global as any).__googleOauthState ?? {};
+  (global as any).__googleOauthState[state] = { referralCode };
+  setTimeout(() => delete (global as any).__googleOauthState?.[state], 600_000);
   const url = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=${encodeURIComponent(scope)}&state=${state}&access_type=offline`;
   res.redirect(url);
 });
@@ -306,8 +335,11 @@ r.get("/oauth/google/redirect", (_req: Request, res: Response) => {
 // ── GET /oauth/google/callback — handle Google redirect back ───────
 r.get("/oauth/google/callback", async (req: Request, res: Response) => {
   try {
-    const { code } = req.query as { code: string };
+    const { code, state } = req.query as { code: string; state: string };
     if (!code) { res.redirect("https://www.wheresizematters.com/login?error=oauth_failed"); return; }
+    const googleState = (global as any).__googleOauthState?.[state];
+    const referralCode = googleState?.referralCode ?? "";
+    if (googleState) delete (global as any).__googleOauthState[state];
 
     const clientId = process.env.GOOGLE_CLIENT_ID ?? "";
     const clientSecret = process.env.GOOGLE_CLIENT_SECRET ?? "";
@@ -342,6 +374,14 @@ r.get("/oauth/google/callback", async (req: Request, res: Response) => {
         email: googleUser.email,
         avatarUrl: googleUser.picture ?? null,
       });
+      // Process referral for new OAuth user
+      if (profile && referralCode && referralCode !== profile.id) {
+        try {
+          await createReferral(referralCode, profile.id);
+          await updateProfile(profile.id, { referred_by: referralCode } as any);
+          await awardCoins(referralCode, 500);
+        } catch (e) { console.error("Referral processing error:", e); }
+      }
     } else if (googleUser.picture) {
       await updateProfile(profile.id, { avatar_url: googleUser.picture });
     }
@@ -397,7 +437,7 @@ r.post("/wallet", async (req: Request, res: Response) => {
 // ── POST /oauth/x ──────────────────────────────────────────────────
 r.post("/oauth/x", async (req: Request, res: Response) => {
   try {
-    const { accessToken, accessSecret } = req.body;
+    const { accessToken, accessSecret, referralCode } = req.body;
 
     if (!accessToken || !accessSecret) {
       res.status(400).json({ error: "accessToken and accessSecret are required" });
@@ -425,7 +465,17 @@ r.post("/oauth/x", async (req: Request, res: Response) => {
         xName: xUser.name ?? null,
         avatarUrl: xUser.profile_image_url ?? null,
       });
-      if (profile) await updateProfile(profile.id, { x_followers: xFollowersCount } as any);
+      if (profile) {
+        await updateProfile(profile.id, { x_followers: xFollowersCount } as any);
+        // Process referral for new OAuth user
+        if (referralCode && referralCode !== profile.id) {
+          try {
+            await createReferral(referralCode, profile.id);
+            await updateProfile(profile.id, { referred_by: referralCode } as any);
+            await awardCoins(referralCode, 500);
+          } catch (e) { console.error("Referral processing error:", e); }
+        }
+      }
     } else {
       await updateProfile(profile.id, {
         x_handle: xUser.username,
@@ -454,7 +504,7 @@ r.post("/oauth/x", async (req: Request, res: Response) => {
 // ── POST /oauth/google ─────────────────────────────────────────────
 r.post("/oauth/google", async (req: Request, res: Response) => {
   try {
-    const { idToken } = req.body;
+    const { idToken, referralCode } = req.body;
 
     if (!idToken) {
       res.status(400).json({ error: "idToken is required" });
@@ -479,6 +529,14 @@ r.post("/oauth/google", async (req: Request, res: Response) => {
         email: googleUser.email,
         avatarUrl: googleUser.picture ?? null,
       });
+      // Process referral for new OAuth user
+      if (profile && referralCode && referralCode !== profile.id) {
+        try {
+          await createReferral(referralCode, profile.id);
+          await updateProfile(profile.id, { referred_by: referralCode } as any);
+          await awardCoins(referralCode, 500);
+        } catch (e) { console.error("Referral processing error:", e); }
+      }
     } else {
       // Update avatar on each login
       if (googleUser.picture) {

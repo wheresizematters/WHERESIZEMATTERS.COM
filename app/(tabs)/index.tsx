@@ -1018,7 +1018,7 @@ const styles = StyleSheet.create({
   filterTagChipText: { fontSize: SIZES.sm, fontWeight: '700' },
   filterDoneBtn: { backgroundColor: COLORS.gold, borderRadius: RADIUS.md, paddingVertical: 16, alignItems: 'center', marginTop: 8 },
   filterDoneBtnText: { color: COLORS.bg, fontWeight: '800', fontSize: SIZES.md },
-  tagChip: { alignSelf: 'flex-start', paddingHorizontal: 8, paddingVertical: 2, borderRadius: RADIUS.full, borderWidth: 1 },
+  tagChip: { alignSelf: 'flex-start', paddingHorizontal: 10, paddingVertical: 4, borderRadius: RADIUS.full, borderWidth: 1 },
   tagChipText: { fontSize: 10, fontWeight: '700', letterSpacing: 0.3 },
   tagPickerLabel: { color: COLORS.muted, fontSize: SIZES.xs, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 8, marginTop: 16 },
   tagPickerRow: { gap: 8, paddingBottom: 4 },
@@ -1038,7 +1038,7 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   // Author row
-  authorRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  authorRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   authorAvatar: { width: 36, height: 36, borderRadius: 18, borderWidth: 2, alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.bg },
   authorAvatarLetter: { fontSize: SIZES.md, fontWeight: '800' },
   authorMeta: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8 },

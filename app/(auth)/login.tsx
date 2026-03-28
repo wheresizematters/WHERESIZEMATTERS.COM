@@ -13,7 +13,7 @@ import { setToken } from '@/lib/supabase';
 type OAuthProvider = 'x';
 
 const SOCIAL_PROVIDERS: { provider: OAuthProvider; label: string; icon: any; bg: string; color: string }[] = [
-  { provider: 'x', label: 'Continue with X', icon: 'logo-twitter', bg: '#000', color: '#fff' },
+  { provider: 'x', label: 'Continue with X', icon: 'logo-twitter', bg: '#222', color: '#fff' },
 ];
 
 // Detect mobile browser (not in-app wallet browser)

@@ -74,7 +74,7 @@ function PostItem({ post }: { post: Post }) {
       {post.title && <Text style={{ color: COLORS.white, fontWeight: '800', fontSize: SIZES.base, marginBottom: 4 }}>{post.title}</Text>}
       <Text style={styles.postItemContent} numberOfLines={3}>{post.content}</Text>
       {mediaUrl && (
-        <Image source={{ uri: mediaUrl }} style={{ width: '100%', height: 160, borderRadius: RADIUS.md, marginTop: 8, backgroundColor: COLORS.card }} resizeMode="cover" />
+        <Image source={{ uri: mediaUrl }} style={{ width: '100%', height: 220, borderRadius: RADIUS.md, marginTop: 8, backgroundColor: COLORS.card }} resizeMode="cover" />
       )}
       <View style={styles.postItemFooter}>
         {post.type === 'poll' && (
@@ -660,7 +660,11 @@ export default function ProfileScreen() {
             <Ionicons name="person-add-outline" size={18} color={COLORS.gold} />
             <View style={{ flex: 1 }}>
               <Text style={styles.inviteBtnLabel}>Invite Friends</Text>
-              <Text style={styles.inviteBtnSub}>Share your invite link & earn 250 $SIZE coins</Text>
+              <Text style={styles.inviteBtnSub}>
+                {(profile as any).referral_count > 0
+                  ? `${(profile as any).referral_count} referred · ${(profile as any).referral_count * 500} $SIZE earned`
+                  : 'Share your invite link & earn 500 $SIZE per signup'}
+              </Text>
             </View>
             <Ionicons name="share-outline" size={18} color={COLORS.gold} />
           </TouchableOpacity>
@@ -749,7 +753,7 @@ const styles = StyleSheet.create({
 
   // Stats
   statsGrid: { flexDirection: 'row', flexWrap: 'wrap', marginHorizontal: 16, backgroundColor: COLORS.card, borderRadius: RADIUS.lg, borderWidth: 1, borderColor: COLORS.cardBorder, marginBottom: 16, overflow: 'hidden' },
-  statCell: { width: '50%', padding: 16, alignItems: 'center' },
+  statCell: { width: '50%', padding: 20, alignItems: 'center' },
   statCellBorder: { borderLeftWidth: 1, borderLeftColor: COLORS.cardBorder },
   statCellTop: { borderTopWidth: 1, borderTopColor: COLORS.cardBorder },
   statVal: { color: COLORS.gold, fontSize: SIZES.xl, fontWeight: '900' },

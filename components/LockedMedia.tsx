@@ -7,7 +7,7 @@ import PaywallModal from './PaywallModal';
 import { proxyMediaUrl } from '@/lib/media';
 
 const { width } = Dimensions.get('window');
-const MEDIA_HEIGHT = width * 0.75;
+const MEDIA_HEIGHT = Math.max(220, width * 0.75);
 
 interface Props {
   uri: string;

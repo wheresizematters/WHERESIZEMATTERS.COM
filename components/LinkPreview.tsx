@@ -79,7 +79,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.card,
     marginTop: 4,
   },
-  image: { width: '100%', height: 160 },
+  image: { width: '100%', height: 220 },
   body: { padding: 12, gap: 3 },
   publisher: { color: COLORS.gold, fontSize: 10, fontWeight: '700', letterSpacing: 0.5, textTransform: 'uppercase' },
   title: { color: COLORS.white, fontSize: SIZES.md, fontWeight: '700', lineHeight: 20 },

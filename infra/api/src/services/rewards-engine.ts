@@ -34,6 +34,7 @@
 
 import { scanAll, putItem, T } from "../db";
 import { getLeaderboard } from "./profiles";
+import { getTodayReferralCount } from "./referrals";
 import { v4 as uuid } from "uuid";
 
 // ── Configuration ────────────────────────────────────────────────
@@ -234,6 +235,10 @@ async function calculateActivityScores(): Promise<UserWeight[]> {
 
     const userMessages = todayMessages.filter((m: any) => m.sender_id === userId);
     score += Math.min(userMessages.length, maxMessagesPerDay) * activityScoring.message;
+
+    // Referral scoring
+    const referralCount = await getTodayReferralCount(userId);
+    score += referralCount * activityScoring.referral;
 
     if (score > 0) {
       scores.push({

@@ -41,6 +41,16 @@ export const SIZES = {
   xs: 10, sm: 12, md: 14, base: 16, lg: 18, xl: 22, xxl: 28, xxxl: 36, huge: 48,
 };
 
+export const SPACING = {
+  xs: 4, sm: 8, md: 12, lg: 16, xl: 24, xxl: 32,
+};
+
+export const SHADOWS = {
+  card: Platform.OS === 'web'
+    ? { boxShadow: '0 1px 3px rgba(0,0,0,0.4), 0 1px 2px rgba(0,0,0,0.3)' }
+    : { shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.3, shadowRadius: 3, elevation: 3 },
+};
+
 export const RADIUS = {
   sm: 8, md: 12, lg: 16, xl: 24, full: 999,
 };
