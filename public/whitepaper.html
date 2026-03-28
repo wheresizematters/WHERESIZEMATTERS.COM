@@ -1399,6 +1399,27 @@
     </table>
 
     <p style="margin-top:16px;">The cubic curve is <em>frontloaded</em>: penalty drops fast early (incentivizes patience over the first few months), then flattens near zero. At 365 days, the penalty is eliminated entirely. Emergency withdrawals also incur the penalty but forfeit unclaimed rewards.</p>
+
+    <h3 class="sub-title">5.3 &mdash; Referral Revenue Share</h3>
+    <p>Refer someone to SIZE. and earn <strong>5% of their staking rewards forever</strong>. Not a one-time bonus. Not a promotional period. A permanent, on-chain revenue share enforced by the smart contract.</p>
+
+    <div class="formula-block">
+      referrer_reward = staker_reward &times; 0.05<br>
+      staker_keeps = staker_reward &times; 0.95
+    </div>
+
+    <p>When User A refers User B:</p>
+    <table class="earn-table">
+      <tr><th>Event</th><th style="text-align:right">User A (Referrer)</th><th style="text-align:right">User B (Staker)</th></tr>
+      <tr><td>B signs up via A's link</td><td style="text-align:right;color:var(--green)">+500 $SIZE bonus</td><td style="text-align:right">Account created</td></tr>
+      <tr><td>B stakes and earns 10K $SIZE</td><td style="text-align:right;color:var(--green)">+500 $SIZE (5%)</td><td style="text-align:right">9,500 $SIZE (95%)</td></tr>
+      <tr><td>B claims again: 50K $SIZE</td><td style="text-align:right;color:var(--green)">+2,500 $SIZE (5%)</td><td style="text-align:right">47,500 $SIZE (95%)</td></tr>
+      <tr><td colspan="3" style="color:var(--text-tertiary);font-style:italic;text-align:center">...forever, on every claim, enforced on-chain</td></tr>
+    </table>
+
+    <p style="margin-top:16px;">The referral relationship is set once via <span class="inline-code">setReferrer()</span> and cannot be changed. The 5% cut is taken from <em>rewards only</em> &mdash; never from principal or penalty. The referrer earns passively for as long as their referral stakes and the protocol generates fees.</p>
+
+    <p>This creates the strongest possible incentive to evangelize SIZE. The more people you bring in, the more they stake, the more you earn. Indefinitely. Your referral network is a permanent income stream.</p>
   </div>
 </div>
 

@@ -225,6 +225,33 @@ The leaderboard isn't a vanity metric. It's an income stream.
 
 ---
 
+## Referral Revenue Share
+
+Refer someone. Earn 5% of their staking rewards. Forever.
+
+Not a one-time bonus. Not a promotional window. A permanent, on-chain revenue share hardcoded into `SizeStaking.sol`. Irreversible once set.
+
+$$\text{referrer\_reward} = \text{staker\_claim} \times 0.05$$
+
+$$\text{staker\_keeps} = \text{staker\_claim} \times 0.95$$
+
+$$\begin{array}{|l|r|r|}
+\hline
+\textbf{Event} & \textbf{Referrer Gets} & \textbf{Staker Gets} \\
+\hline
+\text{Signup via link} & +500 \text{ \$SIZE bonus} & \text{Account created} \\
+\text{Referral claims 10K} & +500 \text{ \$SIZE (5\%)} & 9{,}500 \text{ \$SIZE} \\
+\text{Referral claims 50K} & +2{,}500 \text{ \$SIZE (5\%)} & 47{,}500 \text{ \$SIZE} \\
+\text{Referral claims 1M} & +50{,}000 \text{ \$SIZE (5\%)} & 950{,}000 \text{ \$SIZE} \\
+\hline
+\multicolumn{3}{|c|}{\textit{...forever, on every claim, enforced on-chain}} \\
+\hline
+\end{array}$$
+
+The 5% comes from rewards only — never from principal, never from the penalty pool. Your referral network is a permanent income stream. The more people you bring in, the more they stake, the more you earn. Indefinitely.
+
+---
+
 ## DickCoins
 
 Every verified user can launch a DickCoin — a personal ERC-20 — directly from the app. One tap. Clanker deploys it to Uniswap V4 on Base. Tradeable immediately.
