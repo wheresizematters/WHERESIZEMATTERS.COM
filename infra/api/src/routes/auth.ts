@@ -10,7 +10,7 @@ import {
   createOAuthProfile,
   updateProfile,
 } from "../services/profiles";
-import { createCustodialWallet } from "../services/custodial-wallet";
+import { createCustodialWallet, getCustodialWallet } from "../services/custodial-wallet";
 import { createReferral } from "../services/referrals";
 import { awardCoins } from "../services/profiles";
 
@@ -205,10 +205,11 @@ r.get("/oauth/x/callback", async (req: Request, res: Response) => {
         avatarUrl: xUser.profile_image_url ?? null,
       });
       if (profile) {
-        await updateProfile(profile.id, { x_followers: xFollowers } as any);
-        // Auto-create custodial wallet for new OAuth users
+        // X-connected users are automatically verified (proved humanity via X)
+        await updateProfile(profile.id, { x_followers: xFollowers, is_verified: true, x_verified: true } as any);
+        // Auto-create custodial wallet for new OAuth users (tied to their X account permanently)
         createCustodialWallet(profile.id).then(w => {
-          if (w) updateProfile(profile.id, { wallet_address: w.address } as any).catch(() => {});
+          if (w) updateProfile(profile.id, { wallet_address: w.address, custodial_wallet: w.address } as any).catch(() => {});
         }).catch(() => {});
         // Process referral for new OAuth user
         if (referralCode && referralCode !== profile.id) {
@@ -220,12 +221,24 @@ r.get("/oauth/x/callback", async (req: Request, res: Response) => {
         }
       }
     } else {
+      // Existing user logging in with X — update info + auto-verify
       await updateProfile(profile.id, {
         x_handle: xUser.username,
         x_avatar_url: xUser.profile_image_url ?? null,
         x_name: xUser.name ?? null,
         x_followers: xFollowers,
+        is_verified: true,
+        x_verified: true,
       } as any);
+      // Ensure they have a custodial wallet
+      const existingWallet = await getCustodialWallet(profile.id);
+      if (!existingWallet) {
+        createCustodialWallet(profile.id).then(w => {
+          if (w && !profile.wallet_address) {
+            updateProfile(profile.id, { wallet_address: w.address, custodial_wallet: w.address } as any).catch(() => {});
+          }
+        }).catch(() => {});
+      }
     }
 
     const jwt = signToken({ userId: profile.id, email: profile.email ?? "", username: profile.username });
@@ -300,15 +313,24 @@ r.get("/link-x/callback", async (req: Request, res: Response) => {
     if (!userRes.ok) { res.redirect("https://www.wheresizematters.com/profile?error=x_user_failed"); return; }
     const { data: xUser } = await userRes.json() as any;
 
-    // Link X to existing profile
+    // Link X to existing profile — auto-verify + ensure custodial wallet
     await updateProfile(userId, {
       x_handle: xUser.username,
       x_avatar_url: xUser.profile_image_url ?? null,
       x_name: xUser.name ?? null,
       x_followers: xUser.public_metrics?.followers_count ?? 0,
-      auth_provider: "x", // Mark as X-linked
+      auth_provider: "x",
       oauth_provider_id: xUser.id,
+      is_verified: true,
+      x_verified: true,
     } as any);
+    // Ensure custodial wallet exists for X-linked users
+    const existingWallet = await getCustodialWallet(userId);
+    if (!existingWallet) {
+      createCustodialWallet(userId).then(w => {
+        if (w) updateProfile(userId, { custodial_wallet: w.address } as any).catch(() => {});
+      }).catch(() => {});
+    }
 
     res.redirect("https://www.wheresizematters.com/profile?x_linked=true");
   } catch (err: any) {

@@ -235,7 +235,7 @@ export default function LaunchDickCoinScreen() {
                 <View style={s.reqCard}>
                   <View style={s.reqRow}>
                     <Ionicons name={profile?.is_verified ? 'checkmark-circle' : 'close-circle'} size={18} color={profile?.is_verified ? COLORS.green : COLORS.red} />
-                    <Text style={s.reqText}>Verified account</Text>
+                    <Text style={s.reqText}>Verified account (X or size verification)</Text>
                     {!profile?.is_verified && (
                       <TouchableOpacity onPress={() => router.push('/verify' as any)}>
                         <Text style={s.reqLink}>Get Verified</Text>
