@@ -153,59 +153,7 @@ export default function LoginScreen() {
           ))}
         </View>
 
-        {/* Divider */}
-        <View style={styles.divider}>
-          <View style={styles.dividerLine} />
-          <Text style={styles.dividerText}>or sign in with email</Text>
-          <View style={styles.dividerLine} />
-        </View>
-
-        {/* Email / password form */}
-        <View style={styles.form}>
-          <TextInput
-            style={styles.input}
-            placeholder="Email"
-            placeholderTextColor={COLORS.muted}
-            value={email}
-            onChangeText={setEmail}
-            autoCapitalize="none"
-            keyboardType="email-address"
-            autoComplete="email"
-          />
-          <TextInput
-            style={styles.input}
-            placeholder="Password"
-            placeholderTextColor={COLORS.muted}
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-            autoComplete="current-password"
-          />
-
-          {error ? <Text style={styles.error}>{error}</Text> : null}
-
-          <TouchableOpacity
-            style={[styles.btn, loading && styles.btnDisabled]}
-            onPress={handleLogin}
-            disabled={loading}
-            activeOpacity={0.85}
-          >
-            {loading
-              ? <ActivityIndicator color={COLORS.bg} />
-              : <Text style={styles.btnText}>SIGN IN</Text>
-            }
-          </TouchableOpacity>
-        </View>
-
-        {/* Footer */}
-        <View style={styles.footer}>
-          <Text style={styles.footerText}>Don't have an account? </Text>
-          <Link href="/(auth)/signup" asChild>
-            <TouchableOpacity>
-              <Text style={styles.footerLink}>Sign up</Text>
-            </TouchableOpacity>
-          </Link>
-        </View>
+        {error ? <Text style={styles.error}>{error}</Text> : null}
 
         <View style={styles.legalRow}>
           <TouchableOpacity onPress={() => { if (typeof window !== 'undefined') window.open('/privacy', '_blank'); }}>
