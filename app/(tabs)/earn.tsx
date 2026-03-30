@@ -29,9 +29,9 @@ const EARN_ACTIONS = [
 ];
 
 const REWARDS = [
-  { icon: 'ribbon',    label: 'Premium — 1 Month',  cost: '$4.99',   desc: 'Subscribe via Stripe or burn $10 of $SIZE' },
-  { icon: 'flash',     label: 'Feed Boost',          cost: '$5',      desc: 'Boost your post to the top of the feed' },
-  { icon: 'shield-checkmark', label: 'Get Verified', cost: '$10',     desc: 'Burn $10 of $SIZE to verify instantly' },
+  { icon: 'flash',     label: 'Feed Boost',    cost: '5K $SIZE',  desc: 'Burn 5,000 $SIZE to boost your post to the top' },
+  { icon: 'shield-checkmark', label: 'Get Verified', cost: '10K $SIZE', desc: 'Burn 10,000 $SIZE to verify instantly' },
+  { icon: 'sparkles',  label: 'AI Logo Gen',   cost: '500 $SIZE', desc: 'Burn 500 $SIZE to generate a DickCoin logo' },
 ];
 
 export default function EarnScreen() {
@@ -114,24 +114,21 @@ export default function EarnScreen() {
   async function redeemReward(reward: typeof REWARDS[number]) {
     if (!session?.user.id) return;
 
-    if (reward.label === 'Premium — 1 Month') {
-      // Route to Stripe
-      const { stripeCheckout } = require('@/lib/purchases');
-      stripeCheckout('monthly', session.user.id);
-      return;
-    }
-
     if (reward.label === 'Get Verified') {
       router.push('/verify' as any);
       return;
     }
 
     if (reward.label === 'Feed Boost') {
-      if (!window.confirm('Boost your next post for ' + reward.cost + '?')) return;
+      if (!window.confirm('Burn 5,000 $SIZE to boost your next post?')) return;
       window.alert('Feed Boost activated! Your next post will be prioritized.');
       return;
     }
 
+    if (reward.label === 'AI Logo Gen') {
+      router.push('/launch-dickcoin' as any);
+      return;
+    }
   }
 
   return (
@@ -354,7 +351,7 @@ export default function EarnScreen() {
             </View>
           ) : (
             <View style={styles.section}>
-              <Text style={styles.sectionLabel}>SPEND</Text>
+              <Text style={styles.sectionLabel}>BURN $SIZE</Text>
               {REWARDS.map((reward, i) => (
                 <TouchableOpacity
                   key={i}
