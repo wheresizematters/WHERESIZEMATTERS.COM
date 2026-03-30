@@ -239,6 +239,18 @@ export default function SettingsScreen() {
 
         {/* Preferences section removed — push notifications not ready */}
 
+        {/* Learn */}
+        <Text style={styles.section}>LEARN</Text>
+        <View style={styles.card}>
+          <SettingsRow icon="book-outline" label="Whitepaper" onPress={() => typeof window !== 'undefined' && (window.location.href = '/whitepaper')} />
+          <View style={styles.divider} />
+          <SettingsRow icon="pie-chart-outline" label="Tokenomics" onPress={() => typeof window !== 'undefined' && (window.location.href = '/tokenomics')} />
+          <View style={styles.divider} />
+          <SettingsRow icon="code-slash-outline" label="Documentation" onPress={() => typeof window !== 'undefined' && (window.location.href = '/documentation')} />
+          <View style={styles.divider} />
+          <SettingsRow icon="logo-twitter" label="@wheresize" onPress={() => typeof window !== 'undefined' && window.open('https://x.com/wheresize', '_blank')} />
+        </View>
+
         {/* About */}
         <Text style={styles.section}>ABOUT</Text>
         <View style={styles.card}>
