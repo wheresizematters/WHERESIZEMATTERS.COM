@@ -175,6 +175,7 @@ export default function LeaderboardScreen() {
   const [netWorthLoading, setNetWorthLoading] = useState(false);
   const [followersEntries, setFollowersEntries] = useState<FollowersEntry[]>([]);
   const [followersLoading, setFollowersLoading] = useState(false);
+  const [rewardPool, setRewardPool] = useState<string | null>(null);
 
   // Nearby state
   const [location, setLocation] = useState<UserLocation | null>(null);
@@ -207,6 +208,11 @@ export default function LeaderboardScreen() {
     }
     setLoading(false);
     setRefreshing(false);
+    // Fetch reward pool from treasury
+    fetch('/api/v1/wallets/size-balance/0x117c1e5d49e545021c21a0e3ade73dc42fd8ccf0')
+      .then(r => r.json())
+      .then(d => { if (d.balance > 0) setRewardPool(d.formatted); })
+      .catch(() => {});
   }, [session?.user.id, activeFilter, verifiedOnly]);
 
   useEffect(() => { load(); }, [load]);
@@ -384,6 +390,15 @@ export default function LeaderboardScreen() {
         ItemSeparatorComponent={() => <View style={styles.sep} />}
         ListHeaderComponent={
           <>
+            {/* Reward Pool Banner */}
+            {rewardPool && (
+              <View style={{ backgroundColor: `${COLORS.gold}10`, borderWidth: 1, borderColor: `${COLORS.gold}30`, borderRadius: RADIUS.lg, padding: 16, marginBottom: 12, alignItems: 'center' }}>
+                <Text style={{ color: COLORS.muted, fontSize: 10, fontWeight: '800', letterSpacing: 2.5, marginBottom: 6 }}>REWARD POOL FROM TRADING FEES</Text>
+                <Text style={{ color: COLORS.gold, fontSize: 24, fontWeight: '900' }}>{rewardPool} $SIZE</Text>
+                <Text style={{ color: COLORS.muted, fontSize: 11, marginTop: 4 }}>Distributed to top 10 + stakers + active users daily</Text>
+              </View>
+            )}
+
             {/* Your Ranking Hero */}
             {profile && (
               <LinearGradient
