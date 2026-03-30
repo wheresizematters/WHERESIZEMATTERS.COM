@@ -1,16 +1,10 @@
 {
   "deployer": "0xa1113D1a049Fcc81bf9B93d8f8175F4e031eaBad",
   "protocolTreasury": "0x117c1e5d49e545021c21a0e3ade73dc42fd8ccf0",
-  "gasWallet": "0x117c1e5d49e545021c21a0e3ade73dc42fd8ccf0",
+  "gasWallet": "0xd5bbfc98f467a1304736e48c407175c0d8e5736c",
   "feeCollectorBot": "0xa8d00375c8b8accef44352d45ca1f65422624557",
   "rewardsBot": "0x2466b3f0e3891db3380b335b7d0a132dea0360d9",
   "chain": "baseSepolia",
   "chainId": 84532,
-  "contracts": {
-    "mockSizeToken": "0x3Cb7fEb17BD78f6f1A3ec6C914A35C5664c9faEa",
-    "sizeStaking": "0x297144aF8c96E69E0488C00a0D94E37572B3169d",
-    "sizeRewards": "0x37672980cA3c2d69829B967C91Da6630A08371fA",
-    "sizeDickCoinFactory": "0x2DA5AAF1559B44d8116aB395dFC9002AaB33dc2A",
-    "sizeGifting": "0x800ec9D558b28289Cf91cF5e8e0E4a3583D6bBF2"
-  }
+  "note": "Will update to Base mainnet after $SIZE token deployment"
 }

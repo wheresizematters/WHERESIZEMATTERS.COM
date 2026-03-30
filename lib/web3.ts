@@ -1,9 +1,9 @@
-// Base Sepolia testnet config
-export const BASE_CHAIN_ID = 84532;
-export const BASE_CHAIN_ID_HEX = '0x14a34';
-export const TOKEN_ADDRESS = '0x3Cb7fEb17BD78f6f1A3ec6C914A35C5664c9faEa'; // Mock $SIZE on Sepolia
-export const STAKING_ADDRESS = '0xD5bDD6D1179a2ca1dB79AFfcEBF602d7cFe918E6';
-export const RPC_URL = 'https://sepolia.base.org';
+// Base Mainnet
+export const BASE_CHAIN_ID = 8453;
+export const BASE_CHAIN_ID_HEX = '0x2105';
+export const TOKEN_ADDRESS = '0x21F2D807421e456be5b4BFcC30E5278049eC8b07';
+export const STAKING_ADDRESS = '0xC7851342DAA6bb06c805AFE4a0781F5119596B8F';
+export const RPC_URL = 'https://base-mainnet.core.chainstack.com/1f396980c6a698065bdf9bbebbb7fd78';
 
 // Minimal ERC-20 ABI for balance + transfer
 export const ERC20_ABI = [
@@ -31,10 +31,10 @@ export async function switchToBase(): Promise<boolean> {
           method: 'wallet_addEthereumChain',
           params: [{
             chainId: BASE_CHAIN_ID_HEX,
-            chainName: 'Base Sepolia',
+            chainName: 'Base',
             nativeCurrency: { name: 'Ethereum', symbol: 'ETH', decimals: 18 },
-            rpcUrls: ['https://sepolia.base.org'],
-            blockExplorerUrls: ['https://sepolia.basescan.org'],
+            rpcUrls: ['https://mainnet.base.org'],
+            blockExplorerUrls: ['https://basescan.org'],
           }],
         });
         return true;

@@ -214,7 +214,7 @@ body { background: #050505; color: #f5f5f5; font-family: -apple-system, BlinkMac
 
 <script>
 const CODEX_KEY = '79de2a116cac57f758349fa67ea5db22dafd19ec';
-const BASE_CHAIN = 84532; // Base Sepolia testnet
+const BASE_CHAIN = 8453; // Base Sepolia testnet
 const addr = window.location.pathname.split('/coin/')[1] || '';
 
 // Uniswap V3 SwapRouter02 on Base
@@ -456,24 +456,24 @@ async function executeSwap() {
     const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
     const account = accounts[0];
 
-    // Ensure Base network (chainId 0x14a34 = 8453)
+    // Ensure Base network (chainId 0x2105 = 8453)
     const chainId = await window.ethereum.request({ method: 'eth_chainId' });
-    if (chainId !== '0x14a34') {
+    if (chainId !== '0x2105') {
       try {
         await window.ethereum.request({
           method: 'wallet_switchEthereumChain',
-          params: [{ chainId: '0x14a34' }]
+          params: [{ chainId: '0x2105' }]
         });
       } catch (switchErr) {
         if (switchErr.code === 4902) {
           await window.ethereum.request({
             method: 'wallet_addEthereumChain',
             params: [{
-              chainId: '0x14a34',
-              chainName: 'Base Sepolia',
+              chainId: '0x2105',
+              chainName: 'Base',
               nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
-              rpcUrls: ['https://sepolia.base.org'],
-              blockExplorerUrls: ['https://sepolia.basescan.org']
+              rpcUrls: ['https://mainnet.base.org'],
+              blockExplorerUrls: ['https://basescan.org']
             }]
           });
         } else {
