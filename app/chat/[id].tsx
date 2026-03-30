@@ -89,7 +89,7 @@ function MessageBubble({
   const isViewed = !!msg.viewed_at;
 
   if (isSnap) {
-    const canView = !isMe && !isViewed;
+    const canView = !isViewed; // anyone can view if not yet opened
     return (
       <View style={[styles.bubbleWrap, isMe ? styles.bubbleWrapMe : styles.bubbleWrapThem]}>
         <TouchableOpacity
@@ -107,9 +107,7 @@ function MessageBubble({
           </Text>
           <View>
             <Text style={[styles.snapLabel, isViewed && styles.snapLabelViewed]}>
-              {isMe
-                ? isViewed ? 'Opened' : `${msg.media_type === 'video' ? 'Video' : 'Photo'} sent`
-                : isViewed ? 'Opened' : `Tap to view ${msg.media_type === 'video' ? 'video' : 'photo'}`}
+              {isViewed ? 'Opened' : isMe ? `Tap to preview ${msg.media_type === 'video' ? 'video' : 'photo'}` : `Tap to view ${msg.media_type === 'video' ? 'video' : 'photo'}`}
             </Text>
             {msg.content ? <Text style={styles.snapCaption}>{msg.content}</Text> : null}
           </View>
