@@ -23,9 +23,18 @@ export default function WebNavbar() {
   return (
     <View style={styles.navbar}>
       <View style={styles.inner}>
-        <TouchableOpacity onPress={() => router.push('/' as any)}>
-          <Text style={styles.logo}>SIZE.</Text>
-        </TouchableOpacity>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+          <TouchableOpacity onPress={() => router.push('/' as any)}>
+            <Text style={styles.logo}>SIZE.</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#111', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 4, borderWidth: 1, borderColor: '#222' }}
+            onPress={() => { if (typeof navigator !== 'undefined' && navigator.clipboard) { navigator.clipboard.writeText('0x21F2D807421e456be5b4BFcC30E5278049eC8b07'); window.alert('CA copied!'); } }}
+          >
+            <Text style={{ color: COLORS.muted, fontSize: 10, fontWeight: '600' }}>CA:</Text>
+            <Text style={{ color: COLORS.gold, fontSize: 10, fontFamily: 'monospace', fontWeight: '700' }}>0x21F2...8b07</Text>
+          </TouchableOpacity>
+        </View>
 
         <View style={styles.tabs}>
           {TABS.map(tab => {
