@@ -394,31 +394,6 @@ export default function LeaderboardScreen() {
         ItemSeparatorComponent={() => <View style={styles.sep} />}
         ListHeaderComponent={
           <>
-            {/* Reward Pool Banner */}
-            {rewardPool && (
-              <View style={{ backgroundColor: `${COLORS.gold}10`, borderWidth: 1, borderColor: `${COLORS.gold}30`, borderRadius: RADIUS.lg, padding: 16, marginBottom: 12, alignItems: 'center', gap: 8 }}>
-                <Text style={{ color: COLORS.muted, fontSize: 10, fontWeight: '800', letterSpacing: 2.5 }}>REWARD POOL FROM TRADING FEES</Text>
-                <Text style={{ color: COLORS.gold, fontSize: 26, fontWeight: '900' }}>{rewardPool} $SIZE</Text>
-                {rewardStats && (
-                  <View style={{ flexDirection: 'row', gap: 16, marginTop: 4 }}>
-                    <View style={{ alignItems: 'center' }}>
-                      <Text style={{ color: COLORS.white, fontSize: SIZES.md, fontWeight: '800' }}>{rewardStats.totalStaked ? (rewardStats.totalStaked / 1e6).toFixed(0) + 'M' : '0'}</Text>
-                      <Text style={{ color: COLORS.muted, fontSize: 9, letterSpacing: 1 }}>STAKED</Text>
-                    </View>
-                    <View style={{ alignItems: 'center' }}>
-                      <Text style={{ color: COLORS.white, fontSize: SIZES.md, fontWeight: '800' }}>Epoch {rewardStats.epoch}</Text>
-                      <Text style={{ color: COLORS.muted, fontSize: 9, letterSpacing: 1 }}>CURRENT</Text>
-                    </View>
-                    <View style={{ alignItems: 'center' }}>
-                      <Text style={{ color: COLORS.green, fontSize: SIZES.md, fontWeight: '800' }}>{rewardStats.timeUntilNextFormatted ?? '—'}</Text>
-                      <Text style={{ color: COLORS.muted, fontSize: 9, letterSpacing: 1 }}>NEXT DIST</Text>
-                    </View>
-                  </View>
-                )}
-                <Text style={{ color: COLORS.muted, fontSize: 11 }}>70% to stakers · 30% to leaderboard + active users</Text>
-              </View>
-            )}
-
             {/* Your Ranking Hero */}
             {profile && (
               <LinearGradient
@@ -591,6 +566,31 @@ export default function LeaderboardScreen() {
           </TouchableOpacity>
           )}
         </View>
+
+        {/* Reward Pool Banner — shows on ALL tabs */}
+        {rewardPool && (
+          <View style={{ backgroundColor: `${COLORS.gold}10`, borderWidth: 1, borderColor: `${COLORS.gold}30`, borderRadius: RADIUS.lg, padding: 16, marginHorizontal: 16, marginBottom: 10, alignItems: 'center', gap: 8 }}>
+            <Text style={{ color: COLORS.muted, fontSize: 10, fontWeight: '800', letterSpacing: 2.5 }}>REWARD POOL FROM TRADING FEES</Text>
+            <Text style={{ color: COLORS.gold, fontSize: 26, fontWeight: '900' }}>{rewardPool} $SIZE</Text>
+            {rewardStats && (
+              <View style={{ flexDirection: 'row', gap: 16, marginTop: 4 }}>
+                <View style={{ alignItems: 'center' }}>
+                  <Text style={{ color: COLORS.white, fontSize: SIZES.md, fontWeight: '800' }}>{rewardStats.totalStaked ? (rewardStats.totalStaked / 1e6).toFixed(0) + 'M' : '0'}</Text>
+                  <Text style={{ color: COLORS.muted, fontSize: 9, letterSpacing: 1 }}>STAKED</Text>
+                </View>
+                <View style={{ alignItems: 'center' }}>
+                  <Text style={{ color: COLORS.white, fontSize: SIZES.md, fontWeight: '800' }}>Epoch {rewardStats.epoch}</Text>
+                  <Text style={{ color: COLORS.muted, fontSize: 9, letterSpacing: 1 }}>CURRENT</Text>
+                </View>
+                <View style={{ alignItems: 'center' }}>
+                  <Text style={{ color: COLORS.green, fontSize: SIZES.md, fontWeight: '800' }}>{rewardStats.timeUntilNextFormatted ?? '—'}</Text>
+                  <Text style={{ color: COLORS.muted, fontSize: 9, letterSpacing: 1 }}>NEXT DIST</Text>
+                </View>
+              </View>
+            )}
+            <Text style={{ color: COLORS.muted, fontSize: 11 }}>70% to stakers · 30% to leaderboard + active users</Text>
+          </View>
+        )}
 
         {mode === 'global' ? renderGlobalContent() : mode === 'clout' ? (
           followersLoading ? (
