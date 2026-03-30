@@ -105,20 +105,6 @@ export default function SettingsScreen() {
 
       <ScrollView contentContainerStyle={styles.inner} showsVerticalScrollIndicator={false}>
 
-        {/* Premium status */}
-        {isPremium ? (
-          <View style={styles.premiumBanner}>
-            <Ionicons name="ribbon" size={20} color={COLORS.gold} />
-            <Text style={styles.premiumText}>SIZE. Premium — Active</Text>
-          </View>
-        ) : (
-          <TouchableOpacity style={styles.upgradeBanner} onPress={() => setShowPaywall(true)}>
-            <Ionicons name="star" size={18} color={COLORS.gold} />
-            <Text style={styles.upgradeText}>Upgrade to Premium</Text>
-            <Ionicons name="chevron-forward" size={16} color={COLORS.gold} />
-          </TouchableOpacity>
-        )}
-
         {/* Account */}
         <Text style={styles.section}>ACCOUNT</Text>
         <View style={styles.card}>
