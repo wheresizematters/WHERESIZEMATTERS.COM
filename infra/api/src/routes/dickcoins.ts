@@ -134,7 +134,12 @@ r.get("/trending", async (_req: Request, res: Response) => {
     const all = await scanAll<any>(T.groups);
     const dickCoins = all
       .filter((g: any) => g.type === "dickcoin")
-      .sort((a: any, b: any) => (b.totalVolume ?? 0) - (a.totalVolume ?? 0))
+      .sort((a: any, b: any) => {
+        // Pinned coins always first
+        if (a.pinned && !b.pinned) return -1;
+        if (!a.pinned && b.pinned) return 1;
+        return (b.totalVolume ?? 0) - (a.totalVolume ?? 0);
+      })
       .slice(0, 50);
     res.json(dickCoins);
   } catch (err: any) {
