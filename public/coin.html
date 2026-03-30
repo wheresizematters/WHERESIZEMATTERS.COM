@@ -240,7 +240,16 @@ function fmt(n) {
   return '$' + n.toFixed(0);
 }
 function fmtPrice(n) {
-  if (n < 0.0001) return '$' + n.toExponential(2);
+  if (n === 0) return '$0.00';
+  if (n < 0.000001) {
+    // Count leading zeros after decimal, show as subscript style: $0.0₆1234
+    var s = n.toFixed(20);
+    var zeros = 0;
+    for (var i = 2; i < s.length; i++) { if (s[i] === '0') zeros++; else break; }
+    var sig = s.slice(2 + zeros, 2 + zeros + 4);
+    return '$0.0' + String.fromCharCode(8320 + zeros) + sig;
+  }
+  if (n < 0.01) return '$' + n.toFixed(8);
   if (n < 1) return '$' + n.toFixed(6);
   return '$' + n.toFixed(2);
 }
