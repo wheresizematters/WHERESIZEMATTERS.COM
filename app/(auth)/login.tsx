@@ -155,6 +155,10 @@ export default function LoginScreen() {
 
         {error ? <Text style={styles.error}>{error}</Text> : null}
 
+        <TouchableOpacity onPress={() => { if (typeof window !== 'undefined') window.location.href = '/leaderboard'; }} style={{ marginTop: 16, paddingVertical: 12 }}>
+          <Text style={{ color: COLORS.muted, fontSize: SIZES.sm, textAlign: 'center' }}>Skip — browse without signing in</Text>
+        </TouchableOpacity>
+
         <View style={styles.legalRow}>
           <TouchableOpacity onPress={() => { if (typeof window !== 'undefined') window.open('/privacy', '_blank'); }}>
             <Text style={styles.legalLink}>Privacy Policy</Text>
