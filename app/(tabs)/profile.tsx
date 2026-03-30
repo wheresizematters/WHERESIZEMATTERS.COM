@@ -15,6 +15,7 @@ import { useAuth } from '@/context/AuthContext';
 import { getToken, getApiUrl } from '@/lib/supabase';
 import { Post } from '@/lib/types';
 import { proxyMediaUrl } from '@/lib/media';
+import { getSizeTokenBalance } from '@/lib/web3';
 
 type ProfileTab = 'posts' | 'compare';
 
@@ -174,6 +175,7 @@ export default function ProfileScreen() {
 
   // Wallet state
   const [wallets, setWallets] = useState<VerifiedWallet[]>([]);
+  const [sizeBalance, setSizeBalance] = useState<string>('0');
   const [totalNetWorth, setTotalNetWorth] = useState(0);
   const [walletsLoading, setWalletsLoading] = useState(false);
 
@@ -189,6 +191,9 @@ export default function ProfileScreen() {
     setPostsLoading(true);
     fetchUserPosts(session.user.id).then(setUserPosts).catch(() => setUserPosts([])).finally(() => setPostsLoading(false));
     getMyWallets().then(data => { setWallets(data.wallets); setTotalNetWorth(data.totalNetWorth); }).catch(() => {});
+    if (profile?.wallet_address) {
+      getSizeTokenBalance(profile.wallet_address).then(setSizeBalance).catch(() => {});
+    }
   }, [session?.user.id]);
 
   useEffect(() => {
@@ -454,7 +459,7 @@ export default function ProfileScreen() {
               <Ionicons name="flash" size={18} color={COLORS.gold} />
               <View style={{ flex: 1 }}>
                 <Text style={[styles.verifyRowLabel, { color: COLORS.gold }]}>$SIZE Balance</Text>
-                <Text style={styles.verifyRowSub}>{(profile.size_coins ?? 0).toLocaleString()} coins</Text>
+                <Text style={styles.verifyRowSub}>{sizeBalance !== '0' ? `${sizeBalance} $SIZE` : (profile as any).wallet_address ? 'Checking...' : 'Connect wallet to view'}</Text>
               </View>
             </View>
           </View>
