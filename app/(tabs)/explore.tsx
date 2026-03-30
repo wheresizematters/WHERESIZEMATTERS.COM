@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
-  SafeAreaView, ActivityIndicator, RefreshControl, TextInput,
+  SafeAreaView, ActivityIndicator, RefreshControl, TextInput, Image,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -115,6 +115,13 @@ export default function ExploreScreen() {
                 <View style={s.coinRank}>
                   <Text style={s.coinRankNum}>#{index + 1}</Text>
                 </View>
+                {item.imageUrl ? (
+                  <Image source={{ uri: item.imageUrl }} style={s.coinImage} />
+                ) : (
+                  <View style={s.coinImageFallback}>
+                    <Text style={s.coinImageLetter}>{(item.ticker ?? '?').charAt(0)}</Text>
+                  </View>
+                )}
                 <View style={s.coinInfo}>
                   <View style={s.coinNameRow}>
                     <Text style={s.coinName}>{item.name}</Text>
@@ -133,7 +140,7 @@ export default function ExploreScreen() {
                   </View>
                   <View style={s.coinStatRow}>
                     <Text style={s.coinStatLabel}>Fees</Text>
-                    <Text style={s.coinStatValue}>{item.totalFeesEarned > 0 ? `${item.totalFeesEarned.toFixed(2)} ETH` : '--'}</Text>
+                    <Text style={s.coinStatValue}>{item.totalFeesEarned > 0 ? formatMarketCap(item.totalFeesEarned) : '--'}</Text>
                   </View>
                 </View>
                 <View style={s.coinActions}>
@@ -193,6 +200,9 @@ const s = StyleSheet.create({
   coinCard: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: COLORS.card, borderRadius: RADIUS.lg, borderWidth: 1, borderColor: COLORS.cardBorder, padding: 12, marginBottom: 8 },
   coinRank: { width: 32, alignItems: 'center' },
   coinRankNum: { color: COLORS.muted, fontSize: SIZES.sm, fontWeight: '800' },
+  coinImage: { width: 36, height: 36, borderRadius: 18, backgroundColor: COLORS.card },
+  coinImageFallback: { width: 36, height: 36, borderRadius: 18, backgroundColor: COLORS.card, borderWidth: 1.5, borderColor: COLORS.gold, alignItems: 'center', justifyContent: 'center' },
+  coinImageLetter: { color: COLORS.gold, fontWeight: '900', fontSize: 14 },
   coinInfo: { flex: 1 },
   coinNameRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   coinName: { color: COLORS.white, fontWeight: '700', fontSize: SIZES.md },
