@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import {
-  View, Text, FlatList, TouchableOpacity, StyleSheet,
+  View, Text, FlatList, TouchableOpacity, StyleSheet, Image,
   SafeAreaView, ActivityIndicator, RefreshControl, ScrollView, Platform, Alert,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -569,6 +569,11 @@ export default function LeaderboardScreen() {
               renderItem={({ item }) => (
                 <TouchableOpacity style={styles.row} onPress={() => router.push(`/profile/${item.id}` as any)} activeOpacity={0.7}>
                   <View style={styles.rankNumWrap}><Text style={styles.rankNum}>#{item.rank}</Text></View>
+                  {item.x_avatar_url ? (
+                    <Image source={{ uri: item.x_avatar_url.replace('_normal', '_bigger') }} style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: COLORS.card }} />
+                  ) : (
+                    <UserAvatar username={item.username} size={32} />
+                  )}
                   <View style={styles.userInfo}>
                     <View style={styles.usernameRow}>
                       <Text style={styles.username}>@{item.username}</Text>
@@ -624,7 +629,31 @@ export default function LeaderboardScreen() {
               )}
             />
           )
-        ) : (          <FlatList            data={dickCoins}            keyExtractor={c => c.contractAddress ?? c.id}            contentContainerStyle={styles.list}            renderItem={({ item, index }) => (              <TouchableOpacity style={styles.row} onPress={() => { if (typeof window !== 'undefined') window.location.href = '/coin/' + (item.contractAddress ?? item.id); }} activeOpacity={0.7}>                <View style={styles.rankNumWrap}><Text style={styles.rankNum}>#{index + 1}</Text></View>                <View style={styles.userInfo}>                  <Text style={styles.username}>{item.name} <Text style={{ color: COLORS.gold, fontSize: SIZES.xs }}>{item.ticker}</Text></Text>                  <Text style={styles.countryText}>by @{item.creatorUsername} u00b7 {item.holderCount ?? 0} holders</Text>                </View>              </TouchableOpacity>            )}            ListEmptyComponent={<View style={{ alignItems: 'center', paddingTop: 60 }}><Text style={{ color: COLORS.muted }}>No DickCoins launched yet</Text></View>}          />        )}
+        ) : (
+          <FlatList
+            data={dickCoins}
+            keyExtractor={c => c.contractAddress ?? c.id}
+            contentContainerStyle={styles.list}
+            ListHeaderComponent={<Text style={styles.listHeader}>TOP DICKCOINS</Text>}
+            renderItem={({ item, index }) => (
+              <TouchableOpacity style={styles.row} onPress={() => { if (typeof window !== 'undefined') window.location.href = '/coin/' + (item.contractAddress ?? item.id); }} activeOpacity={0.7}>
+                <View style={styles.rankNumWrap}><Text style={styles.rankNum}>#{index + 1}</Text></View>
+                {item.imageUrl ? (
+                  <Image source={{ uri: item.imageUrl }} style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: COLORS.card }} />
+                ) : (
+                  <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: COLORS.card, borderWidth: 1.5, borderColor: COLORS.gold, alignItems: 'center', justifyContent: 'center' }}>
+                    <Text style={{ color: COLORS.gold, fontWeight: '900', fontSize: 12 }}>{(item.ticker ?? '?').charAt(0)}</Text>
+                  </View>
+                )}
+                <View style={styles.userInfo}>
+                  <Text style={styles.username}>{item.name} <Text style={{ color: COLORS.gold, fontSize: SIZES.xs }}>{item.ticker}</Text></Text>
+                  <Text style={styles.countryText}>by @{item.creatorUsername} · {item.holderCount ?? 0} holders</Text>
+                </View>
+              </TouchableOpacity>
+            )}
+            ListEmptyComponent={<View style={{ alignItems: 'center', paddingTop: 60 }}><Text style={{ color: COLORS.muted }}>No DickCoins launched yet</Text></View>}
+          />
+        )}
 
         <PaywallModal visible={showPaywall} onClose={() => setShowPaywall(false)} trigger="Unlock the full Top 100 leaderboard" />
       </PageContainer>

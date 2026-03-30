@@ -255,7 +255,7 @@ export default function EarnScreen() {
             <TouchableOpacity
               style={styles.tokenCard}
               activeOpacity={0.85}
-              onPress={() => router.push('/coin/0xacfe6019ed1a7dc6f7b508c02d1b04ec88cc21bf' as any)}
+              onPress={() => router.push('/coin/0x21F2D807421e456be5b4BFcC30E5278049eC8b07' as any)}
             >
               <View style={styles.tokenCardHeader}>
                 <Ionicons name="analytics" size={20} color={COLORS.gold} />
@@ -279,7 +279,7 @@ export default function EarnScreen() {
                       const eth = (window as any)?.ethereum;
                       if (!eth) { window.alert('Connect a wallet to buy'); return; }
                       if (window.confirm(`Buy $SIZE with ${amt} ETH? (1% fee to protocol)`)) {
-                        router.push('/coin/0xacfe6019ed1a7dc6f7b508c02d1b04ec88cc21bf' as any);
+                        router.push('/coin/0x21F2D807421e456be5b4BFcC30E5278049eC8b07' as any);
                       }
                     }}
                   >
