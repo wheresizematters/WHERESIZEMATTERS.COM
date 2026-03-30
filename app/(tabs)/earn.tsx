@@ -20,12 +20,12 @@ import {
 } from '@/lib/staking';
 
 const EARN_ACTIONS = [
-  { icon: 'shield-checkmark', label: 'Get Verified',       pct: '0.001%', desc: 'Highest share of the daily reward pool',                key: 'is_verified' },
-  { icon: 'people',           label: 'Refer a Friend',     pct: '0.0008%', desc: 'Each referral earns a share of daily trading fees',    key: 'referral' },
-  { icon: 'star',             label: 'Get Upvoted',        pct: '0.0005%', desc: 'Quality content earns more from the fee pool',         key: 'upvote' },
-  { icon: 'create',           label: 'Post to Feed',       pct: '0.0003%', desc: 'Every post earns a proportional share',                key: 'post' },
-  { icon: 'calendar',         label: 'Daily Login',        pct: '0.0001%', desc: 'Show up daily to claim your share',                    key: 'login' },
-  { icon: 'chatbubbles',      label: 'Send a Message',     pct: '0.0001%', desc: 'Active conversations earn from the pool',              key: 'message' },
+  { icon: 'shield-checkmark', label: 'Get Verified',       pct: '10×', desc: 'Highest weight in the daily reward pool',                  key: 'is_verified' },
+  { icon: 'people',           label: 'Refer a Friend',     pct: '8×',  desc: 'Each referral earns weight + 5% of their staking rewards forever', key: 'referral' },
+  { icon: 'star',             label: 'Get Upvoted',        pct: '5×',  desc: 'Quality content earns more — cap: 20/day',                key: 'upvote' },
+  { icon: 'create',           label: 'Post to Feed',       pct: '3×',  desc: 'Every post earns a proportional share — cap: 5/day',      key: 'post' },
+  { icon: 'calendar',         label: 'Daily Login',        pct: '1×',  desc: 'Show up daily to claim your share',                       key: 'login' },
+  { icon: 'chatbubbles',      label: 'Send a Message',     pct: '1×',  desc: 'Active conversations earn from the pool — cap: 10/day',   key: 'message' },
 ];
 
 const REWARDS = [
