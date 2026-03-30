@@ -426,8 +426,8 @@
       ]
     },
     "/Users/ebk/size-app/contracts/contracts/SizeStaking.sol": {
-      "lastModificationDate": 1774736534510,
-      "contentHash": "b16375c3e29c9aecef33862591ffd792",
+      "lastModificationDate": 1774854542388,
+      "contentHash": "5becf2bfae6aadc49c176da7e8d17b16",
       "sourceName": "contracts/SizeStaking.sol",
       "solcConfig": {
         "version": "0.8.24",
@@ -745,8 +745,8 @@
       ]
     },
     "/Users/ebk/size-app/contracts/contracts/SizeDickCoinFactory.sol": {
-      "lastModificationDate": 1774618621126,
-      "contentHash": "60b7dc194a5f8f191643980f268431fe",
+      "lastModificationDate": 1774854523081,
+      "contentHash": "e944adfd34049630c3a7110c74d8cd84",
       "sourceName": "contracts/SizeDickCoinFactory.sol",
       "solcConfig": {
         "version": "0.8.24",

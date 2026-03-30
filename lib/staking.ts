@@ -2,7 +2,7 @@ import { TOKEN_ADDRESS, RPC_URL, BASE_CHAIN_ID_HEX } from './web3';
 
 export const STAKING_CONTRACT_ADDRESS = '0x297144aF8c96E69E0488C00a0D94E37572B3169d'; // Base Sepolia v2
 
-export const TIER_NAMES = ['None', 'Grower', 'Shower', 'Shlong', 'Whale'] as const;
+export const TIER_NAMES = ['None', 'Shrimp', 'Bull', 'Horse', 'Whale'] as const;
 export const TIER_COLORS = ['#666666', '#888888', '#0A84FF', '#BF5AF2', '#E8500A'];
 export const TIER_APY = [0, 8, 18, 40, 80];
 export const TIER_BOOST = [0, 1, 2, 5, 12];

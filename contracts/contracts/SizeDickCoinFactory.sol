@@ -16,8 +16,8 @@ import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 contract SizeDickCoinFactory is Ownable2Step, ReentrancyGuard {
 
     uint256 public constant CREATOR_BPS = 9000;    // 90%
-    uint256 public constant PROTOCOL_BPS = 990;    // 9.9%
-    uint256 public constant GAS_BPS = 10;          // 0.1%
+    uint256 public constant PROTOCOL_BPS = 999;    // 9.99%
+    uint256 public constant GAS_BPS = 1;           // 0.01%
     uint256 public constant TOTAL_BPS = 10000;
     uint256 public constant MAX_DICKCOINS = 10000;
 

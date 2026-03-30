@@ -14,10 +14,10 @@ import "@openzeppelin/contracts/access/Ownable2Step.sol";
  *         proportionally to stakers weighted by their tier boost.
  *
  *         Tiers:
- *           Grower  — 100K+   $SIZE — 1x  boost
- *           Shower  — 1M+     $SIZE — 2x  boost
- *           Shlong  — 10M+    $SIZE — 5x  boost
- *           Whale   — 100M+   $SIZE — 12x boost
+ *           Shrimp  — 10M+    $SIZE — 1x  boost
+ *           Bull    — 25M+    $SIZE — 2x  boost
+ *           Horse   — 100M+   $SIZE — 5x  boost
+ *           Whale   — 250M+   $SIZE — 12x boost
  *
  *         Early Withdrawal Penalty:
  *           Cubic decay from 50% at day 0 to 0% at 365 days.

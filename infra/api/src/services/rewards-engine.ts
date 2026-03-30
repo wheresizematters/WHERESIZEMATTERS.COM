@@ -41,12 +41,15 @@ import { v4 as uuid } from "uuid";
 
 export const REWARDS_CONFIG = {
   // Protocol fee split (of the 9.9% protocol receives from DickCoin trades)
-  stakingSharePct: 75,      // 75% of protocol fees → staking rewards
-  epochSharePct: 25,        // 25% of protocol fees → epoch rewards
+  stakingSharePct: 70,      // 70% of $SIZE fees → stakers
+  epochSharePct: 30,        // 30% of $SIZE fees → leaderboard + active users
 
-  // Epoch distribution split
-  topTenSharePct: 75,       // 75% of epoch pool → top 10
-  activitySharePct: 25,     // 25% of epoch pool → active users
+  // Epoch distribution split (of the 30%)
+  dickCoinLeaderboardPct: 20,     // 20% → top DickCoins by market cap
+  cloutLeaderboardPct: 3,         // 3% → top X Clout by followers
+  netWorthLeaderboardPct: 3,      // 3% → top Net Worth
+  sizeLeaderboardPct: 3,          // 3% → top Dick Size
+  activitySharePct: 1,            // 1% → daily active user rewards
 
   // Rank weights for top 10 (index 0 = #1)
   rankWeights: [200, 150, 120, 100, 80, 60, 50, 40, 35, 30],
@@ -150,17 +153,47 @@ export async function calculateEpochDistribution(
   dailyPoolSize: number,
   feeSnapshot?: DailyFeeSnapshot | null,
 ): Promise<EpochDistribution> {
-  const { topTenSharePct, activitySharePct, rankWeights } = REWARDS_CONFIG;
+  const { dickCoinLeaderboardPct, cloutLeaderboardPct, netWorthLeaderboardPct, sizeLeaderboardPct, activitySharePct, rankWeights } = REWARDS_CONFIG;
 
-  const topTenPool = (dailyPoolSize * topTenSharePct) / 100;
-  const activityPool = (dailyPoolSize * activitySharePct) / 100;
+  // 4 leaderboard pools + 1 activity pool (totals 30%)
+  const dickCoinPool = (dailyPoolSize * dickCoinLeaderboardPct) / 30;
+  const cloutPool = (dailyPoolSize * cloutLeaderboardPct) / 30;
+  const netWorthPool = (dailyPoolSize * netWorthLeaderboardPct) / 30;
+  const sizePool = (dailyPoolSize * sizeLeaderboardPct) / 30;
+  const activityPool = (dailyPoolSize * activitySharePct) / 30;
 
-  // Get top 10 verified users by size
-  const leaderboard = await getLeaderboard({ verifiedOnly: true });
-  const top10 = leaderboard.slice(0, 10);
+  // Get top 10 for SIZE leaderboard (verified users by size)
+  const sizeLeaderboard = await getLeaderboard({ verifiedOnly: true });
+  const sizeTop10 = sizeLeaderboard.slice(0, 10);
 
-  const totalRankWeight = rankWeights.slice(0, top10.length).reduce((a, b) => a + b, 0);
-  const topTenUsers: UserWeight[] = top10.map((entry, i) => ({
+  // Distribute each pool to its top 10 using rank weights
+  const totalRankWeight = rankWeights.slice(0, 10).reduce((a, b) => a + b, 0);
+  const weightMap: Record<string, number> = {};
+
+  function distributePool(entries: { id: string; username: string }[], pool: number) {
+    const top = entries.slice(0, 10);
+    const tw = rankWeights.slice(0, top.length).reduce((a, b) => a + b, 0);
+    for (let i = 0; i < top.length; i++) {
+      const share = tw > 0 ? (rankWeights[i] / tw) * pool : 0;
+      weightMap[top[i].id] = (weightMap[top[i].id] ?? 0) + share;
+    }
+  }
+
+  // Size leaderboard (3%)
+  distributePool(sizeTop10, sizePool);
+
+  // DickCoin leaderboard (20%) — top coins by volume, reward creators
+  // For now use the same leaderboard entries; in production query DickCoin creators
+  distributePool(sizeTop10, dickCoinPool);
+
+  // Clout leaderboard (3%) — top X followers
+  // For now use size leaderboard; in production query followers leaderboard
+  distributePool(sizeTop10, cloutPool);
+
+  // Net Worth leaderboard (3%)
+  distributePool(sizeTop10, netWorthPool);
+
+  const topTenUsers: UserWeight[] = sizeTop10.map((entry, i) => ({
     userId: entry.id,
     username: entry.username,
     weight: rankWeights[i] ?? 0,
@@ -168,16 +201,8 @@ export async function calculateEpochDistribution(
     breakdown: { rankWeight: rankWeights[i], rank: i + 1 },
   }));
 
+  // Activity scoring (1%)
   const activityUsers = await calculateActivityScores();
-
-  // Combine: top 10 get share of 75%, activity users get share of 25%
-  const weightMap: Record<string, number> = {};
-
-  for (const u of topTenUsers) {
-    const share = totalRankWeight > 0 ? (u.weight / totalRankWeight) * topTenPool : 0;
-    weightMap[u.userId] = (weightMap[u.userId] ?? 0) + share;
-  }
-
   const totalActivityScore = activityUsers.reduce((sum, u) => sum + u.weight, 0);
   for (const u of activityUsers) {
     const share = totalActivityScore > 0 ? (u.weight / totalActivityScore) * activityPool : 0;
