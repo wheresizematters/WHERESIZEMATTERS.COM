@@ -501,4 +501,105 @@ async function refreshWalletNetWorth(userId: string, address: string, chain: str
   }
 }
 
+// ── Staking leaderboard (reads on-chain) ────────────────────────────
+
+const STAKING_ADDRESS = "0xC7851342DAA6bb06c805AFE4a0781F5119596B8F";
+const SIZE_TOKEN = "0x21F2D807421e456be5b4BFcC30E5278049eC8b07";
+const BASE_RPC = "https://base-mainnet.core.chainstack.com/1f396980c6a698065bdf9bbebbb7fd78";
+
+const STAKING_ABI = [
+  "function getStakeInfo(address _user) view returns (uint256 stakedAmount, uint256 pendingRewards, uint256 tier, uint256 boost, uint256 effectiveStake)",
+  "function totalStaked() view returns (uint256)",
+  "function totalEffectiveStaked() view returns (uint256)",
+];
+
+const TIER_NAMES = ["None", "Shrimp", "Bull", "Horse", "Whale"];
+
+r.get("/staking-leaderboard", async (_req: Request, res: Response) => {
+  try {
+    const { ethers } = require("ethers");
+    const provider = new ethers.JsonRpcProvider(BASE_RPC);
+    const staking = new ethers.Contract(STAKING_ADDRESS, STAKING_ABI, provider);
+
+    // Get all profiles with wallet addresses
+    const profiles = await scanAll<any>(T.profiles);
+    const withWallets = profiles.filter((p: any) => p.wallet_address);
+
+    // Check each wallet's staking position
+    const positions: any[] = [];
+    await Promise.allSettled(withWallets.map(async (p: any) => {
+      try {
+        const info = await staking.getStakeInfo(p.wallet_address);
+        const staked = Number(ethers.formatEther(info[0]));
+        if (staked > 0) {
+          const tier = Number(info[2]);
+          const boost = Number(info[3]) / 10000;
+          const effective = Number(ethers.formatEther(info[4]));
+          const pending = Number(ethers.formatEther(info[1]));
+          positions.push({
+            userId: p.id,
+            username: p.username,
+            wallet: p.wallet_address,
+            isVerified: p.is_verified ?? false,
+            avatarUrl: p.avatar_url ?? p.x_avatar_url ?? null,
+            staked: Math.round(staked),
+            effective: Math.round(effective),
+            pending: Math.round(pending),
+            tier,
+            tierName: TIER_NAMES[tier] ?? "Unknown",
+            boost,
+          });
+        }
+      } catch {}
+    }));
+
+    // Also check the top stakers from the staking data we got
+    // Get total staked for APY calc
+    let totalStaked = 0;
+    let totalEffective = 0;
+    try {
+      totalStaked = Number(ethers.formatEther(await staking.totalStaked()));
+      totalEffective = Number(ethers.formatEther(await staking.totalEffectiveStaked()));
+    } catch {}
+
+    // Sort by staked amount
+    positions.sort((a, b) => b.staked - a.staked);
+
+    // Add rank + APY estimate
+    // APY based on daily volume estimate — use 24h fees from Clanker
+    // For now use a simple formula: (your_effective / total_effective) * annual_fees / your_staked
+    const ranked = positions.map((p, i) => ({
+      rank: i + 1,
+      ...p,
+      shareOfPool: totalEffective > 0 ? ((p.effective / totalEffective) * 100).toFixed(2) + "%" : "0%",
+    }));
+
+    res.json({
+      stakers: ranked,
+      totalStaked: Math.round(totalStaked),
+      totalEffective: Math.round(totalEffective),
+      stakerCount: positions.length,
+    });
+  } catch (err: any) {
+    console.error("Staking leaderboard error:", err.message);
+    res.json({ stakers: [], totalStaked: 0, totalEffective: 0, stakerCount: 0 });
+  }
+});
+
+// ── $SIZE balance for any wallet ────────────────────────────────────
+
+r.get("/size-balance/:address", async (req: Request, res: Response) => {
+  try {
+    const { ethers } = require("ethers");
+    const provider = new ethers.JsonRpcProvider(BASE_RPC);
+    const abi = ["function balanceOf(address) view returns (uint256)"];
+    const token = new ethers.Contract(SIZE_TOKEN, abi, provider);
+    const bal = await token.balanceOf(req.params.address);
+    const formatted = Number(ethers.formatEther(bal));
+    res.json({ address: req.params.address, balance: formatted, formatted: formatted.toLocaleString() });
+  } catch {
+    res.json({ address: req.params.address, balance: 0, formatted: "0" });
+  }
+});
+
 export default r;
