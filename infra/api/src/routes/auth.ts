@@ -229,7 +229,6 @@ r.get("/oauth/x/callback", async (req: Request, res: Response) => {
     }
 
     const jwt = signToken({ userId: profile.id, email: profile.email ?? "", username: profile.username });
-    const jwt = signToken({ userId: profile.id, email: profile.email ?? "", username: profile.username });
     res.redirect(`https://www.wheresizematters.com/leaderboard?token=${jwt}`);
   } catch (err: any) {
     console.error("X OAuth callback error:", err);
