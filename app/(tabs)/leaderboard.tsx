@@ -463,7 +463,7 @@ export default function LeaderboardScreen() {
                 ))}
               </View>
             )}
-            <Text style={styles.listHeader}>TOP VERIFIED MEMBERS</Text>
+            <Text style={styles.listHeader}>LENGTH LEADERBOARD</Text>
           </>
         }
         ListFooterComponent={!isPremium && entries.length > 13 ? (
@@ -502,7 +502,7 @@ export default function LeaderboardScreen() {
             onPress={() => setMode('global')}
           >
             <Ionicons name="globe-outline" size={14} color={mode === 'global' ? COLORS.gold : COLORS.muted} />
-            <Text style={[styles.modeBtnText, mode === 'global' && styles.modeBtnTextActive]}>Global</Text>
+            <Text style={[styles.modeBtnText, mode === 'global' && styles.modeBtnTextActive]}>Length</Text>
           </TouchableOpacity>
           {/* Nearby removed — crypto users don't like location tracking */}
           <TouchableOpacity
