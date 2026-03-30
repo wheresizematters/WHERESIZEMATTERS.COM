@@ -71,26 +71,26 @@ export default function VerifyScreen() {
   }
 
   async function pickPhoto() {
-    const cameraPermission = await ImagePicker.requestCameraPermissionsAsync();
-    if (cameraPermission.granted) {
-      const result = await ImagePicker.launchCameraAsync({
-        mediaTypes: ['images'],
-        quality: 0.8,
-        allowsEditing: false,
-      });
-      if (result.canceled || !result.assets[0]) return;
-      setPhotoUri(result.assets[0].uri);
-      setStep('photo');
-    } else {
-      const library = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (!library.granted) { setErrorMsg('Camera or photo library access is required.'); setStep('error'); return; }
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ['images'],
-        quality: 0.8,
-      });
-      if (result.canceled || !result.assets[0]) return;
-      setPhotoUri(result.assets[0].uri);
-      setStep('photo');
+    // On web, camera API is unreliable — use file picker which allows camera on mobile browsers
+    if (Platform.OS === 'web') {
+      return pickFromLibrary();
+    }
+    try {
+      const cameraPermission = await ImagePicker.requestCameraPermissionsAsync();
+      if (cameraPermission.granted) {
+        const result = await ImagePicker.launchCameraAsync({
+          mediaTypes: ['images'],
+          quality: 0.8,
+          allowsEditing: false,
+        });
+        if (result.canceled || !result.assets[0]) return;
+        setPhotoUri(result.assets[0].uri);
+        setStep('photo');
+      } else {
+        return pickFromLibrary();
+      }
+    } catch {
+      return pickFromLibrary();
     }
   }
 

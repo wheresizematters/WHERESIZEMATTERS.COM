@@ -201,7 +201,7 @@ export default function EarnScreen() {
             {walletAddress ? (
               <View style={styles.walletConnectedBadge}>
                 <View style={styles.walletDot} />
-                <Text style={styles.walletConnectedText}>Connected · Ready for $SIZE token launch</Text>
+                <Text style={styles.walletConnectedText}>Connected · $SIZE is live on Base</Text>
               </View>
             ) : (
               <Text style={styles.walletHint}>Works with MetaMask, Coinbase Wallet, and all browser wallets</Text>
