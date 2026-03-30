@@ -182,7 +182,8 @@
     <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
     Pre-register with X
   </a>
-  <div class="prereg-sub">Reserve your spot. Get early access when we launch.</div>
+  <div class="prereg-sub" id="prereg-sub">Reserve your spot. Get early access when we launch.</div>
+  <div id="registered-msg" style="display:none;color:#32D74B;font-size:13px;font-weight:700;margin-bottom:24px">✓ You're on the list. We'll notify you when we launch.</div>
 
   <div class="divider"></div>
 
@@ -232,6 +233,15 @@ function go(e) {
 fetch('/api/v1/analytics/gate-status').then(function(r){return r.json()}).then(function(d){
   if(!d.enabled){document.cookie='size_access=1;path=/;max-age=315360000;SameSite=Lax';location.reload()}
 }).catch(function(){});
+// Show registered confirmation
+if (location.search.includes('registered=true')) {
+  document.getElementById('registered-msg').style.display = 'block';
+  document.getElementById('prereg-sub').style.display = 'none';
+  document.querySelector('.prereg-btn').textContent = '✓ Pre-registered';
+  document.querySelector('.prereg-btn').style.background = '#222';
+  document.querySelector('.prereg-btn').style.color = '#32D74B';
+  document.querySelector('.prereg-btn').style.pointerEvents = 'none';
+}
 // Waitlist count
 fetch('/api/v1/profiles/count').then(function(r){return r.json()}).then(function(d){
   var count = d.count || 0;
