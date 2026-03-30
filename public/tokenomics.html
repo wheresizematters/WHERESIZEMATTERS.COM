@@ -891,6 +891,15 @@
     }
   }
 </style>
+<!-- KaTeX for LaTeX rendering -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}]});"></script>
+<style>
+  .katex-display { margin: 20px 0 !important; overflow-x: auto; }
+  .katex { font-size: 1.05em !important; }
+  .math-block { background: var(--bg-raised, #141414); border: 1px solid var(--border-subtle, rgba(255,255,255,0.06)); border-radius: 12px; padding: 24px; margin: 20px 0; }
+</style>
 </head>
 <body>
 
@@ -999,6 +1008,35 @@
 
     <div class="callout">
       No emission schedule. No team unlocks.
+    </div>
+
+    <div class="math-block">
+      <p style="color:var(--text-secondary);font-size:11px;letter-spacing:2px;text-transform:uppercase;margin-bottom:16px">$SIZE FEE DISTRIBUTION</p>
+      $$\text{\$SIZE Fees} \longrightarrow \begin{cases} 70\% \rightarrow \text{Stakers (proportional to effective stake)} \\[6pt] 20\% \rightarrow \text{Top DickCoin creators (by market cap rank)} \\[6pt] 10\% \rightarrow \begin{cases} 3.33\% \rightarrow \text{Top X Clout (by followers)} \\[4pt] 3.33\% \rightarrow \text{Top Net Worth (by on-chain portfolio)} \\[4pt] 3.33\% \rightarrow \text{Top Dick Size (by verified tier)} \end{cases} \end{cases}$$
+    </div>
+
+    <div class="math-block">
+      <p style="color:var(--text-secondary);font-size:11px;letter-spacing:2px;text-transform:uppercase;margin-bottom:16px">YOUR DAILY STAKING YIELD</p>
+      $$\text{your yield} = \frac{S_{\text{you}} \times B_{\text{tier}}}{\displaystyle\sum_{i} S_i \times B_i} \times R_{\text{stakers}}$$
+      <p style="color:var(--text-secondary);font-size:13px;margin-top:12px">Where $S$ = tokens staked, $B$ = tier boost multiplier, $R_{\text{stakers}}$ = 70% of daily $SIZE fees</p>
+    </div>
+
+    <div class="math-block">
+      <p style="color:var(--text-secondary);font-size:11px;letter-spacing:2px;text-transform:uppercase;margin-bottom:16px">STAKER POOL FROM VOLUME</p>
+      $$\text{staker pool} = \frac{V \times 0.01 \times 0.70}{P_S}$$
+      <p style="color:var(--text-secondary);font-size:13px;margin-top:12px">$V$ = daily trading volume, $P_S$ = $SIZE price. Everything deterministic.</p>
+    </div>
+
+    <div class="math-block">
+      <p style="color:var(--text-secondary);font-size:11px;letter-spacing:2px;text-transform:uppercase;margin-bottom:16px">EXIT TAX</p>
+      $$\text{penalty} = 0.69 \times \left(\frac{365 - d}{365}\right)^3$$
+      <p style="color:var(--text-secondary);font-size:13px;margin-top:12px">$d$ = days staked. 69% at day 0 → 0% at 1 year. Penalized tokens → staking pool.</p>
+    </div>
+
+    <div class="math-block">
+      <p style="color:var(--text-secondary);font-size:11px;letter-spacing:2px;text-transform:uppercase;margin-bottom:16px">EFFECTIVE WEIGHT</p>
+      $$\underbrace{250{,}000{,}000 \times 12}_{\text{Whale}} = 3{,}000{,}000{,}000 \gg \underbrace{10{,}000{,}000 \times 1}_{\text{Shrimp}}$$
+      <p style="color:var(--text-secondary);font-size:13px;margin-top:12px">Max 400 Whales: $250\text{M} \times 400 = 100\text{B} = \text{total supply}$</p>
     </div>
   </div>
 </div>

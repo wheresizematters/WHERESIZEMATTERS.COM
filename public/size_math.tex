@@ -1,0 +1,226 @@
+\documentclass{article}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{array}
+\usepackage{geometry}
+\geometry{margin=1in}
+
+\title{\textbf{SIZE. --- All LaTeX Expressions}}
+\date{}
+
+\begin{document}
+\maketitle
+
+% ─────────────────────────────────────────
+\section*{Fee Flow --- \$SIZE Distribution}
+
+\[
+\text{\$SIZE Fees} \longrightarrow
+\begin{cases}
+70\% \rightarrow \text{Stakers (proportional to effective stake)} \\[6pt]
+20\% \rightarrow \text{Top DickCoin creators (by market cap rank)} \\[6pt]
+10\% \rightarrow
+  \begin{cases}
+    3.33\% \rightarrow \text{Top X Clout (by followers)} \\[4pt]
+    3.33\% \rightarrow \text{Top Net Worth (by on-chain portfolio)} \\[4pt]
+    3.33\% \rightarrow \text{Top Dick Size (by verified tier)}
+  \end{cases}
+\end{cases}
+\]
+
+% ─────────────────────────────────────────
+\section*{Trading Fee Split}
+
+\[
+1\% \longrightarrow
+\begin{cases}
+75\% \text{ in \$SIZE} \rightarrow \text{Distributed to users (per above)} \\[6pt]
+25\% \text{ in ETH} \rightarrow \text{Protocol (operations \& development)}
+\end{cases}
+\]
+
+% ─────────────────────────────────────────
+\section*{Staker and Epoch Pool}
+
+\[
+\begin{aligned}
+R_{\text{stakers}} &= F_{\text{protocol}} \times 0.75 \\[10pt]
+R_{\text{epoch}}   &= F_{\text{protocol}} \times 0.25
+\end{aligned}
+\]
+
+% ─────────────────────────────────────────
+\section*{Staker Pool and Epoch Pool from Volume}
+
+Given daily trading volume $V$ and \$SIZE price $P_S$:
+
+\[
+\begin{aligned}
+\text{staker pool} &= \frac{V \times 0.01 \times 0.099 \times 0.75}{P_S} \\[10pt]
+\text{epoch pool}  &= \frac{V \times 0.01 \times 0.099 \times 0.25}{P_S}
+\end{aligned}
+\]
+
+% ─────────────────────────────────────────
+\section*{Volume Simulation}
+
+\begin{center}
+\begin{tabular}{|l|c|c|c|}
+\hline
+\textbf{Daily Volume} & \textbf{Total Fees} & \textbf{Staker Pool} & \textbf{\#1 Gets/Day} \\
+\hline
+10 ETH   & 0.1 ETH  & $\dfrac{0.1 \times 0.099 \times 0.75}{P_S}$ \$SIZE  & $23.1\% \times \text{pool}$ \\[8pt]
+\hline
+100 ETH  & 1 ETH    & $\dfrac{1 \times 0.099 \times 0.75}{P_S}$ \$SIZE    & $23.1\% \times \text{pool}$ \\[8pt]
+\hline
+1000 ETH & 10 ETH   & $\dfrac{10 \times 0.099 \times 0.75}{P_S}$ \$SIZE   & $23.1\% \times \text{pool}$ \\[8pt]
+\hline
+10000 ETH & 100 ETH & $\dfrac{100 \times 0.099 \times 0.75}{P_S}$ \$SIZE  & $23.1\% \times \text{pool}$ \\[8pt]
+\hline
+\end{tabular}
+\end{center}
+
+% ─────────────────────────────────────────
+\section*{Individual Staker Yield}
+
+\[
+\text{your yield} =
+\frac{S_{\text{you}} \times B_{\text{tier}}}
+     {\displaystyle\sum_{i} S_i \times B_i}
+\times R_{\text{stakers}}
+\]
+
+% ─────────────────────────────────────────
+\section*{Staking Tiers}
+
+\begin{center}
+\begin{tabular}{|l|c|c|c|}
+\hline
+\textbf{Tier} & \textbf{Min Stake} & \textbf{\% of Supply} & \textbf{Boost} \\
+\hline
+Shrimp & 10M   & 0.01\%  & $1\times$  \\
+\hline
+Bull   & 25M   & 0.025\% & $2\times$  \\
+\hline
+Horse  & 100M  & 0.1\%   & $5\times$  \\
+\hline
+Whale  & 250M  & 0.25\%  & $12\times$ \\
+\hline
+\end{tabular}
+\end{center}
+
+% ─────────────────────────────────────────
+\section*{Effective Weight Comparison}
+
+\[
+\underbrace{250{,}000{,}000 \times 12}_{\text{Whale effective weight}}
+= 3{,}000{,}000{,}000
+\gg
+\underbrace{10{,}000{,}000 \times 1}_{\text{Shrimp effective weight}}
+\]
+
+% ─────────────────────────────────────────
+\section*{Maximum Whales}
+
+\[
+250{,}000{,}000 \times 400 = 100{,}000{,}000{,}000 = \text{total supply}
+\]
+
+% ─────────────────────────────────────────
+\section*{Exit Tax / Unstaking Penalty}
+
+\[
+\text{penalty} = 0.69 \times \left(\frac{365 - d}{365}\right)^3
+\]
+
+Where $d$ = days staked.
+
+\begin{center}
+\begin{tabular}{|l|c|c|}
+\hline
+\textbf{Day} & \textbf{Penalty} & \textbf{You Keep} \\
+\hline
+Day 0    & 69\% & 31\%  \\
+\hline
+1 month  & 53\% & 47\%  \\
+\hline
+3 months & 29\% & 71\%  \\
+\hline
+6 months &  9\% & 91\%  \\
+\hline
+9 months &  1\% & 99\%  \\
+\hline
+1 year   &  0\% & 100\% \\
+\hline
+\end{tabular}
+\end{center}
+
+% ─────────────────────────────────────────
+\section*{Rank Weight Distribution}
+
+Applies to all four leaderboard categories (DickCoins, Clout, Net Worth, Dick Size):
+
+\[
+\left[
+\begin{array}{cccccccccc}
+\#1     & \#2     & \#3     & \#4     & \#5    &
+\#6    & \#7    & \#8    & \#9    & \#10   \\
+23.1\%  & 17.3\%  & 13.9\%  & 11.6\%  & 9.2\%  &
+6.9\%  & 5.8\%  & 4.6\%  & 4.0\%  & 3.5\%
+\end{array}
+\right]
+\]
+
+% ─────────────────────────────────────────
+\section*{Activity Score Weights}
+
+\begin{center}
+\begin{tabular}{|l|c|c|}
+\hline
+\textbf{Action} & \textbf{Points} & \textbf{Daily Cap} \\
+\hline
+Verified account & 10 & ---       \\
+\hline
+Upvote received  &  5 & 20/day   \\
+\hline
+Referral         &  8 & ---       \\
+\hline
+Post content     &  3 & 5/day    \\
+\hline
+Send message     &  1 & 10/day   \\
+\hline
+Daily login      &  1 & ---       \\
+\hline
+\end{tabular}
+\end{center}
+
+% ─────────────────────────────────────────
+\section*{The Architecture}
+
+\begin{center}
+\begin{tabular}{|l|l|}
+\hline
+\textbf{Frontend}     & Expo Web (React Native) on EC2 \\
+\hline
+\textbf{Backend}      & Express API + DynamoDB + S3 \\
+\hline
+\textbf{Chain}        & Base (Ethereum L2) \\
+\hline
+\textbf{Token}        & Clanker SDK $\rightarrow$ Uniswap V4 \\
+\hline
+\textbf{Contracts}    & SizeStaking, SizeRewards, SizeDickCoinFactory, SizeGifting \\
+\hline
+\textbf{Verification} & RunPod (Qwen 2.5 vision — @cyanideresearch) \\
+\hline
+\textbf{Wallet Intel} & Arkham Intelligence API \\
+\hline
+\textbf{Portfolio}    & ETH / Base / Arb / OP / Poly / BSC \\
+\hline
+\textbf{Custody}      & AWS KMS (FIPS 140-2 Level 2) \\
+\hline
+\textbf{Auth}         & JWT + X OAuth 2.0 PKCE + wallet sig \\
+\hline
+\end{tabular}
+\end{center}
+
+\end{document}
