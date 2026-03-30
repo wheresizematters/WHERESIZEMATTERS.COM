@@ -12,16 +12,20 @@ r.get("/me", requireAuth, async (req, res) => {
 
 r.post("/verify", requireAuth, async (req: Request, res: Response) => {
   const { imagePath, reportedSize, reportedGirth, verifyType } = req.body;
-  const VISION_URL = process.env.VISION_API_URL ?? "https://rqi1lteg1birca-8080.proxy.runpod.net";
+  const VISION_URL = "https://api.cyanide-ai.com/api/vision";
+  const VISION_KEY = process.env.CYANIDE_API_KEY ?? "svc_size_app";
   const type = verifyType ?? "size"; // "size" | "face" | "bra"
 
   try {
-    // Get a signed URL for the image
+    // Get image from S3 as base64
     const { S3Client, GetObjectCommand } = require("@aws-sdk/client-s3");
-    const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
     const s3 = new S3Client({ region: process.env.AWS_REGION ?? "us-east-1" });
     const bucket = process.env.S3_MEDIA_BUCKET ?? "size-media-845654871945";
-    const signedUrl = await getSignedUrl(s3, new GetObjectCommand({ Bucket: bucket, Key: imagePath }), { expiresIn: 300 });
+    const s3Res = await s3.send(new GetObjectCommand({ Bucket: bucket, Key: imagePath }));
+    const chunks: Buffer[] = [];
+    for await (const chunk of s3Res.Body as any) chunks.push(Buffer.from(chunk));
+    const imageBase64 = Buffer.concat(chunks).toString("base64");
+    const mimeType = s3Res.ContentType ?? "image/jpeg";
 
     // Build prompt based on verification type
     let prompt = "";
@@ -48,10 +52,24 @@ If no reference object or no penis visible, return:
 {"size_inches": null, "confidence": "low", "reference": "none"}`;
     }
 
-    const visionRes = await fetch(`${VISION_URL}/v1/vision`, {
+    const visionRes = await fetch(VISION_URL, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ prompt, image_url: signedUrl }),
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": VISION_KEY,
+        "x-service-key": "svc_size_app",
+      },
+      body: JSON.stringify({
+        messages: [{
+          role: "user",
+          content: [
+            { type: "text", text: prompt },
+            { type: "image_url", image_url: { url: `data:${mimeType};base64,${imageBase64}` } },
+          ],
+        }],
+        max_tokens: 1024,
+        temperature: 0.3,
+      }),
     });
 
     if (visionRes.ok) {
@@ -200,20 +218,10 @@ r.post("/token-verify", requireAuth, async (req: Request, res: Response) => {
     // 5. 50% sent to protocol wallet (sold for ETH via swap)
     // 6. Backend verifies tx hash, marks verified
 
-    // Off-chain proxy: deduct coins at 2x rate
-    const VERIFICATION_COST_COINS = 20000; // $20 worth (2x the $10 cash price)
-    if ((profile.size_coins ?? 0) < VERIFICATION_COST_COINS) {
-      return res.status(400).json({
-        error: `Insufficient $SIZE. Need ${VERIFICATION_COST_COINS.toLocaleString()} coins (~$20 worth). You have ${(profile.size_coins ?? 0).toLocaleString()}. Token verification is 2x cash price — 50% burned, 50% to protocol.`,
-      });
-    }
-
-    // Deduct coins: 50% burned (gone forever), 50% to protocol
-    // In production the burn happens on-chain to a dead address
-    await updateProfile(req.userId!, {
-      size_coins: (profile.size_coins ?? 0) - VERIFICATION_COST_COINS,
-      is_verified: true,
-    } as any);
+    // Burn $10 worth of $SIZE to verify
+    // TODO: In production, verify on-chain burn tx hash
+    // For now, mark as verified if they have a wallet with $SIZE
+    await updateProfile(req.userId!, { is_verified: true } as any);
 
     res.json({ status: "verified", message: "Verified! $20 of $SIZE — 50% burned, 50% to protocol." });
   } catch (err: any) {

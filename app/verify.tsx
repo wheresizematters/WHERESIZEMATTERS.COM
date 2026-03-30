@@ -195,8 +195,52 @@ export default function VerifyScreen() {
                 </View>
                 <Text style={s.heroTitle}>Get Verified</Text>
                 <Text style={s.heroSub}>
-                  Free AI verification. Choose what you want to verify.
+                  Three ways to verify. Pick one.
                 </Text>
+              </View>
+
+              {/* Quick verify options */}
+              <View style={{ gap: 8, marginBottom: 20 }}>
+                <TouchableOpacity
+                  style={{ flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#111', borderWidth: 1, borderColor: '#222', borderRadius: 12, padding: 14 }}
+                  onPress={() => { if (typeof window !== 'undefined') window.location.href = '/api/v1/auth/oauth/x/redirect'; }}
+                >
+                  <Ionicons name="logo-twitter" size={20} color="#1DA1F2" />
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ color: '#fff', fontWeight: '700', fontSize: 14 }}>Sign in with X</Text>
+                    <Text style={{ color: '#888', fontSize: 11 }}>Instant verification — connect your X account</Text>
+                  </View>
+                  <Text style={{ color: '#32D74B', fontWeight: '800', fontSize: 12 }}>FREE</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={{ flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#111', borderWidth: 1, borderColor: '#222', borderRadius: 12, padding: 14 }}
+                  onPress={async () => {
+                    if (!window.confirm('Burn $10 worth of $SIZE to verify instantly?')) return;
+                    const token = getToken();
+                    const res = await fetch('/api/v1/verifications/token-verify', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                      body: JSON.stringify({ walletAddress: profile?.wallet_address }),
+                    });
+                    const data = await res.json();
+                    if (data.status === 'verified') { setStep('result_verified'); }
+                    else { window.alert(data.error || 'Verification failed'); }
+                  }}
+                >
+                  <Ionicons name="flame" size={20} color={COLORS.gold} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ color: '#fff', fontWeight: '700', fontSize: 14 }}>Burn $SIZE Tokens</Text>
+                    <Text style={{ color: '#888', fontSize: 11 }}>Burn $10 worth of $SIZE to verify instantly</Text>
+                  </View>
+                  <Text style={{ color: COLORS.gold, fontWeight: '800', fontSize: 12 }}>$10</Text>
+                </TouchableOpacity>
+              </View>
+
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+                <View style={{ flex: 1, height: 1, backgroundColor: '#222' }} />
+                <Text style={{ color: '#444', fontSize: 11 }}>or verify with AI (free)</Text>
+                <View style={{ flex: 1, height: 1, backgroundColor: '#222' }} />
               </View>
 
               {/* Verification type selector */}
