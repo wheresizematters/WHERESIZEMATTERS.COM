@@ -30,7 +30,6 @@ const EARN_ACTIONS = [
 
 const REWARDS = [
   { icon: 'flash',     label: 'Feed Boost',    cost: '5K $SIZE',  desc: 'Burn 5,000 $SIZE to boost your post to the top' },
-  { icon: 'sparkles',  label: 'AI Logo Gen',   cost: '500 $SIZE', desc: 'Burn 500 $SIZE to generate a DickCoin logo' },
 ];
 
 export default function EarnScreen() {
