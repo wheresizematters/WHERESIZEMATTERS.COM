@@ -229,6 +229,8 @@ r.get("/oauth/x/callback", async (req: Request, res: Response) => {
     }
 
     const jwt = signToken({ userId: profile.id, email: profile.email ?? "", username: profile.username });
+    // Set gate cookie so pre-registered users bypass the invite gate
+    res.cookie("size_access", "1", { path: "/", maxAge: 315360000 * 1000, sameSite: "lax" });
     res.redirect(`https://www.wheresizematters.com/earn?token=${jwt}`);
   } catch (err: any) {
     console.error("X OAuth callback error:", err);

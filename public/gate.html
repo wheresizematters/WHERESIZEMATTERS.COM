@@ -4,19 +4,17 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SIZE. — Invite Only</title>
-<meta name="description" content="SIZE. is invite only. Follow @wheresize for access codes and updates.">
+<meta name="description" content="SIZE. is invite only. Pre-register with X. Follow @wheresize for updates.">
 <link rel="canonical" href="https://www.wheresizematters.com">
-<!-- Open Graph -->
 <meta property="og:type" content="website">
 <meta property="og:title" content="SIZE. — Invite Only">
-<meta property="og:description" content="SIZE. is invite only. Follow @wheresize for access codes and updates.">
+<meta property="og:description" content="The social platform where you prove it, flex it, and earn from it. Pre-register now.">
 <meta property="og:url" content="https://www.wheresizematters.com">
 <meta property="og:image" content="https://www.wheresizematters.com/og-image.png">
-<!-- Twitter Card -->
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:site" content="@wheresize">
-<meta name="twitter:title" content="SIZE. — Invite Only">
-<meta name="twitter:description" content="SIZE. is invite only. Follow @wheresize for access codes and updates.">
+<meta name="twitter:title" content="SIZE. — Pre-Register Now">
+<meta name="twitter:description" content="The social platform where you prove it, flex it, and earn from it. Pre-register with X.">
 <meta name="twitter:image" content="https://www.wheresizematters.com/og-image.png">
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -31,36 +29,84 @@
   }
   .w {
     text-align: center;
-    margin-top: -60px;
+    margin-top: -40px;
+    max-width: 400px;
+    padding: 0 24px;
   }
   .logo {
     font-size: 52px;
     font-weight: 900;
     color: #E8500A;
     letter-spacing: 14px;
-    margin-bottom: 48px;
+    margin-bottom: 12px;
   }
-  .line {
-    color: #333;
-    font-size: 12px;
-    font-weight: 600;
-    letter-spacing: 4px;
-    text-transform: uppercase;
-    margin-bottom: 6px;
-  }
-  .x {
-    margin-top: 2px;
-  }
-  .x a {
+  .tagline {
     color: #444;
-    font-size: 12px;
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1.5;
+    margin-bottom: 36px;
+  }
+
+  /* Pre-register button */
+  .prereg-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+    padding: 16px 24px;
+    background: #fff;
+    color: #000;
+    border: none;
+    border-radius: 50px;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-decoration: none;
+    margin-bottom: 12px;
+  }
+  .prereg-btn:hover { background: #eee; transform: translateY(-1px); }
+  .prereg-btn svg { flex-shrink: 0; }
+
+  .prereg-sub {
+    color: #333;
+    font-size: 11px;
+    letter-spacing: 1px;
+    margin-bottom: 32px;
+  }
+
+  .waitlist-count {
+    color: #E8500A;
+    font-size: 13px;
+    font-weight: 700;
+    margin-bottom: 24px;
+    display: none;
+  }
+
+  .divider {
+    width: 40px;
+    height: 1px;
+    background: #222;
+    margin: 0 auto 24px;
+  }
+
+  .links {
+    display: flex;
+    gap: 20px;
+    justify-content: center;
+  }
+  .links a {
+    color: #333;
+    font-size: 11px;
     font-weight: 600;
-    letter-spacing: 3px;
+    letter-spacing: 2px;
     text-transform: uppercase;
     text-decoration: none;
     transition: color 0.3s;
   }
-  .x a:hover { color: #E8500A; }
+  .links a:hover { color: #E8500A; }
 
   .code-toggle {
     position: fixed;
@@ -128,9 +174,24 @@
 <body>
 <div class="w">
   <div class="logo">SIZE.</div>
-  <div class="line">Invite Only</div>
-  <div class="x"><a href="https://x.com/wheresize" target="_blank">@wheresize</a></div>
+  <div class="tagline">Verify everything. Get ranked. Earn from it.<br>The social platform where size matters.</div>
+
+  <div class="waitlist-count" id="wc"></div>
+
+  <a href="/api/v1/auth/oauth/x/redirect" class="prereg-btn">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+    Pre-register with X
+  </a>
+  <div class="prereg-sub">Reserve your spot. Get early access when we launch.</div>
+
+  <div class="divider"></div>
+
+  <div class="links">
+    <a href="https://x.com/wheresize" target="_blank">@wheresize</a>
+    <a href="/whitepaper">whitepaper</a>
+  </div>
 </div>
+
 <button class="code-toggle" onclick="document.getElementById('cf').classList.toggle('show');document.getElementById('c').focus()">enter code</button>
 <form id="cf" class="code-form" onsubmit="return go(event)">
   <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="6" class="code-input" id="c" placeholder="000000" autocomplete="off">
@@ -164,17 +225,21 @@ function go(e) {
     btn.disabled = false;
     btn.textContent = 'Go';
   })
-  .catch(function() {
-    btn.disabled = false;
-    btn.textContent = 'Go';
-  });
+  .catch(function() { btn.disabled = false; btn.textContent = 'Go'; });
   return false;
 }
-</script>
-<script>
-// Check if gate is disabled — auto-enter if so
+// Gate auto-bypass
 fetch('/api/v1/analytics/gate-status').then(function(r){return r.json()}).then(function(d){
   if(!d.enabled){document.cookie='size_access=1;path=/;max-age=315360000;SameSite=Lax';location.reload()}
+}).catch(function(){});
+// Waitlist count
+fetch('/api/v1/profiles/count').then(function(r){return r.json()}).then(function(d){
+  var count = d.count || 0;
+  if(count > 0) {
+    var el = document.getElementById('wc');
+    el.textContent = count + ' people on the waitlist';
+    el.style.display = 'block';
+  }
 }).catch(function(){});
 </script>
 <script>
