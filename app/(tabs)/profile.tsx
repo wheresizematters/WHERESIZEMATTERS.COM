@@ -246,6 +246,36 @@ export default function ProfileScreen() {
     setUploadingHeader(false);
   }
 
+  if (!session) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <PageContainer>
+          <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 16, padding: 32 }}>
+            <Text style={{ color: COLORS.gold, fontSize: 36, fontWeight: '900', letterSpacing: 6 }}>SIZE.</Text>
+            <Text style={{ color: COLORS.white, fontSize: SIZES.xl, fontWeight: '800', textAlign: 'center' }}>Join the measuring contest</Text>
+            <Text style={{ color: COLORS.muted, fontSize: SIZES.md, textAlign: 'center', lineHeight: 22 }}>
+              Sign in to verify your size, connect your wallet, build your profile, and climb the leaderboard.
+            </Text>
+            <TouchableOpacity
+              style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, backgroundColor: '#fff', width: '100%', maxWidth: 300, paddingVertical: 16, borderRadius: RADIUS.full, marginTop: 12 }}
+              onPress={() => { if (typeof window !== 'undefined') window.location.href = '/api/v1/auth/oauth/x/redirect'; }}
+            >
+              <Ionicons name="logo-twitter" size={20} color="#000" />
+              <Text style={{ color: '#000', fontWeight: '700', fontSize: 16 }}>Continue with X</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, backgroundColor: COLORS.gold, width: '100%', maxWidth: 300, paddingVertical: 16, borderRadius: RADIUS.full }}
+              onPress={() => router.push('/(auth)/login' as any)}
+            >
+              <Ionicons name="wallet" size={20} color={COLORS.bg} />
+              <Text style={{ color: COLORS.bg, fontWeight: '700', fontSize: 16 }}>Connect Wallet</Text>
+            </TouchableOpacity>
+          </View>
+        </PageContainer>
+      </SafeAreaView>
+    );
+  }
+
   if (!profile) {
     return (
       <SafeAreaView style={styles.container}>
