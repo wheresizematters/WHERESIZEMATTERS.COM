@@ -155,15 +155,60 @@ export default function ExploreScreen() {
             )}
             ListEmptyComponent={
               <View style={s.empty}>
-                <Ionicons name="planet-outline" size={40} color={COLORS.muted} />
+                <Ionicons name="rocket-outline" size={40} color={COLORS.muted} />
                 <Text style={s.emptyTitle}>No DickCoins launched yet</Text>
                 <Text style={s.emptyDesc}>Be the first to launch a personal memecoin on SIZE.</Text>
-                {profile?.is_verified && (
-                  <TouchableOpacity style={s.emptyCta} onPress={() => router.push('/launch-dickcoin' as any)}>
-                    <Ionicons name="rocket" size={16} color={COLORS.bg} />
-                    <Text style={s.emptyCtaText}>Launch a DickCoin</Text>
-                  </TouchableOpacity>
-                )}
+              </View>
+            }
+            ListFooterComponent={
+              <View style={{ paddingTop: 20, gap: 16 }}>
+                {/* Launch CTA */}
+                <TouchableOpacity
+                  style={{ backgroundColor: COLORS.card, borderWidth: 1, borderColor: `${COLORS.gold}40`, borderRadius: RADIUS.lg, padding: 20, alignItems: 'center', gap: 10 }}
+                  onPress={() => router.push('/launch-dickcoin' as any)}
+                >
+                  <Ionicons name="rocket" size={28} color={COLORS.gold} />
+                  <Text style={{ color: COLORS.white, fontSize: SIZES.lg, fontWeight: '800' }}>Launch Your DickCoin</Text>
+                  <Text style={{ color: COLORS.muted, fontSize: SIZES.sm, textAlign: 'center', lineHeight: 20 }}>
+                    Deploy your own ERC-20 on Base. Earn 90% of trading fees forever. Your community gets a Circle Jerk automatically.
+                  </Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: COLORS.gold, borderRadius: RADIUS.full, paddingHorizontal: 20, paddingVertical: 10, marginTop: 4 }}>
+                    <Text style={{ color: COLORS.bg, fontWeight: '800', fontSize: SIZES.md }}>Create Now</Text>
+                  </View>
+                </TouchableOpacity>
+
+                {/* How it works */}
+                <View style={{ backgroundColor: COLORS.card, borderRadius: RADIUS.lg, borderWidth: 1, borderColor: COLORS.cardBorder, padding: 20, gap: 14 }}>
+                  <Text style={{ color: COLORS.muted, fontSize: 10, fontWeight: '800', letterSpacing: 2.5 }}>HOW DICKCOINS WORK</Text>
+                  {[
+                    { icon: 'flash', text: 'You earn 90% of every trade fee on your coin — forever' },
+                    { icon: 'people', text: 'A token-gated Circle Jerk community spawns automatically' },
+                    { icon: 'trending-up', text: 'At 0.5 ETH in fees, autostaking deploys for holders' },
+                    { icon: 'shield-checkmark', text: 'Deployed via Clanker on Base with Uniswap V4 liquidity' },
+                  ].map((item, i) => (
+                    <View key={i} style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 12 }}>
+                      <Ionicons name={item.icon as any} size={18} color={COLORS.gold} style={{ marginTop: 2 }} />
+                      <Text style={{ color: COLORS.offWhite, fontSize: SIZES.sm, flex: 1, lineHeight: 20 }}>{item.text}</Text>
+                    </View>
+                  ))}
+                </View>
+
+                {/* $SIZE token card */}
+                <TouchableOpacity
+                  style={{ backgroundColor: COLORS.card, borderRadius: RADIUS.lg, borderWidth: 1, borderColor: COLORS.cardBorder, padding: 20, flexDirection: 'row', alignItems: 'center', gap: 14 }}
+                  onPress={() => { if (typeof window !== 'undefined') window.location.href = '/coin/0x21F2D807421e456be5b4BFcC30E5278049eC8b07'; }}
+                >
+                  <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: `${COLORS.gold}20`, alignItems: 'center', justifyContent: 'center' }}>
+                    <Text style={{ color: COLORS.gold, fontWeight: '900', fontSize: 16 }}>$</Text>
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ color: COLORS.white, fontWeight: '800', fontSize: SIZES.md }}>$SIZE Token</Text>
+                    <Text style={{ color: COLORS.muted, fontSize: SIZES.xs }}>View chart, trade, and join the community</Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={18} color={COLORS.muted} />
+                </TouchableOpacity>
+
+                <View style={{ height: 100 }} />
               </View>
             }
           />
