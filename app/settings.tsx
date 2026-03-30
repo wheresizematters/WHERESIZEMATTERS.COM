@@ -260,6 +260,29 @@ export default function SettingsScreen() {
           />
           <View style={styles.divider} />
           <SettingsRow
+            icon="key-outline"
+            label="Export Wallet Key"
+            onPress={async () => {
+              const confirm1 = window.prompt('This will export your custodial wallet private key and deactivate it permanently.\n\nType "I_UNDERSTAND_THIS_IS_IRREVERSIBLE" to continue:');
+              if (confirm1 !== 'I_UNDERSTAND_THIS_IS_IRREVERSIBLE') { window.alert('Export cancelled.'); return; }
+              try {
+                const token = getToken();
+                const res = await fetch('/api/v1/custodial/export', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                  body: JSON.stringify({ confirm: 'I_UNDERSTAND_THIS_IS_IRREVERSIBLE' }),
+                });
+                const data = await res.json();
+                if (data.error) { window.alert(data.error); return; }
+                if (data.privateKey) {
+                  window.prompt('Your private key (copy it now — it will never be shown again):', data.privateKey);
+                  window.alert('Custodial wallet deactivated. You now have full custody of this key.');
+                }
+              } catch { window.alert('Export failed. Try again.'); }
+            }}
+          />
+          <View style={styles.divider} />
+          <SettingsRow
             icon="trash-outline"
             label="Delete Account"
             danger

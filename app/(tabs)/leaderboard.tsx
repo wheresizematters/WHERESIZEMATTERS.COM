@@ -209,7 +209,12 @@ export default function LeaderboardScreen() {
     }
     setLoading(false);
     setRefreshing(false);
-    // Fetch reward stats
+  }, [session?.user.id, activeFilter, verifiedOnly]);
+
+  useEffect(() => { load(); }, [load]);
+
+  // Fetch reward stats independently (shows on all tabs)
+  useEffect(() => {
     fetch('/api/v1/wallets/reward-stats')
       .then(r => r.json())
       .then(d => {
@@ -217,9 +222,7 @@ export default function LeaderboardScreen() {
         if (d.treasuryPool > 0) setRewardPool(d.treasuryPool.toLocaleString());
       })
       .catch(() => {});
-  }, [session?.user.id, activeFilter, verifiedOnly]);
-
-  useEffect(() => { load(); }, [load]);
+  }, []);
 
   // ── Nearby load ────────────────────────────────────────────────────────────
   const loadNearby = useCallback(async (loc: UserLocation, miles: number) => {
