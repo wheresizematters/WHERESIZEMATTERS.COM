@@ -60,7 +60,8 @@ export async function getPosts(userId?: string, limit = 30): Promise<any[]> {
           username: author.username,
           size_inches: author.size_inches,
           is_verified: author.is_verified,
-        } : { id: p.user_id, username: "Unknown", size_inches: 0, is_verified: false },
+          avatar_url: author.avatar_url ?? (author as any).x_avatar_url ?? null,
+        } : { id: p.user_id, username: "Unknown", size_inches: 0, is_verified: false, avatar_url: null },
         poll_options: pollOptions,
         user_vote,
       };
@@ -83,6 +84,7 @@ export async function getPost(postId: string): Promise<any | null> {
     author: author ? {
       id: author.id, username: author.username,
       size_inches: author.size_inches, is_verified: author.is_verified,
+      avatar_url: author.avatar_url ?? (author as any).x_avatar_url ?? null,
     } : null,
     poll_options: pollOptions,
   };
@@ -152,6 +154,7 @@ export async function getUserPosts(userId: string): Promise<any[]> {
     author: author ? {
       id: author.id, username: author.username,
       size_inches: author.size_inches, is_verified: author.is_verified,
+      avatar_url: author.avatar_url ?? (author as any).x_avatar_url ?? null,
     } : null,
     poll_options: [],
   }));
