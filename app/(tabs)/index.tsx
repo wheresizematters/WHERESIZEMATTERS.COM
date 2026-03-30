@@ -692,6 +692,7 @@ export default function FeedScreen() {
   const [showFilter, setShowFilter] = useState(false);
   const [dismissedNudge, setDismissedNudge] = useState(false);
   const [showPaywall, setShowPaywall] = useState(false);
+  const [showLogin, setShowLogin] = useState(false);
   const [pullY, setPullY] = useState(0);
   const pullState = useRef({ startY: 0, active: false, triggered: false });
   const feedAtTop = useRef(true);
@@ -710,7 +711,7 @@ export default function FeedScreen() {
   }, [session]);
 
   const handleVoteOnPost = useCallback(async (postId: string, vote: 1 | -1 | 0) => {
-    if (!session) { router.push('/(auth)/login' as any); return; }
+    if (!session) { setShowLogin(true); return; }
     setPosts(prev => prev.map(p => {
       if (p.id !== postId) return p;
       const prevVote = p.user_vote ?? 0;
@@ -800,7 +801,7 @@ export default function FeedScreen() {
           {!session ? (
             <TouchableOpacity
               style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: COLORS.gold, borderRadius: RADIUS.full, paddingHorizontal: 14, paddingVertical: 8 }}
-              onPress={() => router.push('/(auth)/login' as any)}
+              onPress={() => setShowLogin(true)}
             >
               <Ionicons name="log-in-outline" size={16} color={COLORS.bg} />
               <Text style={{ color: COLORS.bg, fontWeight: '800', fontSize: 13 }}>Sign In</Text>
@@ -981,6 +982,34 @@ export default function FeedScreen() {
         onClose={() => setShowPaywall(false)}
         trigger="See exact sizes, unlock photos & videos, get verified."
       />
+
+      {/* Login modal — popup over content */}
+      <Modal visible={showLogin} animationType="fade" transparent>
+        <TouchableOpacity style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', alignItems: 'center', justifyContent: 'center' }} activeOpacity={1} onPress={() => setShowLogin(false)}>
+          <View style={{ backgroundColor: COLORS.card, borderRadius: RADIUS.lg, borderWidth: 1, borderColor: COLORS.cardBorder, padding: 28, width: 320, alignItems: 'center', gap: 14 }} onStartShouldSetResponder={() => true}>
+            <Text style={{ color: COLORS.gold, fontSize: 28, fontWeight: '900', letterSpacing: 6 }}>SIZE.</Text>
+            <Text style={{ color: COLORS.muted, fontSize: 11, letterSpacing: 3, textTransform: 'uppercase' }}>Sign in to participate</Text>
+            <TouchableOpacity
+              style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#fff', width: '100%', paddingVertical: 14, borderRadius: RADIUS.full }}
+              onPress={() => { setShowLogin(false); if (typeof window !== 'undefined') window.location.href = '/api/v1/auth/oauth/x/redirect'; }}
+            >
+              <Ionicons name="logo-twitter" size={18} color="#000" />
+              <Text style={{ color: '#000', fontWeight: '700', fontSize: 15 }}>Continue with X</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: COLORS.gold, width: '100%', paddingVertical: 14, borderRadius: RADIUS.full }}
+              onPress={() => { setShowLogin(false); router.push('/(auth)/login' as any); }}
+            >
+              <Ionicons name="wallet" size={18} color={COLORS.bg} />
+              <Text style={{ color: COLORS.bg, fontWeight: '700', fontSize: 15 }}>Connect Wallet</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => setShowLogin(false)} style={{ paddingTop: 4 }}>
+              <Text style={{ color: COLORS.muted, fontSize: 12 }}>Maybe later</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
       </PageContainer>
     </SafeAreaView>
   );

@@ -50,7 +50,7 @@ export default function WebNavbar() {
           {!session && (
             <TouchableOpacity
               style={styles.signInBtn}
-              onPress={() => router.push('/(auth)/login' as any)}
+              onPress={() => { if (typeof window !== 'undefined') window.location.href = '/api/v1/auth/oauth/x/redirect'; }}
             >
               <Ionicons name="log-in-outline" size={16} color={COLORS.bg} />
               <Text style={styles.signInText}>Sign In</Text>
