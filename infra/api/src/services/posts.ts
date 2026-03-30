@@ -34,12 +34,9 @@ export interface Comment {
 // ── Posts ───────────────────────────────────────────────────────────
 
 export async function getPosts(userId?: string, limit = 30): Promise<any[]> {
-  // Get all posts sorted by score desc, then created_at desc
+  // Get all posts sorted by newest first
   let posts = await scanAll<Post>(T.posts);
-  posts.sort((a, b) => {
-    if (b.score !== a.score) return b.score - a.score;
-    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-  });
+  posts.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
   posts = posts.slice(0, limit);
 
   // Hydrate with author + poll options
