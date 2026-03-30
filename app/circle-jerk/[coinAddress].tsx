@@ -59,7 +59,7 @@ export default function CircleJerkScreen() {
 
       setCoin(coinData);
 
-      // Find my tier
+      // Find my tier — check membership OR on-chain balance/staking
       const walletAddr = profile?.wallet_address?.toLowerCase();
       const myHolding = holders.find(h =>
         (h.holderAddress?.toLowerCase() === walletAddr) ||
@@ -67,12 +67,35 @@ export default function CircleJerkScreen() {
         h.user_id === session?.user.id
       );
 
-      if (!myHolding) {
-        setGated(true);
-        setMyTier('NONE');
-      } else {
+      if (myHolding) {
         setGated(false);
         setMyTier(myHolding.role === 'owner' ? 'DADDY' : 'STROKER');
+      } else if (walletAddr && session?.user.id) {
+        // Check if user has staked or holds the token on-chain
+        try {
+          const balRes = await fetch(`/api/v1/wallets/size-balance/${walletAddr}`);
+          const balData = await balRes.json();
+          const stakingRes = await fetch('/api/v1/wallets/staking-leaderboard');
+          const stakingData = await stakingRes.json();
+          const myStake = (stakingData.stakers || []).find((s: any) => s.wallet?.toLowerCase() === walletAddr);
+
+          if ((balData.balance > 0) || myStake) {
+            // User holds or has staked — auto-add as member
+            setGated(false);
+            setMyTier(myStake ? 'STROKER' : 'STROKER');
+            // Auto-register membership in background
+            fetch(`/api/v1/circle-jerks/${coinAddress}/messages`, { method: 'GET', headers: { Authorization: `Bearer ${getToken()}` } }).catch(() => {});
+          } else {
+            setGated(true);
+            setMyTier('NONE');
+          }
+        } catch {
+          setGated(true);
+          setMyTier('NONE');
+        }
+      } else {
+        setGated(true);
+        setMyTier('NONE');
       }
 
       // Fetch messages
