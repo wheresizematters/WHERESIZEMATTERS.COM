@@ -30,7 +30,6 @@ const EARN_ACTIONS = [
 
 const REWARDS = [
   { icon: 'flash',     label: 'Feed Boost',    cost: '5K $SIZE',  desc: 'Burn 5,000 $SIZE to boost your post to the top' },
-  { icon: 'shield-checkmark', label: 'Get Verified', cost: '10K $SIZE', desc: 'Burn 10,000 $SIZE to verify instantly' },
   { icon: 'sparkles',  label: 'AI Logo Gen',   cost: '500 $SIZE', desc: 'Burn 500 $SIZE to generate a DickCoin logo' },
 ];
 

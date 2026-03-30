@@ -195,7 +195,7 @@ export default function VerifyScreen() {
                 </View>
                 <Text style={s.heroTitle}>Get Verified</Text>
                 <Text style={s.heroSub}>
-                  Verify with AI, card, or $SIZE tokens. Choose what you want to verify.
+                  Free AI verification. Choose what you want to verify.
                 </Text>
               </View>
 
@@ -230,61 +230,7 @@ export default function VerifyScreen() {
                 </TouchableOpacity>
               </View>
 
-              {/* Payment cards */}
-              <Text style={s.sectionLabel}>PAY TO VERIFY</Text>
-              <View style={s.payCards}>
-                <TouchableOpacity
-                  style={s.payCard}
-                  onPress={() => {
-                    const { stripeCheckout } = require('@/lib/purchases');
-                    stripeCheckout('monthly', session?.user.id ?? '');
-                  }}
-                >
-                  <Text style={s.payCardPrice}>$10</Text>
-                  <Text style={s.payCardMethod}>Pay with Card</Text>
-                  <Text style={s.payCardDesc}>via Stripe</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={[s.payCard, s.payCardToken]}
-                  onPress={async () => {
-                    if (!profile?.wallet_address) {
-                      window.alert('Connect your wallet first (go to Grow tab)');
-                      return;
-                    }
-                    try {
-                      const res = await fetch('/api/v1/verifications/token-verify', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
-                        body: JSON.stringify({ walletAddress: profile.wallet_address }),
-                      });
-                      const data = await res.json();
-                      if (data.error) {
-                        window.alert(data.error);
-                      } else if (data.status === 'verified') {
-                        await updateProfile({ is_verified: true });
-                        setStep('result_verified');
-                      }
-                    } catch {
-                      window.alert('Failed to verify with tokens');
-                    }
-                  }}
-                >
-                  <Text style={s.payCardPrice}>$20</Text>
-                  <Text style={s.payCardMethod}>Pay with $SIZE</Text>
-                  <Text style={s.payCardDesc}>50% burned / 50% to protocol</Text>
-                  <Text style={s.payCardNote}>2x premium — supports the ecosystem</Text>
-                </TouchableOpacity>
-              </View>
-
-              {/* Divider */}
-              <View style={s.orDivider}>
-                <View style={s.orLine} />
-                <Text style={s.orText}>or verify for free with AI</Text>
-                <View style={s.orLine} />
-              </View>
-
-              {/* AI verification flow */}
+              {/* AI verification flow — free */}
               <>
                 <View style={s.heroSection}>
                   <View style={s.iconCircle}>
