@@ -34,7 +34,7 @@ export function FeatureFlagsProvider({ children }: { children: React.ReactNode }
         .catch(() => {});
     }
     load();
-    const interval = setInterval(load, 300000); // 5 min
+    const interval = setInterval(load, 30000); // 30 sec — fast enough to feel instant when toggling from admin
     return () => clearInterval(interval);
   }, []);
 
