@@ -602,4 +602,55 @@ r.get("/size-balance/:address", async (req: Request, res: Response) => {
   }
 });
 
+// ── Epoch + reward stats ────────────────────────────────────────────
+
+const REWARDS_ADDRESS = "0x987f4fE774aeb104a3724C155Df583B3D72BE117";
+const REWARDS_ABI = [
+  "function getCurrentEpochInfo() view returns (uint256 epoch, uint256 pool, uint256 lastDist, uint256 nextDist)",
+];
+
+r.get("/reward-stats", async (_req: Request, res: Response) => {
+  try {
+    const { ethers } = require("ethers");
+    const provider = new ethers.JsonRpcProvider(BASE_RPC);
+    const rewards = new ethers.Contract(REWARDS_ADDRESS, REWARDS_ABI, provider);
+    const staking = new ethers.Contract(STAKING_ADDRESS, STAKING_ABI, provider);
+
+    // Epoch info
+    const epochInfo = await rewards.getCurrentEpochInfo();
+    const epoch = Number(epochInfo[0]);
+    const pendingPool = Number(ethers.formatEther(epochInfo[1]));
+    const lastDist = Number(epochInfo[2]) * 1000;
+    const nextDist = Number(epochInfo[3]) * 1000;
+
+    // If no distribution yet, next is now + 23hrs from first deposit
+    const now = Date.now();
+    const timeUntilNext = lastDist === 0 ? 0 : Math.max(0, nextDist - now);
+
+    // Treasury SIZE balance (reward pool)
+    const tokenAbi = ["function balanceOf(address) view returns (uint256)"];
+    const sizeToken = new ethers.Contract(SIZE_TOKEN, tokenAbi, provider);
+    const treasuryBalance = Number(ethers.formatEther(await sizeToken.balanceOf("0x117c1e5d49e545021c21a0e3ade73dc42fd8ccf0")));
+
+    // Total staked
+    const totalStaked = Number(ethers.formatEther(await staking.totalStaked()));
+    const totalEffective = Number(ethers.formatEther(await staking.totalEffectiveStaked()));
+
+    res.json({
+      epoch,
+      pendingPool: Math.round(pendingPool),
+      treasuryPool: Math.round(treasuryBalance),
+      lastDistribution: lastDist === 0 ? null : new Date(lastDist).toISOString(),
+      nextDistribution: lastDist === 0 ? "Ready — first epoch can be triggered now" : new Date(nextDist).toISOString(),
+      timeUntilNextMs: timeUntilNext,
+      timeUntilNextFormatted: lastDist === 0 ? "Now" : `${Math.floor(timeUntilNext / 3600000)}h ${Math.floor((timeUntilNext % 3600000) / 60000)}m`,
+      totalStaked: Math.round(totalStaked),
+      totalEffective: Math.round(totalEffective),
+    });
+  } catch (err: any) {
+    console.error("Reward stats error:", err.message);
+    res.json({ epoch: 0, treasuryPool: 0, totalStaked: 0 });
+  }
+});
+
 export default r;
