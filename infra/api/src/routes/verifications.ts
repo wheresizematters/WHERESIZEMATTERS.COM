@@ -30,18 +30,19 @@ r.post("/verify", requireAuth, async (req: Request, res: Response) => {
     // Build prompt based on verification type
     let prompt = "";
     if (type === "face") {
-      prompt = `This is a face verification photo. Confirm there is a real human face visible. Determine if this appears to be a real person (not a screenshot, not a photo of a photo).
+      prompt = `This is a face verification photo for a social app. Confirm there is a real human face visible (not a screenshot, not a photo of a photo). Rate their attractiveness on a scale of 1-10, be brutally honest and funny.
 
 Return JSON only:
-{"verified": true|false, "gender": "male"|"female"|"unknown", "confidence": "high"|"medium"|"low", "notes": "<brief>"}`;
+{"verified": true|false, "gender": "male"|"female"|"unknown", "confidence": "high"|"medium"|"low", "attractiveness": <1-10>, "roast": "<short funny one-liner about their looks>"}`;
     } else if (type === "bra") {
-      prompt = `Estimate the bra/cup size visible in this photo. Look for any reference objects for scale.
+      prompt = `This is a boob verification photo for a social app. Estimate the cup/bra size visible. Rate the tits on a scale of 1-10, be honest and playful.
 
 Return JSON only:
-{"bra_size": "<like 34C>", "cup": "<letter>", "band": <number>, "confidence": "high"|"medium"|"low", "reference": "<what you used>"}
+{"bra_size": "<like 34C>", "cup": "<letter>", "band": <number>, "confidence": "high"|"medium"|"low", "rating": <1-10>, "roast": "<short funny one-liner>"}
 
 If cannot determine, return:
-{"bra_size": null, "confidence": "low", "reference": "none"}`;
+{"bra_size": null, "confidence": "low", "rating": 0, "roast": "Can't see anything"}`;
+
     } else {
       prompt = `Measure the penis in this photo. Look for a reference object (ruler, tape measure, credit card, dollar bill, phone) to calibrate scale.
 
@@ -89,23 +90,29 @@ If no reference object or no penis visible, return:
       let notes = "";
 
       if (type === "face") {
-        // Face verification — just confirm it's a real person
+        // Face verification — confirm real person + rate attractiveness
         const verified = analysis.verified ?? false;
         const gender = analysis.gender ?? "unknown";
+        const attractiveness = analysis.attractiveness ?? 0;
+        const roast = analysis.roast ?? "";
         autoVerify = verified && (confidence === "high" || confidence === "medium");
-        notes = `Face: ${verified ? 'real person' : 'not verified'} (${gender}, ${confidence})`;
+        notes = `Face: ${verified ? 'real person' : 'not verified'} (${gender}, ${confidence}, ${attractiveness}/10)`;
         if (gender === "female") profileUpdates.gender = "female";
         else if (gender === "male") profileUpdates.gender = "male";
+        if (attractiveness > 0) profileUpdates.attractiveness_rating = attractiveness;
 
       } else if (type === "bra") {
-        // Bra size verification
+        // Boobs verification — estimate size + rate
         const braSize = analysis.bra_size ?? null;
+        const rating = analysis.rating ?? 0;
+        const roast = analysis.roast ?? "";
         autoVerify = braSize && (confidence === "high" || confidence === "medium");
-        notes = `Bra: ${braSize ?? '?'} (${confidence})`;
+        notes = `Boobs: ${braSize ?? '?'} (${confidence}, ${rating}/10)`;
         if (braSize) {
           profileUpdates.gender = "female";
           profileUpdates.bra_size = braSize;
         }
+        if (rating > 0) profileUpdates.boob_rating = rating;
 
       } else {
         // Size verification (default)
@@ -130,10 +137,21 @@ If no reference object or no penis visible, return:
 
       if (autoVerify) {
         await updateProfile(req.userId!, profileUpdates);
-        const verifiedWhat = type === "face" ? "identity" : type === "bra" ? `bra size (${analysis.bra_size})` : `size (${analysis.size_inches}")`;
+        let reason = "";
+        if (type === "face") {
+          const rating = analysis.attractiveness ?? 0;
+          const roast = analysis.roast ?? "";
+          reason = `Attractiveness: ${rating}/10${roast ? ` — "${roast}"` : ''}`;
+        } else if (type === "bra") {
+          const rating = analysis.rating ?? 0;
+          const roast = analysis.roast ?? "";
+          reason = `${analysis.bra_size ?? '?'} — Rating: ${rating}/10${roast ? ` — "${roast}"` : ''}`;
+        } else {
+          reason = `Verified: ${analysis.size_inches}" (${confidence} confidence)`;
+        }
         return res.json({
           status: "auto_verified",
-          reason: `Verified: ${verifiedWhat} (${confidence} confidence)`,
+          reason,
         });
       }
 

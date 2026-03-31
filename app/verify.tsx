@@ -38,6 +38,8 @@ export default function VerifyScreen() {
   const [errorMsg, setErrorMsg] = useState('');
   const [showPaywall, setShowPaywall] = useState(false);
   const [verifyType, setVerifyType] = useState<'size' | 'face' | 'bra'>('size');
+  const [verifiedPhotoUri, setVerifiedPhotoUri] = useState<string | null>(null);
+  const [aiRating, setAiRating] = useState<string | null>(null);
 
   useEffect(() => {
     if (!session?.user.id) { setStep('instructions'); return; }
@@ -128,12 +130,13 @@ export default function VerifyScreen() {
 
     if (result.status === 'auto_verified') {
       await updateProfile({ is_verified: true });
+      setVerifiedPhotoUri(photoUri);
+      if (result.reason) setAiRating(result.reason);
       setStep('result_verified');
     } else if (result.status === 'rejected') {
       setErrorMsg(result.reason ?? 'Verification failed. Try again with a clearer photo and a reference object.');
       setStep('error');
     } else {
-      // Shouldn't happen anymore but handle gracefully
       setStep('result_verified');
     }
   }
@@ -269,8 +272,8 @@ export default function VerifyScreen() {
                   onPress={() => setVerifyType('bra')}
                 >
                   <Ionicons name="heart" size={22} color={verifyType === 'bra' ? COLORS.purple : COLORS.muted} />
-                  <Text style={[s.typeCardLabel, verifyType === 'bra' && { color: COLORS.purple }]}>Other</Text>
-                  
+                  <Text style={[s.typeCardLabel, verifyType === 'bra' && { color: COLORS.purple }]}>Boobs</Text>
+
                 </TouchableOpacity>
               </View>
 
@@ -278,37 +281,57 @@ export default function VerifyScreen() {
               <>
                 <View style={s.heroSection}>
                   <View style={s.iconCircle}>
-                    <Ionicons name="shield-checkmark-outline" size={40} color={COLORS.gold} />
+                    <Ionicons name={verifyType === 'face' ? 'person-circle-outline' : verifyType === 'bra' ? 'heart-outline' : 'shield-checkmark-outline'} size={40} color={verifyType === 'bra' ? COLORS.purple : COLORS.gold} />
                   </View>
-                  <Text style={s.heroTitle}>Get Verified</Text>
+                  <Text style={s.heroTitle}>
+                    {verifyType === 'face' ? 'Face Verify' : verifyType === 'bra' ? 'Boobs Verify' : 'Size Verify'}
+                  </Text>
                   <Text style={s.heroSub}>
-                    Submit a photo with a reference object in frame. Our AI measures the scale and confirms your size.
+                    {verifyType === 'face'
+                      ? 'Submit a selfie. Our AI confirms you\'re real and rates your attractiveness 1-10.'
+                      : verifyType === 'bra'
+                      ? 'Submit a photo. Our AI estimates cup size and rates 1-10.'
+                      : 'Submit a photo with a reference object in frame. Our AI measures the scale and confirms your size.'}
                   </Text>
                 </View>
 
-                <Text style={s.sectionLabel}>REFERENCE OBJECTS</Text>
-                <View style={s.refList}>
-                  {REFERENCE_OBJECTS.map(item => (
-                    <View key={item.label} style={s.refRow}>
-                      <Text style={s.refIcon}>{item.icon}</Text>
-                      <View style={s.refText}>
-                        <Text style={s.refLabel}>{item.label}</Text>
-                        <Text style={s.refDetail}>{item.detail}</Text>
-                      </View>
+                {verifyType === 'size' && (
+                  <>
+                    <Text style={s.sectionLabel}>REFERENCE OBJECTS</Text>
+                    <View style={s.refList}>
+                      {REFERENCE_OBJECTS.map(item => (
+                        <View key={item.label} style={s.refRow}>
+                          <Text style={s.refIcon}>{item.icon}</Text>
+                          <View style={s.refText}>
+                            <Text style={s.refLabel}>{item.label}</Text>
+                            <Text style={s.refDetail}>{item.detail}</Text>
+                          </View>
+                        </View>
+                      ))}
                     </View>
-                  ))}
-                </View>
+                  </>
+                )}
 
                 <Text style={s.sectionLabel}>PHOTO TIPS</Text>
                 <View style={s.tipList}>
-                  {[
+                  {(verifyType === 'face' ? [
+                    'Face the camera directly with good lighting',
+                    'No filters, no screenshots, no photos of photos',
+                    'AI rates attractiveness 1-10 — flex your angles',
+                    'You can post the result or delete it',
+                  ] : verifyType === 'bra' ? [
+                    'Good lighting, straight on',
+                    'AI estimates cup size and rates 1-10',
+                    'You can post the result or delete it',
+                    'No face required — body only is fine',
+                  ] : [
                     'Shoot from directly above in good lighting',
                     'Keep both the subject and reference object fully in frame',
                     'Measure erect length from base to tip along the top',
-                    'Your photo is deleted immediately after review',
-                  ].map((tip, i) => (
+                    'You can post the result or delete it',
+                  ]).map((tip, i) => (
                     <View key={i} style={s.tipRow}>
-                      <View style={s.tipDot} />
+                      <View style={[s.tipDot, verifyType === 'bra' && { backgroundColor: COLORS.purple }]} />
                       <Text style={s.tipText}>{tip}</Text>
                     </View>
                   ))}
@@ -317,15 +340,15 @@ export default function VerifyScreen() {
                 <View style={s.privacyNote}>
                   <Ionicons name="lock-closed-outline" size={14} color={COLORS.muted} />
                   <Text style={s.privacyText}>
-                    Photos are stored encrypted, never shared, and permanently deleted after verification — whether approved or rejected.
+                    Your photo is permanently deleted after AI review unless you choose to post it or use it for a DickCoin launch.
                   </Text>
                 </View>
 
-                <TouchableOpacity style={s.primaryBtn} onPress={() => goToGirth('camera')}>
-                  <Ionicons name="camera-outline" size={18} color={COLORS.bg} />
-                  <Text style={s.primaryBtnText}>Take Photo</Text>
+                <TouchableOpacity style={s.primaryBtn} onPress={() => verifyType === 'size' ? goToGirth('camera') : pickFromLibrary()}>
+                  <Ionicons name={verifyType === 'face' ? 'camera-outline' : 'images-outline'} size={18} color={COLORS.bg} />
+                  <Text style={s.primaryBtnText}>{verifyType === 'face' ? 'Take Selfie' : 'Upload Photo'}</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={s.secondaryBtn} onPress={() => goToGirth('library')}>
+                <TouchableOpacity style={s.secondaryBtn} onPress={() => verifyType === 'size' ? goToGirth('library') : pickFromLibrary()}>
                   <Ionicons name="images-outline" size={18} color={COLORS.gold} />
                   <Text style={s.secondaryBtnText}>Choose from Library</Text>
                 </TouchableOpacity>
@@ -403,10 +426,52 @@ export default function VerifyScreen() {
               <Ionicons name="shield-checkmark" size={48} color={COLORS.gold} />
             </View>
             <Text style={s.resultTitle}>Verified!</Text>
-            <Text style={s.resultSub}>Your size has been confirmed by our AI. The verified badge is now active on your profile.</Text>
-            <TouchableOpacity style={s.primaryBtn} onPress={() => router.replace('/profile' as any)}>
-              <Text style={s.primaryBtnText}>Back to Profile</Text>
-            </TouchableOpacity>
+            {aiRating && <Text style={{ color: COLORS.gold, fontSize: SIZES.md, fontWeight: '700', textAlign: 'center' }}>{aiRating}</Text>}
+            <Text style={s.resultSub}>The verified badge is now active on your profile.</Text>
+
+            {verifiedPhotoUri && (
+              <View style={{ width: '100%', gap: 10, marginTop: 8 }}>
+                <Text style={{ color: COLORS.muted, fontSize: SIZES.xs, textAlign: 'center', letterSpacing: 1, fontWeight: '700' }}>WANT TO USE YOUR PHOTO?</Text>
+
+                <TouchableOpacity
+                  style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: COLORS.gold, borderRadius: RADIUS.md, paddingVertical: 14 }}
+                  onPress={async () => {
+                    if (!session) return;
+                    const { submitVerificationPhoto } = require('@/lib/api');
+                    // Post to feed with the verified image
+                    const { createPost } = require('@/lib/api');
+                    const tag = verifyType === 'face' ? 'selfie' : verifyType === 'bra' ? 'verified' : 'verified';
+                    await createPost(session.user.id, `Just got verified on SIZE. ${aiRating ?? ''}`, verifiedPhotoUri, tag);
+                    if (typeof window !== 'undefined') window.alert('Posted to feed!');
+                    router.replace('/(tabs)' as any);
+                  }}
+                >
+                  <Ionicons name="megaphone" size={18} color={COLORS.bg} />
+                  <Text style={{ color: COLORS.bg, fontWeight: '900', fontSize: SIZES.sm }}>Post to Feed</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: COLORS.card, borderRadius: RADIUS.md, paddingVertical: 14, borderWidth: 1, borderColor: `${COLORS.gold}40` }}
+                  onPress={() => router.push('/launch-dickcoin' as any)}
+                >
+                  <Ionicons name="rocket" size={18} color={COLORS.gold} />
+                  <Text style={{ color: COLORS.gold, fontWeight: '900', fontSize: SIZES.sm }}>Launch a DickCoin with It</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={{ alignItems: 'center', paddingVertical: 10 }}
+                  onPress={() => router.replace('/profile' as any)}
+                >
+                  <Text style={{ color: COLORS.muted, fontSize: SIZES.sm }}>No thanks — delete my photo</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+
+            {!verifiedPhotoUri && (
+              <TouchableOpacity style={s.primaryBtn} onPress={() => router.replace('/profile' as any)}>
+                <Text style={s.primaryBtnText}>Back to Profile</Text>
+              </TouchableOpacity>
+            )}
           </View>
         )}
 
