@@ -312,6 +312,24 @@ export default function EarnScreen() {
           </View>
           )}
 
+          {/* KOL Ratings CTA */}
+          <View style={styles.section}>
+            <Text style={styles.sectionLabel}>INTELLIGENCE</Text>
+            <TouchableOpacity
+              style={styles.launchCta}
+              activeOpacity={0.85}
+              onPress={() => router.push('/kol' as any)}
+            >
+              <View style={styles.launchCtaInner}>
+                <Ionicons name="analytics" size={22} color={COLORS.bg} />
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.launchCtaTitle}>KOL Wallet Ratings</Text>
+                  <Text style={styles.launchCtaSub}>Rate any wallet 0-1000. Compare wallets, check blue chip NFTs, Arkham intel, Farcaster, $SIZE staking.</Text>
+                </View>
+              </View>
+            </TouchableOpacity>
+          </View>
+
           {/* Tab toggle */}
           <View style={styles.tabBar}>
             <TouchableOpacity

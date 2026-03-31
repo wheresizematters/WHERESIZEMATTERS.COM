@@ -386,3 +386,84 @@ export interface FollowersEntry {
 export async function fetchFollowersLeaderboard(): Promise<FollowersEntry[]> {
   return (await api<FollowersEntry[]>('/api/v1/profiles/leaderboard/followers')) ?? [];
 }
+
+// ── KOL Ratings ─────────────────────────────────────────────────
+
+export interface KolRating {
+  address: string;
+  score: {
+    total: number;
+    breakdown: {
+      ethValue: number;
+      sizeHoldings: number;
+      sizeStaking: number;
+      blueChipNFTs: number;
+      arkhamRecognition: number;
+      farcasterPresence: number;
+    };
+    tier: string;
+  };
+  ethBalance: number;
+  ethBalanceUsd: number;
+  sizePosition: {
+    balance: number;
+    staked: number;
+    pendingRewards: number;
+    tier: number;
+    tierName: string;
+    effectiveStake: number;
+  };
+  blueChipNFTs: { name: string; address: string; balance: number }[];
+  arkham: {
+    entityName: string | null;
+    twitter: string | null;
+    labels: string[];
+    isKnown: boolean;
+  };
+  farcaster: {
+    fid: number | null;
+    username: string | null;
+    displayName: string | null;
+    followerCount: number;
+    followingCount: number;
+    isOG: boolean;
+    pfpUrl: string | null;
+  };
+  ratedAt: string;
+}
+
+export interface KolComparison {
+  wallet1: KolRating;
+  wallet2: KolRating;
+  winner: string;
+  winnerScore: number;
+  differential: number;
+  categoryWinners: Record<string, string>;
+  trash_talk: string;
+}
+
+export interface KolTopEntry {
+  rank: number;
+  address: string;
+  score: number;
+  tier: string;
+  entityName: string | null;
+  farcasterUsername: string | null;
+  ratedAt: string;
+}
+
+export async function rateKolWallet(address: string): Promise<KolRating | null> {
+  return api<KolRating>(`/api/v1/kol/rate/${address}`);
+}
+
+export async function compareKolWallets(addr1: string, addr2: string): Promise<KolComparison | null> {
+  return api<KolComparison>(`/api/v1/kol/compare/${addr1}/${addr2}`);
+}
+
+export async function fetchKolTop(): Promise<{ leaderboard: KolTopEntry[]; count: number }> {
+  return (await api<{ leaderboard: KolTopEntry[]; count: number }>('/api/v1/kol/top')) ?? { leaderboard: [], count: 0 };
+}
+
+export async function fetchKolFarcaster(address: string): Promise<any> {
+  return api(`/api/v1/kol/farcaster/${address}`);
+}
