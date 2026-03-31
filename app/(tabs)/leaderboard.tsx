@@ -694,27 +694,77 @@ export default function LeaderboardScreen() {
           )
         ) : (
           <FlatList
-            data={dickCoins}
+            data={[...dickCoins].sort((a, b) => (b.creatorVerified ? 1 : 0) - (a.creatorVerified ? 1 : 0))}
             keyExtractor={c => c.contractAddress ?? c.id}
             contentContainerStyle={styles.list}
-            ListHeaderComponent={<Text style={styles.listHeader}>TOP DICKCOINS</Text>}
-            renderItem={({ item, index }) => (
-              <TouchableOpacity style={styles.row} onPress={() => { if (typeof window !== 'undefined') window.location.href = '/coin/' + (item.contractAddress ?? item.id); }} activeOpacity={0.7}>
-                <View style={styles.rankNumWrap}><Text style={styles.rankNum}>#{index + 1}</Text></View>
-                {item.imageUrl ? (
-                  <Image source={{ uri: item.imageUrl }} style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: COLORS.card }} />
-                ) : (
-                  <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: COLORS.card, borderWidth: 1.5, borderColor: COLORS.gold, alignItems: 'center', justifyContent: 'center' }}>
-                    <Text style={{ color: COLORS.gold, fontWeight: '900', fontSize: 12 }}>{(item.ticker ?? '?').charAt(0)}</Text>
-                  </View>
+            ListHeaderComponent={
+              <View>
+                <Text style={styles.listHeader}>TOP DICKCOINS</Text>
+                {/* Verify CTA */}
+                {(!session || !profile?.is_verified) && (
+                  <TouchableOpacity
+                    style={{ backgroundColor: `${COLORS.gold}15`, borderWidth: 1, borderColor: `${COLORS.gold}40`, borderRadius: RADIUS.lg, padding: 16, marginBottom: 16, flexDirection: 'row', alignItems: 'center', gap: 12 }}
+                    onPress={() => router.push('/verify' as any)}
+                    activeOpacity={0.8}
+                  >
+                    <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: `${COLORS.gold}20`, alignItems: 'center', justifyContent: 'center' }}>
+                      <Ionicons name="shield-checkmark" size={20} color={COLORS.gold} />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ color: COLORS.white, fontWeight: '800', fontSize: SIZES.sm }}>Get Verified to Launch</Text>
+                      <Text style={{ color: COLORS.muted, fontSize: SIZES.xs, marginTop: 2 }}>Verified creators get highlighted and earn 90% of trading fees</Text>
+                    </View>
+                    <Ionicons name="chevron-forward" size={16} color={COLORS.gold} />
+                  </TouchableOpacity>
                 )}
-                <View style={styles.userInfo}>
-                  <Text style={styles.username}>{item.name} <Text style={{ color: COLORS.gold, fontSize: SIZES.xs }}>{item.ticker}</Text></Text>
-                  <Text style={styles.countryText}>by @{item.creatorUsername} · {item.holderCount ?? 0} holders</Text>
-                </View>
-              </TouchableOpacity>
-            )}
-            ListEmptyComponent={<View style={{ alignItems: 'center', paddingTop: 60 }}><Text style={{ color: COLORS.muted }}>No DickCoins launched yet</Text></View>}
+              </View>
+            }
+            renderItem={({ item, index }) => {
+              const isVerified = !!item.creatorVerified;
+              return (
+                <TouchableOpacity
+                  style={[styles.row, isVerified && { backgroundColor: `${COLORS.gold}08`, borderWidth: 1, borderColor: `${COLORS.gold}20`, borderRadius: RADIUS.md, marginHorizontal: -4, paddingHorizontal: 16 }]}
+                  onPress={() => { if (typeof window !== 'undefined') window.location.href = '/coin/' + (item.contractAddress ?? item.id); }}
+                  activeOpacity={0.7}
+                >
+                  <View style={styles.rankNumWrap}><Text style={styles.rankNum}>#{index + 1}</Text></View>
+                  {item.imageUrl ? (
+                    <Image source={{ uri: item.imageUrl }} style={[{ width: 36, height: 36, borderRadius: 18, backgroundColor: COLORS.card }, isVerified && { borderWidth: 2, borderColor: COLORS.gold }]} />
+                  ) : (
+                    <View style={[{ width: 36, height: 36, borderRadius: 18, backgroundColor: COLORS.card, borderWidth: 1.5, borderColor: isVerified ? COLORS.gold : COLORS.cardBorder, alignItems: 'center', justifyContent: 'center' }]}>
+                      <Text style={{ color: COLORS.gold, fontWeight: '900', fontSize: 13 }}>{(item.ticker ?? '?').charAt(0)}</Text>
+                    </View>
+                  )}
+                  <View style={styles.userInfo}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                      <Text style={styles.username}>{item.name} <Text style={{ color: COLORS.gold, fontSize: SIZES.xs }}>{item.ticker}</Text></Text>
+                    </View>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                      <Text style={styles.countryText}>by @{item.creatorUsername}</Text>
+                      {isVerified && (
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2, backgroundColor: `${COLORS.gold}20`, borderRadius: RADIUS.full, paddingHorizontal: 5, paddingVertical: 1 }}>
+                          <Ionicons name="checkmark-circle" size={9} color={COLORS.gold} />
+                          <Text style={{ color: COLORS.gold, fontSize: 8, fontWeight: '800' }}>VERIFIED</Text>
+                        </View>
+                      )}
+                      <Text style={styles.countryText}>· {item.holderCount ?? 0} holders</Text>
+                    </View>
+                  </View>
+                </TouchableOpacity>
+              );
+            }}
+            ListEmptyComponent={
+              <View style={{ alignItems: 'center', paddingTop: 40, gap: 12 }}>
+                <Ionicons name="rocket-outline" size={40} color={COLORS.muted} />
+                <Text style={{ color: COLORS.muted, fontSize: SIZES.md, fontWeight: '700' }}>No DickCoins launched yet</Text>
+                <TouchableOpacity
+                  style={{ backgroundColor: COLORS.gold, borderRadius: RADIUS.full, paddingHorizontal: 24, paddingVertical: 12, marginTop: 8 }}
+                  onPress={() => router.push('/launch-dickcoin' as any)}
+                >
+                  <Text style={{ color: COLORS.bg, fontWeight: '900', fontSize: SIZES.sm }}>Launch Yours</Text>
+                </TouchableOpacity>
+              </View>
+            }
           />
         )}
 

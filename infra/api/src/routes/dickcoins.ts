@@ -141,7 +141,21 @@ r.get("/trending", async (_req: Request, res: Response) => {
         return (b.totalVolume ?? 0) - (a.totalVolume ?? 0);
       })
       .slice(0, 50);
-    res.json(dickCoins);
+
+    // Hydrate with creator verification status
+    const hydrated = await Promise.all(
+      dickCoins.map(async (coin: any) => {
+        if (!coin.userId) return { ...coin, creatorVerified: false };
+        try {
+          const profile = await getItem<any>(T.profiles, { id: coin.userId });
+          return { ...coin, creatorVerified: !!profile?.is_verified };
+        } catch {
+          return { ...coin, creatorVerified: false };
+        }
+      }),
+    );
+
+    res.json(hydrated);
   } catch (err: any) {
     console.error("Trending error:", err);
     res.json([]);
