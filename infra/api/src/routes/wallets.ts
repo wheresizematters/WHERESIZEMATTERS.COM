@@ -152,13 +152,14 @@ r.get("/leaderboard", async (_req: Request, res: Response) => {
     const all = await scanAll<any>(T.wallets);
 
     // Group by user, sum net worth
-    const userTotals: Record<string, { userId: string; totalNetWorth: number; walletCount: number; chains: string[] }> = {};
+    const userTotals: Record<string, { userId: string; totalNetWorth: number; walletCount: number; chains: string[]; sizeStaked: number }> = {};
     for (const w of all) {
       if (!userTotals[w.user_id]) {
-        userTotals[w.user_id] = { userId: w.user_id, totalNetWorth: 0, walletCount: 0, chains: [] };
+        userTotals[w.user_id] = { userId: w.user_id, totalNetWorth: 0, walletCount: 0, chains: [], sizeStaked: 0 };
       }
       userTotals[w.user_id].totalNetWorth += w.netWorth ?? 0;
       userTotals[w.user_id].walletCount++;
+      if (w.sizeStaked) userTotals[w.user_id].sizeStaked += w.sizeStaked;
       if (!userTotals[w.user_id].chains.includes(w.chain)) {
         userTotals[w.user_id].chains.push(w.chain);
       }
@@ -179,6 +180,7 @@ r.get("/leaderboard", async (_req: Request, res: Response) => {
         isVerified: profile?.is_verified ?? false,
         totalNetWorth: u.totalNetWorth,
         walletCount: u.walletCount,
+        sizeStaked: u.sizeStaked,
         chains: u.chains,
       };
     }));

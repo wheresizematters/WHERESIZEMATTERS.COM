@@ -592,6 +592,25 @@ export default function LeaderboardScreen() {
               </View>
             )}
             <Text style={{ color: COLORS.muted, fontSize: 11 }}>70% to stakers · 30% to leaderboard + active users</Text>
+            {rewardStats && rewardStats.treasuryPool > 0 && (
+              <View style={{ backgroundColor: '#0A0A0A', borderRadius: 8, padding: 10, marginTop: 8, width: '100%' }}>
+                <Text style={{ color: COLORS.muted, fontSize: 9, letterSpacing: 1.5, textAlign: 'center', marginBottom: 6 }}>EPOCH REWARD SHARES (TOP 10)</Text>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 6 }}>
+                  {[23.1,17.3,13.9,11.6,9.2,6.9,5.8,4.6,4.0,3.5].map((pct, i) => {
+                    const epochPool = rewardStats.treasuryPool * 0.30;
+                    const share = Math.round(epochPool * (pct / 100));
+                    const fmt = share >= 1e6 ? (share/1e6).toFixed(1)+'M' : share >= 1e3 ? Math.round(share/1e3)+'K' : String(share);
+                    return (
+                      <View key={i} style={{ alignItems: 'center', backgroundColor: '#111', borderRadius: 6, paddingHorizontal: 6, paddingVertical: 4, minWidth: 52 }}>
+                        <Text style={{ color: COLORS.gold, fontSize: 9, fontWeight: '800' }}>#{i+1}</Text>
+                        <Text style={{ color: COLORS.white, fontSize: 10, fontWeight: '700' }}>{fmt}</Text>
+                      </View>
+                    );
+                  })}
+                </View>
+                <Text style={{ color: COLORS.muted, fontSize: 9, textAlign: 'center', marginTop: 6 }}>reward = (rank_weight / 865) × 30% × pool</Text>
+              </View>
+            )}
           </View>
         )}
 
@@ -654,14 +673,20 @@ export default function LeaderboardScreen() {
                       )}
                     </View>
                     <Text style={styles.countryText}>{item.walletCount ?? 0} wallet{(item.walletCount ?? 0) !== 1 ? 's' : ''} · {(item.chains ?? []).length} chain{(item.chains ?? []).length !== 1 ? 's' : ''}</Text>
+                    {item.sizeStaked > 0 && (
+                      <Text style={{ color: COLORS.gold, fontSize: 10, fontWeight: '700' }}>{item.sizeStaked >= 1e6 ? (item.sizeStaked/1e6).toFixed(0)+'M' : (item.sizeStaked/1e3).toFixed(0)+'K'} $SIZE staked</Text>
+                    )}
                   </View>
-                  <View style={styles.netWorthBadge}>
+                  <View style={{ alignItems: 'flex-end' }}>
                     <Text style={styles.netWorthBadgeText}>
                       {item.totalNetWorth >= 1_000_000_000 ? `$${(item.totalNetWorth / 1_000_000_000).toFixed(1)}B`
                         : item.totalNetWorth >= 1_000_000 ? `$${(item.totalNetWorth / 1_000_000).toFixed(1)}M`
                         : item.totalNetWorth >= 1_000 ? `$${(item.totalNetWorth / 1_000).toFixed(1)}K`
                         : `$${Math.round(item.totalNetWorth).toLocaleString()}`}
                     </Text>
+                    {index < 10 && rewardStats?.treasuryPool > 0 && (
+                      <Text style={{ color: COLORS.green, fontSize: 9 }}>+{Math.round(rewardStats.treasuryPool * 0.30 * [0.231,0.173,0.139,0.116,0.092,0.069,0.058,0.046,0.040,0.035][index] / 1e3)}K/epoch</Text>
+                    )}
                   </View>
                 </TouchableOpacity>
               )}
