@@ -30,6 +30,7 @@ export const T = {
   analytics:       process.env.TABLE_ANALYTICS        ?? "size-analytics",
   wallets:         process.env.TABLE_WALLETS          ?? "size-wallets",
   referrals:       process.env.TABLE_REFERRALS        ?? "size-referrals",
+  gifts:           process.env.TABLE_GIFTS            ?? "size-gifts",
 };
 
 // ── Generic helpers ────────────────────────────────────────────────

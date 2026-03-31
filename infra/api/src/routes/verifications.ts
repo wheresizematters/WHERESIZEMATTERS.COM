@@ -230,8 +230,6 @@ r.post("/token-verify", requireAuth, async (req: Request, res: Response) => {
   }
 });
 
-export default r;
-
 // ── Token-based premium ────────────────────────────────────────────
 // Pay $10 of $SIZE for 1 month premium. 50% burned, 50% to protocol.
 r.post("/token-premium", requireAuth, async (req: Request, res: Response) => {
@@ -261,3 +259,5 @@ r.post("/token-premium", requireAuth, async (req: Request, res: Response) => {
     res.status(500).json({ error: "Internal server error" });
   }
 });
+
+export default r;

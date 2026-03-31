@@ -7,7 +7,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SIZES, RADIUS } from '@/constants/theme';
-import { fetchUserRank, getMyWallets, fetchFollowersLeaderboard, RankResult } from '@/lib/api';
+import { fetchUserRank, getMyWallets, fetchFollowersLeaderboard, fetchReferralStats, fetchReferralList, RankResult } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
 
 function formatNetWorth(val: number): string {
@@ -41,25 +41,32 @@ export default function ReferralsScreen() {
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
 
+  const [referralCount, setReferralCount] = useState(0);
+  const [referralEarnings, setReferralEarnings] = useState(0);
+  const [referrals, setReferrals] = useState<{ username: string; joined: string; isVerified: boolean }[]>([]);
+
   const userId = session?.user.id;
-  const referralCount = (profile as any)?.referral_count ?? 0;
-  const referralEarnings = referralCount * 500;
   const referralLink = userId ? `https://wheresizematters.com/invite/${userId}` : '';
 
-  // Mock referral list from profile data — in production this would be its own API
-  const referrals: { username: string; joined: string }[] = (profile as any)?.referrals ?? [];
-
   useEffect(() => {
-    if (!userId) return;
+    if (!userId) { setLoading(false); return; }
     async function load() {
-      const [rank, wallets, followers] = await Promise.all([
+      const [rank, wallets, followers, stats, list] = await Promise.all([
         fetchUserRank(userId!),
         getMyWallets(),
         fetchFollowersLeaderboard(),
+        fetchReferralStats(),
+        fetchReferralList(),
       ]);
       setRankResult(rank.rank > 0 ? rank : null);
       setTotalNetWorth(wallets.totalNetWorth);
-      // Find my X followers count
+      setReferralCount(stats.totalReferred);
+      setReferralEarnings(stats.totalRewardEarned);
+      setReferrals(list.referrals.map((r: any) => ({
+        username: r.username ?? 'unknown',
+        joined: r.joinedAt ?? r.createdAt,
+        isVerified: !!r.isVerified,
+      })));
       const me = followers.find(f => f.id === userId);
       if (me) setXFollowers(me.x_followers);
       else if ((profile as any)?.x_followers) setXFollowers((profile as any).x_followers);
@@ -225,7 +232,12 @@ export default function ReferralsScreen() {
                       <Text style={styles.listAvatarText}>{ref.username.charAt(0).toUpperCase()}</Text>
                     </View>
                     <View style={{ flex: 1 }}>
-                      <Text style={styles.listUsername}>@{ref.username}</Text>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                        <Text style={styles.listUsername}>@{ref.username}</Text>
+                        {ref.isVerified && (
+                          <Ionicons name="checkmark-circle" size={12} color={COLORS.gold} />
+                        )}
+                      </View>
                       <Text style={styles.listJoined}>{timeAgo(ref.joined)}</Text>
                     </View>
                     <Text style={styles.listEarned}>+500 $SIZE</Text>

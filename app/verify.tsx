@@ -40,7 +40,7 @@ export default function VerifyScreen() {
   const [verifyType, setVerifyType] = useState<'size' | 'face' | 'bra'>('size');
 
   useEffect(() => {
-    if (!session?.user.id) return;
+    if (!session?.user.id) { setStep('instructions'); return; }
     if (profile?.is_verified) { setStep('already_verified'); return; }
 
     fetchMyVerificationRequest(session.user.id).then(req => {

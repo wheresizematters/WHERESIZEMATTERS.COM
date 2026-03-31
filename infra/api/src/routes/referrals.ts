@@ -15,11 +15,26 @@ r.get("/stats", requireAuth, async (req: Request, res: Response) => {
   }
 });
 
-// ── GET /list — users I've referred ──────────────────────────────
+// ── GET /list — users I've referred (hydrated with profiles) ─────
 r.get("/list", requireAuth, async (req: Request, res: Response) => {
   try {
+    const { getProfile } = require("../services/profiles");
     const referrals = await getReferrals(req.userId!);
-    res.json({ referrals });
+    const hydrated = await Promise.all(
+      referrals.map(async (ref) => {
+        const profile = await getProfile(ref.referredUserId);
+        return {
+          userId: ref.referredUserId,
+          username: profile?.username ?? "unknown",
+          avatarUrl: profile?.avatar_url ?? null,
+          isVerified: !!profile?.is_verified,
+          joinedAt: ref.createdAt,
+        };
+      }),
+    );
+    // Sort newest first
+    hydrated.sort((a, b) => new Date(b.joinedAt).getTime() - new Date(a.joinedAt).getTime());
+    res.json({ referrals: hydrated });
   } catch (err: any) {
     console.error("Referral list error:", err);
     res.status(500).json({ error: "Internal server error" });

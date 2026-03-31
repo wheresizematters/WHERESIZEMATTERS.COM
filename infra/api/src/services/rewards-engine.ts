@@ -198,7 +198,7 @@ export async function calculateEpochDistribution(
     breakdown: { rankWeight: rankWeights[i], rank: i + 1 },
   }));
 
-  // Activity scoring (1%)
+  // Activity scoring (5%)
   const activityUsers = await calculateActivityScores();
   const totalActivityScore = activityUsers.reduce((sum, u) => sum + u.weight, 0);
   for (const u of activityUsers) {
@@ -336,15 +336,15 @@ export async function simulateFromVolume(dailyVolumeEth: number, ethPrice: numbe
   // Total fees = volume × fee rate (typically 1% on our swap)
   const totalFeesEth = dailyVolumeEth * 0.01;
 
-  // Protocol gets 8%
+  // Protocol gets 9.9%
   const protocolFeesEth = totalFeesEth * 0.099;
 
-  // Staking pool = 75% of protocol fees
+  // Staking pool = 70% of protocol fees
   const stakingPoolEth = protocolFeesEth * (REWARDS_CONFIG.stakingSharePct / 100);
   const stakingPoolUsd = stakingPoolEth * ethPrice;
   const stakingPoolSize = sizePrice > 0 ? stakingPoolUsd / sizePrice : 0;
 
-  // Epoch rewards pool = 25% of protocol fees
+  // Epoch rewards pool = 30% of protocol fees
   const epochPoolEth = protocolFeesEth * (REWARDS_CONFIG.epochSharePct / 100);
   const epochPoolUsd = epochPoolEth * ethPrice;
   const epochPoolSize = sizePrice > 0 ? epochPoolUsd / sizePrice : 0;

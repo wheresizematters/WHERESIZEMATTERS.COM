@@ -5,13 +5,23 @@ import * as svc from "../services/profiles";
 const r = Router();
 
 r.get("/me", requireAuth, async (req, res) => {
-  const profile = await svc.getProfile(req.userId!);
-  res.json(profile);
+  try {
+    const profile = await svc.getProfile(req.userId!);
+    res.json(profile);
+  } catch (err: any) {
+    console.error("Get profile error:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
 });
 
 r.patch("/me", requireAuth, async (req, res) => {
-  const updated = await svc.updateProfile(req.userId!, req.body);
-  res.json(updated);
+  try {
+    const updated = await svc.updateProfile(req.userId!, req.body);
+    res.json(updated);
+  } catch (err: any) {
+    console.error("Update profile error:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
 });
 
 r.delete("/me", requireAuth, async (req, res) => {
@@ -35,45 +45,80 @@ r.get("/leaderboard/followers", async (_req, res) => {
 });
 
 r.get("/leaderboard", async (req, res) => {
-  const { country, ageRange } = req.query as any;
-  const verifiedOnly = req.query.verifiedOnly !== 'false';
-  const entries = await svc.getLeaderboard({ country, ageRange, verifiedOnly });
-  res.json(entries);
+  try {
+    const { country, ageRange } = req.query as any;
+    const verifiedOnly = req.query.verifiedOnly !== 'false';
+    const entries = await svc.getLeaderboard({ country, ageRange, verifiedOnly });
+    res.json(entries);
+  } catch (err: any) {
+    console.error("Leaderboard error:", err);
+    res.json([]);
+  }
 });
 
 r.get("/leaderboard/nearby", async (req, res) => {
-  const { lat, lng, radius } = req.query as any;
-  const entries = await svc.getLeaderboardNearby(
-    parseFloat(lat), parseFloat(lng), parseFloat(radius ?? "25")
-  );
-  res.json(entries);
+  try {
+    const { lat, lng, radius } = req.query as any;
+    const entries = await svc.getLeaderboardNearby(
+      parseFloat(lat), parseFloat(lng), parseFloat(radius ?? "25")
+    );
+    res.json(entries);
+  } catch (err: any) {
+    console.error("Nearby leaderboard error:", err);
+    res.json([]);
+  }
 });
 
 r.get("/search", async (req, res) => {
-  const { q } = req.query as any;
-  const results = await svc.searchUsers(q ?? "");
-  res.json(results);
+  try {
+    const { q } = req.query as any;
+    const results = await svc.searchUsers(q ?? "");
+    res.json(results);
+  } catch (err: any) {
+    console.error("Search error:", err);
+    res.json([]);
+  }
 });
 
 r.get("/count", async (_req, res) => {
-  const count = await svc.getTotalUserCount();
-  res.json({ count });
+  try {
+    const count = await svc.getTotalUserCount();
+    res.json({ count });
+  } catch (err: any) {
+    console.error("Count error:", err);
+    res.json({ count: 0 });
+  }
 });
 
 r.get("/percentile/:size", async (req, res) => {
-  const pct = await svc.getUserPercentile(parseFloat(req.params.size));
-  res.json({ percentile: pct });
+  try {
+    const pct = await svc.getUserPercentile(parseFloat(req.params.size));
+    res.json({ percentile: pct });
+  } catch (err: any) {
+    console.error("Percentile error:", err);
+    res.json({ percentile: 50 });
+  }
 });
 
 r.get("/:userId", async (req, res) => {
-  const profile = await svc.getProfile(req.params.userId);
-  if (!profile) return res.status(404).json({ error: "Not found" });
-  res.json(profile);
+  try {
+    const profile = await svc.getProfile(req.params.userId);
+    if (!profile) return res.status(404).json({ error: "Not found" });
+    res.json(profile);
+  } catch (err: any) {
+    console.error("Get user error:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
 });
 
 r.get("/:userId/rank", async (req, res) => {
-  const result = await svc.getUserRank(req.params.userId);
-  res.json(result);
+  try {
+    const result = await svc.getUserRank(req.params.userId);
+    res.json(result);
+  } catch (err: any) {
+    console.error("Get rank error:", err);
+    res.json({ rank: 0, totalUsers: 0, provisional: true });
+  }
 });
 
 r.post("/:userId/coins", requireAuth, async (req, res) => {

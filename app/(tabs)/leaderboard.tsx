@@ -113,15 +113,26 @@ function TopThreeCard({ entry, position, onPress, isPremium }: { entry: Leaderbo
 }
 
 function LeaderboardRow({ entry, onPress, isPremium }: { entry: LeaderboardEntry; onPress: () => void; isPremium?: boolean }) {
+  const isVerified = entry.is_verified;
   return (
-    <TouchableOpacity style={styles.row} onPress={onPress} activeOpacity={0.7}>
+    <TouchableOpacity
+      style={[
+        styles.row,
+        isVerified && { backgroundColor: `${COLORS.gold}08`, borderWidth: 1, borderColor: `${COLORS.gold}20`, borderRadius: RADIUS.md, marginHorizontal: -4, paddingHorizontal: 16 },
+      ]}
+      onPress={onPress}
+      activeOpacity={0.7}
+    >
       <RankBadge rank={entry.rank} />
       <UserAvatar username={entry.username} sizeInches={entry.size_inches} size={32} isVerified={entry.is_verified} />
       <View style={styles.userInfo}>
         <View style={styles.usernameRow}>
           <Text style={styles.username}>@{entry.username}</Text>
-          {entry.is_verified && (
-            <View style={styles.verifiedDot}><Text style={styles.verifiedDotText}>✓</Text></View>
+          {isVerified && (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2, backgroundColor: `${COLORS.gold}20`, borderRadius: RADIUS.full, paddingHorizontal: 5, paddingVertical: 1, marginLeft: 4 }}>
+              <Ionicons name="checkmark-circle" size={9} color={COLORS.gold} />
+              <Text style={{ color: COLORS.gold, fontSize: 8, fontWeight: '800' }}>VERIFIED</Text>
+            </View>
           )}
         </View>
         {entry.country ? <Text style={styles.countryText}>{entry.country}</Text> : null}
@@ -435,6 +446,24 @@ export default function LeaderboardScreen() {
                   <HoloBadge inches={profile.size_inches} size="lg" isPremium={isPremium} />
                 </LinearGradient>
               </LinearGradient>
+            )}
+
+            {/* Verify CTA for non-verified users */}
+            {session && profile && !profile.is_verified && (
+              <TouchableOpacity
+                style={{ backgroundColor: `${COLORS.gold}15`, borderWidth: 1, borderColor: `${COLORS.gold}40`, borderRadius: RADIUS.lg, padding: 14, marginHorizontal: 16, marginBottom: 12, flexDirection: 'row', alignItems: 'center', gap: 12 }}
+                onPress={() => router.push('/verify' as any)}
+                activeOpacity={0.8}
+              >
+                <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: `${COLORS.gold}20`, alignItems: 'center', justifyContent: 'center' }}>
+                  <Ionicons name="shield-checkmark" size={18} color={COLORS.gold} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ color: COLORS.white, fontWeight: '800', fontSize: SIZES.sm }}>Get Verified — Stand Out</Text>
+                  <Text style={{ color: COLORS.muted, fontSize: SIZES.xs, marginTop: 1 }}>Verified users get gold highlights and earn $SIZE rewards</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={16} color={COLORS.gold} />
+              </TouchableOpacity>
             )}
 
             {/* Filter chips */}

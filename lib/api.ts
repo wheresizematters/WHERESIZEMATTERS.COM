@@ -475,3 +475,13 @@ export async function fetchKolTop(): Promise<{ leaderboard: KolTopEntry[]; count
 export async function fetchKolFarcaster(address: string): Promise<any> {
   return api(`/api/v1/kol/farcaster/${address}`);
 }
+
+// ── Referrals ───────────────────────────────────────────────────
+
+export async function fetchReferralStats(): Promise<{ totalReferred: number; totalRewardEarned: number }> {
+  return (await api<{ totalReferred: number; totalRewardEarned: number }>('/api/v1/referrals/stats')) ?? { totalReferred: 0, totalRewardEarned: 0 };
+}
+
+export async function fetchReferralList(): Promise<{ referrals: { referredUserId: string; createdAt: string }[] }> {
+  return (await api<{ referrals: { referredUserId: string; createdAt: string }[] }>('/api/v1/referrals/list')) ?? { referrals: [] };
+}

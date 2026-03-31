@@ -41,7 +41,7 @@ r.post("/", requireAuth, async (req: Request, res: Response) => {
 
     // Record the gift
     const now = new Date().toISOString();
-    await putItem("size-gifts", {
+    await putItem(T.gifts, {
       id: uuid(),
       sender_id: req.userId!,
       sender_username: sender.username,
@@ -63,7 +63,7 @@ r.post("/", requireAuth, async (req: Request, res: Response) => {
 // ── GET /post/:postId — Gifts for a specific post ──────────────────
 r.get("/post/:postId", async (req: Request, res: Response) => {
   try {
-    const all = await scanAll<any>("size-gifts");
+    const all = await scanAll<any>(T.gifts);
     const postGifts = all.filter((g: any) => g.post_id === req.params.postId);
     const totalAmount = postGifts.reduce((sum: number, g: any) => sum + (g.amount ?? 0), 0);
     res.json({ totalAmount, gifts: postGifts });
@@ -73,7 +73,7 @@ r.get("/post/:postId", async (req: Request, res: Response) => {
 // ── GET /received/:userId — Gifts received by a user ───────────────
 r.get("/received/:userId", async (req: Request, res: Response) => {
   try {
-    const all = await scanAll<any>("size-gifts");
+    const all = await scanAll<any>(T.gifts);
     const received = all
       .filter((g: any) => g.recipient_id === req.params.userId)
       .sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
