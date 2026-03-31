@@ -9,14 +9,17 @@
  *
  *  1. Trading happens on Uniswap (via Clanker)
  *  2. Fee collector bot claims ETH fees daily
- *  3. DickCoinFactory splits: 90% creator / 9.9% protocol / 0.1% gas
- *  4. Protocol's 8% split further:
- *     └─ 75% → SizeStaking (deposited as $SIZE, distributed to stakers)
- *     └─ 25% → SizeRewards (epoch-based, distributed to top 10 + active users)
+ *  3. Protocol fee split: 90% creator / 9.9% protocol / 0.1% gas
+ *  4. Protocol's 9.9% split further:
+ *     └─ 70% → SizeStaking (deposited as $SIZE, distributed to stakers)
+ *     └─ 30% → SizeRewards (epoch-based, distributed via leaderboards)
  *
- *  5. SizeRewards epoch distribution:
- *     └─ 75% of epoch pool → TOP 10 on leaderboard (by rank weight)
- *     └─ 25% of epoch pool → ALL active users (by activity score)
+ *  5. SizeRewards epoch distribution (of the 30%):
+ *     └─ 10% → top X Clout (followers)
+ *     └─ 10% → top Net Worth
+ *     └─ 5%  → top Dick Size (verified)
+ *     └─ 5%  → daily active user rewards
+ *     (remaining capacity reserved for future leaderboards: KOL Score, etc.)
  *
  * ═══════════════════════════════════════════════════════════════
  *
@@ -40,16 +43,16 @@ import { v4 as uuid } from "uuid";
 // ── Configuration ────────────────────────────────────────────────
 
 export const REWARDS_CONFIG = {
-  // Protocol fee split (of the 9.9% protocol receives from DickCoin trades)
+  // Protocol fee split (of the 9.9% protocol receives from $SIZE trades)
   stakingSharePct: 70,      // 70% of $SIZE fees → stakers
   epochSharePct: 30,        // 30% of $SIZE fees → leaderboard + active users
 
   // Epoch distribution split (of the 30%)
-  dickCoinLeaderboardPct: 20,     // 20% → top DickCoins by market cap
-  cloutLeaderboardPct: 3,         // 3% → top X Clout by followers
-  netWorthLeaderboardPct: 3,      // 3% → top Net Worth
-  sizeLeaderboardPct: 3,          // 3% → top Dick Size
-  activitySharePct: 1,            // 1% → daily active user rewards
+  cloutLeaderboardPct: 10,        // 10% → top X Clout by followers
+  netWorthLeaderboardPct: 10,     // 10% → top Net Worth
+  sizeLeaderboardPct: 5,          // 5% → top Dick Size (verified)
+  activitySharePct: 5,            // 5% → daily active user rewards
+  // Remaining capacity for future leaderboards (KOL Score, Farcaster, etc.)
 
   // Rank weights for top 10 (index 0 = #1)
   rankWeights: [200, 150, 120, 100, 80, 60, 50, 40, 35, 30],
@@ -153,10 +156,9 @@ export async function calculateEpochDistribution(
   dailyPoolSize: number,
   feeSnapshot?: DailyFeeSnapshot | null,
 ): Promise<EpochDistribution> {
-  const { dickCoinLeaderboardPct, cloutLeaderboardPct, netWorthLeaderboardPct, sizeLeaderboardPct, activitySharePct, rankWeights } = REWARDS_CONFIG;
+  const { cloutLeaderboardPct, netWorthLeaderboardPct, sizeLeaderboardPct, activitySharePct, rankWeights } = REWARDS_CONFIG;
 
-  // 4 leaderboard pools + 1 activity pool (totals 30%)
-  const dickCoinPool = (dailyPoolSize * dickCoinLeaderboardPct) / 30;
+  // 3 leaderboard pools + 1 activity pool (totals 30%)
   const cloutPool = (dailyPoolSize * cloutLeaderboardPct) / 30;
   const netWorthPool = (dailyPoolSize * netWorthLeaderboardPct) / 30;
   const sizePool = (dailyPoolSize * sizeLeaderboardPct) / 30;
@@ -167,7 +169,6 @@ export async function calculateEpochDistribution(
   const sizeTop10 = sizeLeaderboard.slice(0, 10);
 
   // Distribute each pool to its top 10 using rank weights
-  const totalRankWeight = rankWeights.slice(0, 10).reduce((a, b) => a + b, 0);
   const weightMap: Record<string, number> = {};
 
   function distributePool(entries: { id: string; username: string }[], pool: number) {
@@ -179,18 +180,14 @@ export async function calculateEpochDistribution(
     }
   }
 
-  // Size leaderboard (3%)
+  // Size leaderboard (5%)
   distributePool(sizeTop10, sizePool);
 
-  // DickCoin leaderboard (20%) — top coins by volume, reward creators
-  // For now use the same leaderboard entries; in production query DickCoin creators
-  distributePool(sizeTop10, dickCoinPool);
-
-  // Clout leaderboard (3%) — top X followers
+  // Clout leaderboard (10%) — top X followers
   // For now use size leaderboard; in production query followers leaderboard
   distributePool(sizeTop10, cloutPool);
 
-  // Net Worth leaderboard (3%)
+  // Net Worth leaderboard (10%)
   distributePool(sizeTop10, netWorthPool);
 
   const topTenUsers: UserWeight[] = sizeTop10.map((entry, i) => ({
@@ -215,10 +212,12 @@ export async function calculateEpochDistribution(
 
   const totalWeight = allWeights.reduce((sum, w) => sum + w.weight, 0);
 
+  const leaderboardPool = cloutPool + netWorthPool + sizePool;
+
   return {
     timestamp: new Date().toISOString(),
     totalPool: dailyPoolSize,
-    topTenPool,
+    topTenPool: leaderboardPool,
     activityPool,
     topTenUsers,
     activityUsers,
@@ -321,10 +320,10 @@ export async function previewDistribution(dailyPoolSize: number) {
     totalWeight: dist.totalWeight,
     note: "Pool size is deterministic — derived from actual trading volume fees.",
     formula: {
-      step1: "Total trading fees (ETH) collected from all DickCoin trades",
-      step2: "DickCoinFactory splits: 90% creator / 9.9% protocol / 0.1% gas",
-      step3: `Protocol's 9.9% split: ${REWARDS_CONFIG.stakingSharePct}% → stakers, ${REWARDS_CONFIG.epochSharePct}% → epoch rewards`,
-      step4: `Epoch pool split: ${REWARDS_CONFIG.topTenSharePct}% → top 10 by rank, ${REWARDS_CONFIG.activitySharePct}% → active users`,
+      step1: "Total trading fees (ETH) collected from all $SIZE trades",
+      step2: "Fee split: 90% creator / 9.9% protocol / 0.1% gas",
+      step3: `Protocol's 9.9% split: ${REWARDS_CONFIG.stakingSharePct}% → stakers, ${REWARDS_CONFIG.epochSharePct}% → leaderboard rewards`,
+      step4: `Leaderboard split: ${REWARDS_CONFIG.cloutLeaderboardPct}% Clout, ${REWARDS_CONFIG.netWorthLeaderboardPct}% Net Worth, ${REWARDS_CONFIG.sizeLeaderboardPct}% Size, ${REWARDS_CONFIG.activitySharePct}% Activity`,
       step5: "Rank weights: #1=200, #2=150, #3=120 ... #10=30",
       step6: "Activity: verified=10, post=3, upvote=5, referral=8, msg=1, login=1",
     },

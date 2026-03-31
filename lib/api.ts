@@ -17,9 +17,15 @@ async function api<T = any>(path: string, opts?: { method?: string; body?: any }
       headers,
       body: opts?.body ? JSON.stringify(opts.body) : undefined,
     });
-    if (!res.ok) return null;
+    if (!res.ok) {
+      console.warn(`API ${opts?.method ?? 'GET'} ${path} → ${res.status}`);
+      return null;
+    }
     return res.json();
-  } catch { return null; }
+  } catch (err) {
+    console.warn(`API ${opts?.method ?? 'GET'} ${path} failed:`, err);
+    return null;
+  }
 }
 
 function post<T = any>(path: string, body: any) { return api<T>(path, { method: 'POST', body }); }
@@ -264,7 +270,9 @@ export async function isFollowing(followerId: string, followingId: string): Prom
 }
 
 export async function getOrCreateConversation(myId: string, otherId: string): Promise<{ id: string | null; error: string | null }> {
-  return (await post('/api/v1/messaging/conversations', { otherId })) ?? { id: null, error: 'API unavailable' };
+  const token = getToken();
+  if (!token) return { id: null, error: 'Sign in to send messages' };
+  return (await post('/api/v1/messaging/conversations', { otherId })) ?? { id: null, error: 'Failed to connect — try signing in again' };
 }
 
 // ── Groups ────────────────────────────────────────────────────────
