@@ -133,6 +133,7 @@ function RootLayoutNav() {
       <Stack.Screen name="admin" options={{ presentation: 'card', animation: 'slide_from_right' }} />
       <Stack.Screen name="invite/[userId]" options={{ presentation: 'card', animation: 'fade' }} />
       <Stack.Screen name="tokenomics" options={{ presentation: 'card', animation: 'slide_from_right' }} />
+      <Stack.Screen name="referrals" options={{ presentation: 'card', animation: 'slide_from_right' }} />
       <Stack.Screen name="staking" options={{ presentation: 'card', animation: 'slide_from_right' }} />
       <Stack.Screen name="launch-dickcoin" options={{ presentation: 'card', animation: 'slide_from_bottom' }} />
       <Stack.Screen name="circle-jerk/[coinAddress]" options={{ presentation: 'card', animation: 'slide_from_right' }} />

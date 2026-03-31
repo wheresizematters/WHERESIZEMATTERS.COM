@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, SafeAreaView, TouchableOpacity,
-  ScrollView, ActivityIndicator, Alert, Platform, Image, Linking,
+  ScrollView, ActivityIndicator, Alert, Platform, Image, Linking, Share,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -156,6 +156,23 @@ export default function PublicProfileScreen() {
     if (convId) router.push(`/chat/${convId}` as any);
   }
 
+  async function handleShareProfile() {
+    if (!profile) return;
+    const rankStr = rank ? `#${rank.toLocaleString()}` : 'unranked';
+    const verifiedStr = profile.is_verified ? '\n\u2705 Verified' : '';
+    const nwStr = netWorth && netWorth.totalNetWorth > 0
+      ? `\n\u{1F4B0} Net Worth: ${netWorth.totalNetWorth >= 1_000_000 ? `$${(netWorth.totalNetWorth / 1_000_000).toFixed(1)}M` : netWorth.totalNetWorth >= 1_000 ? `$${(netWorth.totalNetWorth / 1_000).toFixed(1)}K` : `$${Math.round(netWorth.totalNetWorth).toLocaleString()}`}`
+      : '';
+    const profileUrl = `https://wheresizematters.com/profile/${id}`;
+    const message = `Check out @${profile.username} on SIZE.\n\n\u{1F3C6} Ranked ${rankStr}${verifiedStr}${nwStr}\n\n${profileUrl}`;
+    if (Platform.OS === 'web') {
+      try { await navigator.share({ title: `@${profile.username} on SIZE.`, text: message, url: profileUrl }); return; } catch {}
+      try { await navigator.clipboard.writeText(message); window.alert('Profile link copied!'); } catch {}
+      return;
+    }
+    await Share.share({ message, url: profileUrl });
+  }
+
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
@@ -195,10 +212,15 @@ export default function PublicProfileScreen() {
             ? <Image source={{ uri: profile.header_url }} style={styles.headerImg} resizeMode="cover" />
             : <LinearGradient colors={['#1A0A00', '#0A0A0A']} style={styles.headerPlaceholder} />
           }
-          {/* Back button */}
+          {/* Back + Share buttons */}
           <View style={styles.topBar}>
             <TouchableOpacity onPress={() => { if (typeof window !== 'undefined' && window.history.length > 1) { router.back(); } else { router.push('/(tabs)' as any); } }} style={styles.topBarBtn}>
               <Ionicons name="chevron-back" size={20} color="#fff" />
+            </TouchableOpacity>
+          </View>
+          <View style={styles.topBarRight}>
+            <TouchableOpacity onPress={handleShareProfile} style={styles.topBarBtn}>
+              <Ionicons name="share-outline" size={18} color="#fff" />
             </TouchableOpacity>
           </View>
         </View>
@@ -402,6 +424,7 @@ const styles = StyleSheet.create({
   headerImg: { width: '100%', height: '100%' },
   headerPlaceholder: { width: '100%', height: '100%' },
   topBar: { position: 'absolute', top: 12, left: 14 },
+  topBarRight: { position: 'absolute', top: 12, right: 14 },
   topBarBtn: { width: 34, height: 34, borderRadius: 17, backgroundColor: 'rgba(0,0,0,0.55)', alignItems: 'center', justifyContent: 'center' },
 
   // Avatar row

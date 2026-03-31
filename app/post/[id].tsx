@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View, Text, FlatList, TouchableOpacity, StyleSheet,
   SafeAreaView, TextInput, KeyboardAvoidingView, Platform,
-  ActivityIndicator, Alert, Linking, Image,
+  ActivityIndicator, Alert, Linking, Image, Share,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';

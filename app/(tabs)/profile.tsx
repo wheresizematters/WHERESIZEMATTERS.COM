@@ -691,17 +691,17 @@ export default function ProfileScreen() {
           )}
 
           {/* ── Invite friends ── */}
-          <TouchableOpacity style={styles.inviteBtn} onPress={handleShare}>
-            <Ionicons name="person-add-outline" size={18} color={COLORS.gold} />
+          <TouchableOpacity style={styles.inviteBtn} onPress={() => router.push('/referrals' as any)}>
+            <Ionicons name="people" size={20} color={COLORS.gold} />
             <View style={{ flex: 1 }}>
-              <Text style={styles.inviteBtnLabel}>Invite Friends</Text>
+              <Text style={styles.inviteBtnLabel}>Referrals & Earnings</Text>
               <Text style={styles.inviteBtnSub}>
                 {(profile as any).referral_count > 0
                   ? `${(profile as any).referral_count} referred · ${(profile as any).referral_count * 500} $SIZE earned`
-                  : 'Share your invite link & earn 500 $SIZE per signup'}
+                  : '5% of referral staking rewards — forever'}
               </Text>
             </View>
-            <Ionicons name="share-outline" size={18} color={COLORS.gold} />
+            <Ionicons name="chevron-forward" size={18} color={COLORS.gold} />
           </TouchableOpacity>
 
           {/* ── Admin ── */}
